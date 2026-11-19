@@ -1,4 +1,4 @@
-"""Per-scene narration synthesis: python -m tools.voice.synth <run_dir>."""
+"""Per-scene narration synthesis: python -m tools.voice.synth <run_dir> [--script <path>]."""
 from __future__ import annotations
 
 import argparse
@@ -12,6 +12,7 @@ from tools.pipeline.script import parse_script
 from tools.voice.engine import TTSEngine, get_engine
 
 PAD_S = 0.4
+DEFAULT_VOICE = "am_michael"  # male, to match the presenter; the owner picks the final voice
 
 
 def _wav_name(scene_id: int) -> str:
@@ -22,7 +23,7 @@ def synth_scenes(
     script_path: Path,
     out_dir: Path,
     engine: TTSEngine,
-    voice: str = "af_heart",
+    voice: str = DEFAULT_VOICE,
     speed: float = 1.0,
     only: list[int] | None = None,
     language: str = "en",
@@ -73,14 +74,17 @@ def synth_scenes(
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Synthesise narration per scene")
     p.add_argument("run_dir", type=Path)
-    p.add_argument("--voice", default="af_heart")
+    p.add_argument("--voice", default=DEFAULT_VOICE)
     p.add_argument("--speed", type=float, default=1.0)
     p.add_argument("--only", default=None, help="comma-separated scene ids, e.g. 2,4")
     p.add_argument("--language", default="en")
+    p.add_argument("--script", type=Path, default=None,
+                   help="script to read narration from (default: <run_dir>/01-script/script.md)")
     a = p.parse_args(argv)
     only = [int(x) for x in a.only.split(",")] if a.only else None
     engine = get_engine("kokoro", a.language)
-    m = synth_scenes(a.run_dir / "01-script" / "script.md", a.run_dir / "02-voice",
+    script = a.script if a.script is not None else a.run_dir / "01-script" / "script.md"
+    m = synth_scenes(script, a.run_dir / "02-voice",
                      engine, a.voice, a.speed, only, a.language)
     print(f"Wrote {len(m['scenes'])} scenes, {m['total_s']} s total")
     return 0

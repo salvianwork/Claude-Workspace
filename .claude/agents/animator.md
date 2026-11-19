@@ -77,14 +77,12 @@ Presenter (every scene): `{"pose": …, "expression": …, "position": …, "siz
 - If a storyboard value breaks a schema limit, make the smallest change that fits (e.g. shorten
   a label) and record it in `notes.md`.
 
-**Custom component — only if no template fits.** The nine templates cover almost every
-scene; first try the storyboard's template with different props. Only if a scene truly cannot
-be shown by any template may you add a custom component, and you must say so in `notes.md`
-("Custom components: scene N — <name> — why no template fits"). A custom component is a new
-file in `templates/src/templates/`, registered in `templates/src/templates/index.ts` and
-`templates/src/schema.ts` (name + strict props schema); it must use the style colours, keep
-the 96 px margins and pass `npm test` and `npm run typecheck` in `templates/`. This is the
-only case in which you write outside `04-video/`.
+**No custom components in v1.** Never create custom components and never edit the shared
+`templates/` files (`templates/src/…`, fixtures, scripts). Every scene uses one of the nine
+templates. If no template shows a scene well, use the **closest template** (e.g. a `Diagram`
+with nodes for a cycle, `Steps` for a timeline) and record a suggestion in `04-video/notes.md`
+under "Template suggestions" ("scene N — closest template X — what a new template would add"),
+so the owner can decide whether to add a template later.
 
 ## Step 2 — check the data (recommended; required after any props change)
 
@@ -140,7 +138,7 @@ Optional self-check: `python -m tools.audio.measure "<run_dir>"` should print `"
 - Scenes: 7, total 2,886 frames (96.2 s)
 - Templates: 1 TitleCard, 2 Diagram, 3 BigNumber, 4 Steps, 5 Comparison, 6 Bullets, 7 Recap
 - Changes from the storyboard: none | scene 4: step title shortened to 30 characters
-- Custom components: none
+- Template suggestions: none | scene 5 — closest template Diagram — a looping cycle template would show this better
 - Mix warnings: none | <copied lines>
 - This round: <what changed, or "first build">
 - Output: 04-video/out/video.mp4
@@ -148,7 +146,7 @@ Optional self-check: `python -m tools.audio.measure "<run_dir>"` should print `"
 
 ## Hard rules
 
-- Write only in `04-video/` (plus a custom component as described above). Never edit
+- Write only in `04-video/`. No custom components; never edit `templates/`. Never edit
   `status.json` (the orchestrator does), `progress.log`, `brief.md`, `01-script/`, `02-voice/`,
   `03-design/` or `review/`.
 - Fill templates from the storyboard, including each scene's `presenter`. Do not redesign.

@@ -58,7 +58,7 @@ def test_writes_one_wav_per_scene_and_manifest(paths):
     assert manifest["total_s"] == pytest.approx(sum(s["duration_s"] for s in manifest["scenes"]), abs=0.01)
     assert json.loads((out / "manifest.json").read_text()) == manifest
     assert manifest["sample_rate"] == 24000 and manifest["engine"] == "fake"
-    assert manifest["language"] == "en" and manifest["voice"] == "af_heart"
+    assert manifest["language"] == "en" and manifest["voice"] == "am_michael"  # male default (presenter is male)
 
 
 def test_only_rerecords_selected_scenes(paths):
@@ -77,6 +77,32 @@ def test_only_without_existing_output_raises(paths):
     script, out = paths
     with pytest.raises(ValueError):
         synth_scenes(script, out, FakeEngine(), only=[1])
+
+
+def test_cli_script_option_uses_given_file(paths, monkeypatch):
+    import tools.voice.synth as synth_mod
+
+    script, out = paths
+    run_dir = script.parent.parent
+    copy = out / "script-voice.md"
+    out.mkdir()
+    two_scenes = SCRIPT.split("## Scene 3")[0] + "## Key claims\n- [S1] x\n"
+    copy.write_text(two_scenes, encoding="utf-8")
+    monkeypatch.setattr(synth_mod, "get_engine", lambda name, language: FakeEngine())
+    assert synth_mod.main([str(run_dir), "--script", str(copy)]) == 0
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert [s["id"] for s in manifest["scenes"]] == [1, 2]
+    assert manifest["voice"] == "am_michael"
+
+
+def test_cli_default_script_is_01_script(paths, monkeypatch):
+    import tools.voice.synth as synth_mod
+
+    script, out = paths
+    monkeypatch.setattr(synth_mod, "get_engine", lambda name, language: FakeEngine())
+    assert synth_mod.main([str(script.parent.parent)]) == 0
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert len(manifest["scenes"]) == 3
 
 
 def test_unknown_language_raises():

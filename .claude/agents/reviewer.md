@@ -22,7 +22,7 @@ about taste.
 
 Always read `brief.md` first (topic, audience, owner notes).
 
-## Output (the only file you write)
+## Output (the only things you write)
 
 `review/gate-<n>-round-<m>.md` (e.g. `review/gate-1-round-2.md`), in exactly this format:
 
@@ -37,7 +37,8 @@ Always read `brief.md` first (topic, audience, owner notes).
 ```
 
 - Write `- none` under an empty section. Include `## Sources (gate 1)` only at gate 1.
-- At gate 4 you may also save extracted frames in `review/frames-gate4-round-<m>/` (only there).
+- At gate 4 you also save extracted keyframes and single frames in
+  `review/frames-gate4-round-<m>/` (this folder is allowed; nothing else besides the review file).
 
 ## Verdict rules
 
@@ -101,11 +102,11 @@ python -m tools.review.transcript voice "<run_dir>"
 ```
 
 It prints `{"scenes":[{"id":1,"problems":[...]}],"ok":true|false}` (local faster-whisper).
-If `02-voice/script-before-voice.md` exists, the Voice agent edited punctuation; prove no
-word changed:
+The voice was recorded from the Voice agent's copy `02-voice/script-voice.md` (it may differ
+from the approved script only in punctuation). Prove no word changed:
 
 ```bash
-python -c "import sys; from tools.pipeline.script import parse_script as p; from tools.review.transcript import normalize_words as n; a, b = p(sys.argv[1]), p(sys.argv[2]); print('SAME WORDS' if [n(s.narration) for s in a.scenes] == [n(s.narration) for s in b.scenes] else 'WORDS CHANGED')" "<run_dir>/02-voice/script-before-voice.md" "<run_dir>/01-script/script.md"
+python -c "import sys; from tools.pipeline.script import parse_script as p; from tools.review.transcript import normalize_words as n; a, b = p(sys.argv[1]), p(sys.argv[2]); print('SAME WORDS' if [n(s.narration) for s in a.scenes] == [n(s.narration) for s in b.scenes] else 'WORDS CHANGED')" "<run_dir>/01-script/script.md" "<run_dir>/02-voice/script-voice.md"
 ```
 
 **Must-fix if:**
@@ -117,8 +118,9 @@ python -c "import sys; from tools.pipeline.script import parse_script as p; from
   say so: "needs Story agent".
 - [ ] **A scene is missing**: a script scene with no manifest entry or no wav file.
 - [ ] **The total length is outside 1–3 min**: `total_s` not within 60–180 s.
-- [ ] Words were changed (`WORDS CHANGED`): the Voice agent may change only punctuation,
-  pauses, voice and speed — restore the approved words.
+- [ ] Words were changed (`WORDS CHANGED`), `02-voice/script-voice.md` is missing, or
+  `01-script/script.md` was edited by the Voice agent: the Voice agent may change only
+  punctuation, pauses, voice and speed, and only in its copy — restore the approved words.
 - [ ] The manifest mixes voices or speeds, or `notes.md` lists an open issue that is a real
   audio error.
 
@@ -251,6 +253,9 @@ Prints `{"gap_db":…,"lufs":…,"sfx_count":…,"scenes":…,"problems":[...]}`
   with a visible presenter has no `mouth` data (`mouth frames: 0`).
 - [ ] The video does not match the storyboard (a different template, text or presenter
   position than planned) without a reason in `04-video/notes.md`.
+- [ ] The Animator created a custom component or changed files under `templates/` (not
+  allowed in v1; it must use the closest template and note a suggestion). Check with
+  `git status --short templates/` — it should print nothing.
 
 **Suggestions only:** motion taste, pacing ideas, icon choices.
 
