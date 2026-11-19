@@ -11,3 +11,4 @@ assets/audio/sfx/*
 !assets/audio/music/.gitkeep
 !assets/audio/sfx/.gitkeep
 *.egg-info/
+.venv-voice/
