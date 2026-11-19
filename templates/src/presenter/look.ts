@@ -6,8 +6,8 @@ import type { PresenterOutfit } from "../schema";
  * No orange in his clothes: orange stays reserved for on-screen highlights.
  */
 export const LOOK = {
-  /** Warm medium brown skin. */
-  skinTone: "#C68A5B",
+  /** Light warm tan skin (owner asked for a lighter tone). */
+  skinTone: "#E3B28A",
   /** Dark brown curly hair. */
   hairColor: "#3B2416",
   /** Iris colour. */
