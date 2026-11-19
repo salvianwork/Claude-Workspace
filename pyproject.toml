@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-agent-team"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["numpy", "soundfile", "pyloudnorm", "num2words"]
+
+[project.optional-dependencies]
+voice = ["kokoro"]
+review = ["faster-whisper"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["tools*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: needs models or ffmpeg"]
