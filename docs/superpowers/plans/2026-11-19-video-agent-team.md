@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-19-video-agent-team-design.md`
 
+> **Execution order (scope change, owner-approved 2026-11-19):** Tasks 1–8, then **Task 12 → Task 13** (presenter, spec §6.6), then Tasks 9, 10, 11.
+
 ## Global Constraints
 
 - Runs on the owner's Windows PC in `C:\Users\PC\Documents\Claude Workspace`. **The path contains a space**: every subprocess call passes arguments as a list, never as one shell string. Use `pathlib` everywhere.
@@ -23,6 +25,7 @@
 - Audio library: only licences in `ALLOWED_LICENCES = {"CC0-1.0", "Pixabay-Content-License"}`; every file records source URL and licence; each video gets `credits.md`.
 - No downloaded images in v1; icons come from the bundled `lucide-react` package (MIT).
 - Never send the owner's personal data to outside services.
+- Presenter (spec §6.6): flat-vector male presenter, dark-brown curly hair, waist-up, front-facing; poses `idle talk point-left point-right think surprised celebrate wave`; expressions `neutral happy curious surprised thinking`; position `left right none`; size `large small`; mouth driven by voice loudness; never overlaps content or captions; scene durations must not change (no overlapping transitions).
 - Python tools are run as `python -m tools.<pkg>.<module> ...` from the workspace root.
 
 ## Review Focus
@@ -354,9 +357,9 @@ Each file has front matter (`name`, `description`, `tools`) and a body containin
 Rules that must appear, copied from the spec:
 - **story:** 150–450 words; written for speaking; a "Key claims" section; run `checks story` before replying.
 - **voice:** may change only punctuation, pauses, voice and speed, never words; run `tools.voice.synth`, then `tools.review.transcript voice`.
-- **design:** never writes code; produces `storyboard.md`, `style.json`, `sound.json`; picks only templates in `TEMPLATE_NAMES`, a mood in `MUSIC_MOODS`, SFX types in `SFX_TYPES`; SFX count ≤ scenes; no SFX on key words.
-- **animator:** fills `scenes.json` from the storyboard; a custom component only if no template fits, and it says so; runs `tools.audio.mix`, then `tools.render.render`.
-- **reviewer:** per-gate checklist (spec §6.2, all four gates, written out); gate 1 must web-search every key claim and cite a URL; gate 2 runs the voice transcript check; gate 4 uses the watch-video skill (fallback: `extract_keyframes` + `transcript final`) and `tools.audio.measure`; output template:
+- **design:** never writes code; produces `storyboard.md` (including a presenter line per scene: pose, expression, position, size — `large` only on TitleCard/BigNumber/Quote/Recap, `small` or `none` on Diagram/Chart/Comparison), `style.json`, `sound.json`; picks only templates in `TEMPLATE_NAMES`, a mood in `MUSIC_MOODS`, SFX types in `SFX_TYPES`; SFX count ≤ scenes; no SFX on key words.
+- **animator:** fills `scenes.json` from the storyboard (including each scene's `presenter`); runs `python -m tools.voice.mouth <run_dir>` to add mouth data; a custom component only if no template fits, and it says so; runs `tools.audio.mix`, then `tools.render.render`.
+- **reviewer:** per-gate checklist (spec §6.2, all four gates, written out); gate 3 adds the presenter checks of spec §6.6 (missing presenter fields; `large` on a dense scene); gate 4 adds presenter overlap and mouth-moves-only-while-speaking checks (keyframes); gate 1 must web-search every key claim and cite a URL; gate 2 runs the voice transcript check; gate 4 uses the watch-video skill (fallback: `extract_keyframes` + `transcript final`) and `tools.audio.measure`; output template:
 
 ```markdown
 # Gate <n>, round <m>: <PASS|FIX>
@@ -423,3 +426,49 @@ On `--resume`: read `status.json` and continue from the recorded step, state and
 - [ ] **Step 3: Implement** `check_setup.py`, the two docs, and any glue the smoke test exposes.
 - [ ] **Step 4: Run** `pytest -v` (all tests, including slow) and `python -m tools.check_setup`. Expected: all PASS; check_setup is ✅ for everything installed in the build environment.
 - [ ] **Step 5: Commit** `git commit -m "feat: setup check, owner guides, smoke test"`
+
+---
+
+### Task 12: Mouth movement data from the voice
+
+**Files:**
+- Create: `tools/voice/mouth.py`
+- Test: `tests/voice/test_mouth.py`
+
+**Interfaces:**
+- Consumes: `02-voice/manifest.json` + `scene-XX.wav` (Task 3), `04-video/scenes.json` (format above).
+- Produces:
+  - `mouth_envelope(samples: np.ndarray, sr: int, n_frames: int, fps: int = 30) -> list[float]` — per video frame, RMS in dBFS mapped linearly from −45 dB → 0.0 to −12 dB → 1.0 (clamped), then smoothed with a 3-frame moving average; values rounded to 2 decimals; output length exactly `n_frames` (zero-padded or trimmed).
+  - `add_mouth_to_scenes(run_dir: Path) -> None` — for every scene in `scenes.json`, sets `scene["mouth"]` to `mouth_envelope(...)` of that scene's wav with `n_frames = durationInFrames`; writes the file back (atomic).
+  - CLI: `python -m tools.voice.mouth <run_dir>`.
+
+- [ ] **Step 1: Write failing tests**: `test_silence_is_closed` (zeros → all 0.0); `test_loud_tone_opens_mouth` (−6 dBFS sine → mean > 0.8); `test_length_matches_frames` (1.0 s at 30 fps, n_frames=31 → len 31, last value 0.0); `test_add_mouth_to_scenes` (tmp run dir with 2 scenes → each scene has `mouth` of length `durationInFrames`).
+- [ ] **Step 2: Run** `.venv/bin/pytest tests/voice/test_mouth.py -v`. Expected: FAIL.
+- [ ] **Step 3: Implement** `mouth.py`.
+- [ ] **Step 4: Run** the tests. Expected: PASS.
+- [ ] **Step 5: Commit** `git commit -m "feat: mouth movement data from voice loudness"`
+
+---
+
+### Task 13: Presenter character, alive layer and character sheet
+
+**Files:**
+- Create: `templates/src/presenter/look.ts`, `templates/src/presenter/Presenter.tsx`, `templates/src/presenter/parts/*.tsx` (head, hair, face, torso, arms), `templates/src/presenter/poses.ts`, `templates/src/alive/Background.tsx`, `templates/src/alive/motion.ts`, `templates/src/CharacterSheet.tsx`, `templates/scripts/character-sheet.mjs`
+- Modify: `templates/src/schema.ts`, `templates/src/Root.tsx`, `templates/src/Video.tsx`, `templates/src/theme.ts` (content box), the nine templates (use the content box and pop-in motion), `templates/fixtures/sample-scenes.json`, `templates/README.md`
+- Test: `templates/src/presenter/presenter.test.ts`, `templates/src/layout.test.ts`
+
+**Interfaces:**
+- Consumes: `scene.mouth` (Task 12), `scenes.json`, style.
+- Produces:
+  - Schema: `PRESENTER_POSES`, `PRESENTER_EXPRESSIONS` (the exact lists in Global Constraints); `PresenterSchema = {pose, expression, position: "left"|"right"|"none", size: "large"|"small"}` with default `{pose:"idle", expression:"neutral", position:"none", size:"small"}`; `scene.presenter` optional (defaulted); `scene.mouth: number[]` optional (default `[]` → mouth closed).
+  - `contentBox(presenter) -> {x, y, width, height}` and `presenterBox(presenter) -> {...} | null` in `theme.ts`: presenter `large` takes 34% of the canvas width, `small` 22%, on its side; the two boxes never intersect and both stay above the caption reserve.
+  - `<Presenter pose expression mouth size side />` — SVG built from parts per `look.ts` (`skinTone`, `hairColor`, `shirtColor` from style accent by default, `glasses: false`); mouth shape from `mouth[frame]`: <0.15 closed, <0.4 slight, <0.7 open, else wide; seeded blink every 2–5 s (deterministic per scene id); breathing (±1.5% torso scale, 4 s cycle); gentle bob (±4 px); curls sway (±2°); pose changes between consecutive scenes blend over 8 frames.
+  - Alive layer: `Background` with 5–8 softly drifting translucent shapes in style colours; `popIn(frame, delay)` spring helper used by icons, numbers and list items; arrows/lines in Diagram and Steps draw themselves (stroke-dashoffset). **No `TransitionSeries` or overlapping transitions** — scene in/out stays inside each scene's own 12-frame entry/exit so durations never change.
+  - Composition `"CharacterSheet"` (1920×1080 still): a grid of every pose (rows) with the talk mouth shapes and every expression (one strip), labelled. `npm run character-sheet` → `out/character-sheet.png`.
+
+- [ ] **Step 1: Write failing tests**: presenter schema defaults and rejects an unknown pose; `contentBox`/`presenterBox` never intersect for every position × size, and both end above the caption reserve; `presenter: none` → `contentBox` equals the full safe box; fixture parses and uses at least 5 different poses.
+- [ ] **Step 2: Run** `cd templates && npm test`. Expected: FAIL.
+- [ ] **Step 3: Implement** the presenter, the alive layer, layout changes and `CharacterSheet`; update the fixture so scenes carry presenter lines and synthetic `mouth` arrays.
+- [ ] **Step 4: Run** `npm test` and `npx tsc --noEmit` → PASS. Run `npm run character-sheet` and `npm run stills`; LOOK at every image: the presenter must look friendly and polished (not stiff), hair clearly curly, hands and arms anatomically plausible, and he must not overlap content or captions. Iterate until it does. Render the fixture to MP4 and confirm its duration is unchanged.
+- [ ] **Step 5: Commit** `git commit -m "feat: presenter character, alive animation and character sheet"`
+
