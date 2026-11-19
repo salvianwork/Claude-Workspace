@@ -34,7 +34,8 @@ owner's existing Claude plan.
   inspected and resumed from the middle.
 
 **Non-goals (v1)**
-- Realistic or filmed-looking footage.
+- Realistic or filmed-looking footage. (A flat-vector presenter character
+  *is* in scope; see §6.6.)
 - The hand-drawn cartoon style (`animation-studio`). Planned for v2.
 - AI-generated or code-synthesised music (v1 uses a curated library).
 - Uploading or publishing anywhere.
@@ -244,6 +245,58 @@ scene on average**, and never on top of a key word of narration.
 (sound plan only) and the Animator re-mixes and re-renders. The script
 and voice are not touched.
 
+### 6.6 Presenter character and "alive" animation
+
+*Added 2026-11-19 at the owner's request: "add animation like a character
+and make it alive and attractive". Owner chose a **male human presenter
+with curly hair**.*
+
+**The presenter**
+- One recurring presenter, drawn in code as layered SVG parts (no
+  downloads, no licence issues, identical in every video).
+- **Style:** clean flat-vector explainer style that matches the template
+  look; shown **from the waist up, facing forward** (with small head tilts).
+- **Look (my defaults, changeable in one settings file
+  `templates/src/presenter/look.ts`):** male, dark-brown curly hair, warm
+  medium skin tone, shirt in the video's style colours, no glasses.
+- **Poses:** idle, talk (natural hand gestures), point-left, point-right
+  (towards the content), think (hand on chin), surprised, celebrate, wave.
+- **Expressions:** neutral, happy, curious, surprised, thinking (eyes,
+  eyebrows, mouth).
+- **Talking:** the mouth opens and closes with the **loudness of the voice**
+  (measured per video frame from the scene's audio), using 4 mouth shapes
+  (closed, slight, open, wide). *Honest limit:* this is loudness-based, not
+  true phoneme lip-sync; it looks convincing at explainer size.
+- **Always alive:** blinks every 2–5 s, breathes, gently bobs, curls sway
+  slightly. Pose changes blend over ~8 frames, never snap.
+
+**Where and how big (Design agent decides per scene)**
+- Each scene in the storyboard gets a presenter line: pose, expression,
+  position `left` / `right` / `none`, size `large` / `small`.
+- Rules: `large` on title, quote, big-number and recap scenes; `small` or
+  `none` on dense scenes (diagram, chart, comparison) so content stays big.
+  When the presenter is shown, templates give the content the remaining
+  width; **the presenter never covers content or captions**.
+
+**"Alive" layer for every scene**
+- Softly drifting background shapes; icons and numbers pop in with a small
+  bounce; arrows and lines draw themselves; smooth transitions between
+  scenes (slide / fade).
+- Motion stays calm: nothing loops fast or flashes, so it never distracts
+  from the narration.
+
+**Review and owner checks**
+- Gate 3 must-fix if: presenter missing a pose/expression/position, or
+  `large` presenter on a dense scene.
+- Gate 4 must-fix if: presenter overlaps content or captions; mouth moving
+  while the voice is silent (or still while it speaks).
+- **Character sheet first:** before the first real video, a one-page image
+  of the presenter in every pose and expression is shown to the owner for
+  approval, so the look is settled once, not per video.
+
+**Non-goals for the presenter (v1):** walking or turning around, 3D,
+several characters, true phoneme lip-sync, a likeness of any real person.
+
 ## 7. Scene template library
 
 The biggest lever for quality and reliability. A shared Remotion project
@@ -324,6 +377,8 @@ Claude Workspace/
 | Setup on Windows is fiddly (Python + Node + ffmpeg + espeak-ng) | Step-by-step setup guide plus a "check setup" command |
 | Visuals look generic | Template library with a good default style; style guide per video |
 | Music drowns out the voice | Automatic ducking; measured 12 dB check at gate 4; transcript of the final mix compared to the voice-only transcript |
+| Presenter looks stiff or awkward (human figures are hardest in code) | Flat-vector style, waist-up, front-facing only; character sheet approved by owner before first video; poses blend smoothly |
+| Character motion distracts from learning | Presenter small or hidden on dense scenes; calm "alive" motion only; gate 4 overlap check |
 | Videos start sounding alike | Least-recently-used track choice; grow the library over time |
 | Copyright claim on "free" music | CC0 / no-attribution only; source and licence recorded per file; `credits.md` per video |
 | Uses a lot of the Claude plan per video | Gates catch problems early, before expensive steps; reviewer reads files, not long conversations |
