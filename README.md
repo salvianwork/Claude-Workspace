@@ -32,5 +32,5 @@ A Windows notification appears whenever the team is waiting for you.
 
 ## More
 
-- Setup on Windows: [`docs/SETUP.md`](docs/SETUP.md).
+- Setup on Windows: [`docs/SETUP.md`](docs/SETUP.md); first test run: [`docs/TEST-CHECKLIST.md`](docs/TEST-CHECKLIST.md); `python -m tools.check_setup` checks the PC.
 - Design: [`docs/superpowers/specs/2026-11-19-video-agent-team-design.md`](docs/superpowers/specs/2026-11-19-video-agent-team-design.md).
