@@ -1,5 +1,7 @@
 """The /make-video orchestrator, the /video-status command, the Notification hook and notify.ps1."""
 import json
+import re
+import shlex
 from pathlib import Path
 
 import pytest
@@ -82,8 +84,8 @@ def test_settings_has_notification_hook():
     hooks = [h for e in entries for h in e["hooks"]]
     assert any(h["type"] == "command" and "notify.ps1" in h["command"] for h in hooks)
     cmd = next(h["command"] for h in hooks if "notify.ps1" in h["command"])
-    assert cmd.startswith("powershell -NoProfile -ExecutionPolicy Bypass -File ")
-    assert '"tools/notify/notify.ps1"' in cmd
+    assert cmd == ('powershell -NoProfile -ExecutionPolicy Bypass -File '
+                   '"$CLAUDE_PROJECT_DIR/tools/notify/notify.ps1"')
 
 
 def test_notify_script_is_safe():
@@ -92,3 +94,39 @@ def test_notify_script_is_safe():
                    "Windows.UI.Notifications", "System.Windows.Forms",
                    "Video Agent Team needs you"]:
         assert needle in text, needle
+
+
+PLACEHOLDERS = {"<s>": "story", "<agent>": "reviewer", "<r+1>": "2", "<r>": "1", "<n>": "1"}
+
+
+def status_update_commands() -> list[str]:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    # one command per line, ending at the line end or at a closing inline-code backtick
+    return re.findall(r"python -m tools\.pipeline\.status update [^`\n]*", text)
+
+
+def test_every_status_update_is_a_full_command():
+    cmds = status_update_commands()
+    assert len(cmds) >= 10
+    for cmd in cmds:
+        assert '"<run_dir>"' in cmd, cmd
+        assert "--agent " in cmd, cmd
+        assert "--event " in cmd, cmd
+    # no shorthand like `--event "..."` outside a full command
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    assert text.count("--event ") == sum(c.count("--event ") for c in cmds)
+
+
+def test_every_status_update_runs_against_the_real_parser(tmp_path):
+    from tools.pipeline.status import init_run, main
+    run = init_run("Test topic", tmp_path / "videos")
+    for cmd in status_update_commands():
+        filled = cmd.replace('"<run_dir>"', shlex.quote(str(run)))
+        for key, value in PLACEHOLDERS.items():
+            filled = filled.replace(key, value)
+        argv = shlex.split(filled)[3:]  # drop "python -m tools.pipeline.status"
+        try:
+            code = main(argv)
+        except SystemExit as e:  # argparse error
+            code = e.code
+        assert code == 0, cmd

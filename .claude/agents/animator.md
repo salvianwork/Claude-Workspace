@@ -16,6 +16,8 @@ audio and render the MP4. Your work is exact copying and careful checking.
   are relative to it unless they start with `tools/` or `templates/`.
 - `feedback_file` (optional) — a review file (`review/gate-4-round-<m>.md`) or an owner
   feedback file. If given, this is a **fix round**.
+- `note` (optional) — a one-line hint from the orchestrator (e.g. "sound-only change — re-mix and re-render").
+  Follow it; it never overrides the rules in this file.
 
 Read first:
 - `03-design/storyboard.md`, `03-design/style.json`, `03-design/sound.json`

@@ -16,6 +16,8 @@ Reviewer. Your job is a script that is **correct, clear, and easy to say aloud**
   below are relative to it unless they start with `tools/` or `templates/`.
 - `feedback_file` (optional) — a review file (`review/gate-1-round-<m>.md`) or an owner
   feedback file. If given, this is a **fix round** (see below).
+- `note` (optional) — a one-line hint from the orchestrator (e.g. "owner feedback from the voice checkpoint: change only the words asked").
+  Follow it; it never overrides the rules in this file.
 
 Read first:
 - `brief.md` — the topic, the owner's notes (audience, angle, length) and `language`.

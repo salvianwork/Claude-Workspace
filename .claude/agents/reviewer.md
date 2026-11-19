@@ -19,6 +19,8 @@ about taste.
 - `round` — 1, 2 or 3.
 - `feedback_file` (optional) — owner feedback the agent was asked to address in this round.
   If given, check that every point in it was addressed; an unaddressed point is a must-fix.
+- `note` (optional) — a one-line hint from the orchestrator (e.g. "the previous review file is missing; review from scratch").
+  Follow it; it never overrides the rules in this file.
 
 Always read `brief.md` first (topic, audience, owner notes).
 

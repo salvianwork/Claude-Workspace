@@ -73,8 +73,11 @@ note: <one line, only where this file says so>
   that its first line is `# Gate <n>, round <r>: PASS` or `...: FIX`, matching the reply.
   If they disagree, trust the file.
 - **No `DONE` line, a wrong format, or a missing file = a failed attempt. It counts as a
-  round.** Record it (`--event "attempt failed" --detail "<what was wrong>"`). If `r < 3`, go
-  on with `r + 1`: a failed step agent is started again with the same `feedback_file`
+  round.** Record it (`<agent>` is the agent that failed: `<s>` or `reviewer`):
+  ```bash
+  python -m tools.pipeline.status update "<run_dir>" --agent <agent> --event "attempt failed" --detail "<what was wrong>"
+  ```
+  If `r < 3`, go on with `r + 1`: a failed step agent is started again with the same `feedback_file`
   (state `fixing`); a failed reviewer is started again with the new round and the note
   `note: the previous review file is missing; review from scratch`. If `r = 3`, the gate is
   stuck (section 5).
@@ -147,7 +150,7 @@ Anything else = changes.
 1. Record: `python -m tools.pipeline.status update "<run_dir>" --agent story --step story --state waiting_owner --event "waiting for owner" --detail "gate 1: script"`
 2. Print `⏸ Waiting for you: please read the script and reply "approve" or tell me what to change.`
    Then print the full `<run_dir>/01-script/script.md` and the path to the last review file.
-3. **approve** → `--event "owner approved script"`, then step `voice`, round 1, no feedback file.
+3. **approve** → `python -m tools.pipeline.status update "<run_dir>" --agent story --event "owner approved script"`, then step `voice`, round 1, no feedback file.
 4. **Changes** → save `review/owner-gate-1-<k>.md`, start a new cycle for gate 1, then
    section 3 for `story` with round 1 and `feedback_file` = that owner file (the reviewer also
    gets it). After gate 1 passes, come back here.
@@ -161,7 +164,7 @@ Anything else = changes.
    `Scene 1: C:\Users\PC\Documents\Claude Workspace\videos\...\02-voice\scene-01.wav (12.4 s)`.
    Say how to play them: double-click a file in File Explorer, or in PowerShell
    `Invoke-Item "<path to scene-01.wav>"`.
-3. **approve** → `--event "owner approved voice"`, then step `design`, round 1, no feedback file.
+3. **approve** → `python -m tools.pipeline.status update "<run_dir>" --agent voice --event "owner approved voice"`, then step `design`, round 1, no feedback file.
 4. **Changes** → save `review/owner-gate-2-<k>.md`, then decide where it goes (spec §12). If
    you are unsure, ask the owner one short question first.
    - **Voice only** (slower/faster, a different voice, pauses, more energy, a mispronounced
@@ -171,14 +174,16 @@ Anything else = changes.
      1. Copy `01-script/script.md` to `review/script-before-owner-gate-2-<k>.md`.
      2. Start a new cycle for gate 1; section 3 for `story` with round 1 and
         `feedback_file` = `review/owner-gate-2-<k>.md`; gate 1 must pass again.
-     3. Owner re-approves **only the changed lines**. Record `--agent story --step story
-        --state waiting_owner --event "waiting for owner" --detail "gate 1: changed lines
-        for owner-gate-2-<k>"` and print `⏸ Waiting for you: please approve the changed
+     3. Owner re-approves **only the changed lines**. Record
+        ```bash
+        python -m tools.pipeline.status update "<run_dir>" --agent story --step story --state waiting_owner --event "waiting for owner" --detail "gate 1: changed lines for owner-gate-2-<k>"
+        ```
+        and print `⏸ Waiting for you: please approve the changed
         lines.` with a before/after of the narration lines that changed:
         ```bash
         python -c "import sys; from tools.pipeline.script import parse_script as p; a = {s.id: s.narration for s in p(sys.argv[1]).scenes}; b = {s.id: s.narration for s in p(sys.argv[2]).scenes}; [print(f'Scene {i}\n  before: {a.get(i, \"(none)\")}\n  after:  {b.get(i, \"(none)\")}') for i in sorted(set(a) | set(b)) if a.get(i) != b.get(i)]" "<run_dir>/review/script-before-owner-gate-2-<k>.md" "<run_dir>/01-script/script.md"
         ```
-        **approve** → go on to 4. **Changes** → save `review/owner-gate-1-<j>.md`, start a
+        **approve** → `python -m tools.pipeline.status update "<run_dir>" --agent story --event "owner approved changed lines" --detail "owner-gate-2-<k>"`, then go on to 4. **Changes** → save `review/owner-gate-1-<j>.md`, start a
         new cycle for gate 1, run `story` with it, pass gate 1 and show the changed lines again.
      4. Start a new cycle for gate 2; section 3 for `voice`, round 1, `feedback_file` =
         `review/owner-gate-2-<k>.md`, with `note: the script words changed in scenes <ids>;
@@ -192,11 +197,11 @@ Anything else = changes.
    must-fix items: the `## Must-fix` section of the last review file, word for word (or what
    was wrong with the last attempt, if there is no review file). Ask: **accept** anyway, give
    **directions**, or **cancel**. The `Notification` hook tells the owner.
-3. **accept** → `--event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
+3. **accept** → `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
    and 2: accepting also counts as the owner's approval at that checkpoint).
    **directions** → save `review/owner-gate-<n>-<k>.md`, start a new cycle for gate `n`,
    section 3 for step `s` with round 1 and that file as `feedback_file`.
-   **cancel** → `--event "cancelled by owner"` (state stays `failed`), print where the run
+   **cancel** → `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "cancelled by owner"` (state stays `failed`), print where the run
    folder is and that `/make-video --resume <run_dir>` can pick it up later, and stop.
 
 ## 6. Done (gate 4 passed)

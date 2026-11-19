@@ -18,6 +18,8 @@ voice and speed, never words.**
 - `feedback_file` (optional) — a review file (`review/gate-2-round-<m>.md`) or an owner
   feedback file ("slower", "more energy in scene 2", "a different voice"). If given, this
   is a **fix round**.
+- `note` (optional) — a one-line hint from the orchestrator (e.g. "the script words changed in scenes 2, 4; re-record only those scenes with --only 2,4").
+  Follow it; it never overrides the rules in this file.
 
 Read first: `brief.md` (`language`), `01-script/script.md` (the approved script — read it,
 never edit it), and on a fix round the `feedback_file`, `02-voice/manifest.json`,

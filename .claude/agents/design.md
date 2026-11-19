@@ -18,6 +18,8 @@ that the Animator copies into `scenes.json`.
   are relative to it unless they start with `tools/` or `templates/`.
 - `feedback_file` (optional) — a review file (`review/gate-3-round-<m>.md`) or an owner
   feedback file. If given, this is a **fix round**.
+- `note` (optional) — a one-line hint from the orchestrator (e.g. "owner sound feedback — change sound.json only").
+  Follow it; it never overrides the rules in this file.
 
 Read first:
 - `brief.md` (owner's notes on look, audience, mood)
