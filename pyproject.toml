@@ -10,7 +10,7 @@ dependencies = ["numpy", "soundfile", "pyloudnorm", "num2words"]
 
 [project.optional-dependencies]
 voice = ["kokoro"]
-review = ["faster-whisper"]
+review = ["faster-whisper", "av<16"]
 dev = ["pytest"]
 
 [tool.setuptools.packages.find]
