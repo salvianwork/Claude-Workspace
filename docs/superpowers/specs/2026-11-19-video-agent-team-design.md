@@ -270,6 +270,20 @@ with curly hair**.*
 - **Always alive:** blinks every 2–5 s, breathes, gently bobs, curls sway
   slightly. Pose changes blend over ~8 frames, never snap.
 
+**Look update (owner-approved 2026-11-19): a reliable expert**
+- Glasses (thin frames), neater curly hair (still clearly curly), late
+  20s–30s, calm confident default expression, thicker natural arms, and a
+  calm open idle pose (hands loosely together in front, not crossed arms).
+- No orange in his clothes: orange stays reserved for on-screen highlights.
+- **Two outfits** (owner chose both):
+  - `blazer` (default): navy blazer over a light-blue collared shirt —
+    trustworthy "documentary host" look for any topic.
+  - `labcoat`: white lab coat over a teal shirt — for science, health and
+    technology topics.
+- The **Design agent picks one outfit per video** (never mixed within a
+  video) and records it in `style.json` as `presenterOutfit`; gate 3 checks
+  the choice fits the topic.
+
 **Where and how big (Design agent decides per scene)**
 - Each scene in the storyboard gets a presenter line: pose, expression,
   position `left` / `right` / `none`, size `large` / `small`.

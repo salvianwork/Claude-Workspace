@@ -472,3 +472,22 @@ On `--resume`: read `status.json` and continue from the recorded step, state and
 - [ ] **Step 4: Run** `npm test` and `npx tsc --noEmit` → PASS. Run `npm run character-sheet` and `npm run stills`; LOOK at every image: the presenter must look friendly and polished (not stiff), hair clearly curly, hands and arms anatomically plausible, and he must not overlap content or captions. Iterate until it does. Render the fixture to MP4 and confirm its duration is unchanged.
 - [ ] **Step 5: Commit** `git commit -m "feat: presenter character, alive animation and character sheet"`
 
+---
+
+### Task 14: Presenter look update and two outfits (owner-approved scope change)
+
+**Files:**
+- Modify: `templates/src/presenter/look.ts`, `templates/src/presenter/parts/*.tsx`, `templates/src/presenter/poses.ts` (idle), `templates/src/presenter/Presenter.tsx`, `templates/src/schema.ts` (StyleSchema), `templates/src/CharacterSheet.tsx`, `templates/fixtures/sample-scenes.json`, `templates/README.md`, `.claude/agents/design.md`, `.claude/agents/reviewer.md`, `docs/presenter-character-sheet.png`, `docs/presenter-in-scene.png`
+- Test: `templates/src/presenter/presenter.test.ts`, `tests/agents/test_agent_files.py`
+
+**Interfaces:**
+- Produces: `PRESENTER_OUTFITS = ["blazer", "labcoat"] as const`; `StyleSchema.presenterOutfit` optional, default `"blazer"`; `<Presenter outfit=... />`; CharacterSheet shows every pose in **both** outfits plus mouth shapes and expressions.
+- Look per spec §6.6 "Look update": glasses, neater curls, late 20s–30s, calm confident neutral expression, thicker natural arms, open idle (hands loosely together in front), no orange clothing; blazer = navy blazer + light-blue collared shirt; labcoat = white coat + teal shirt.
+- design.md: pick `presenterOutfit` per video (`labcoat` for science/health/technology topics, else `blazer`) into style.json; reviewer.md gate 3: must-fix if outfit missing/invalid or clearly mismatched to the topic.
+
+- [ ] **Step 1: Failing tests**: schema default `blazer`, rejects unknown outfit; fixture uses a valid outfit; agent files mention `presenterOutfit`, `blazer`, `labcoat`.
+- [ ] **Step 2: Run** `cd templates && npm test` and `.venv/bin/pytest tests/agents -q` → FAIL.
+- [ ] **Step 3: Implement**, re-render `npm run character-sheet` and stills; art-direct by eye until he reads as a trustworthy expert in both outfits.
+- [ ] **Step 4: Run** tests + `npx tsc --noEmit` → PASS; fixture render duration unchanged.
+- [ ] **Step 5: Commit** `feat: expert presenter look with blazer and lab coat outfits`
+
