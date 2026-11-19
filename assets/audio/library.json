@@ -1,0 +1,76 @@
+{
+  "items": [
+    {
+      "id": "sfx-basic-whoosh",
+      "path": "sfx/basic-whoosh.wav",
+      "kind": "sfx",
+      "tags": [
+        "whoosh"
+      ],
+      "duration_s": 0.8,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": -13.39
+    },
+    {
+      "id": "sfx-basic-pop",
+      "path": "sfx/basic-pop.wav",
+      "kind": "sfx",
+      "tags": [
+        "pop"
+      ],
+      "duration_s": 0.12,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": null
+    },
+    {
+      "id": "sfx-basic-ding",
+      "path": "sfx/basic-ding.wav",
+      "kind": "sfx",
+      "tags": [
+        "ding"
+      ],
+      "duration_s": 1.0,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": -14.47
+    },
+    {
+      "id": "sfx-basic-click",
+      "path": "sfx/basic-click.wav",
+      "kind": "sfx",
+      "tags": [
+        "click"
+      ],
+      "duration_s": 0.03,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": null
+    },
+    {
+      "id": "sfx-basic-swoosh-in",
+      "path": "sfx/basic-swoosh-in.wav",
+      "kind": "sfx",
+      "tags": [
+        "swoosh-in"
+      ],
+      "duration_s": 0.6,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": -13.4
+    },
+    {
+      "id": "sfx-basic-reveal",
+      "path": "sfx/basic-reveal.wav",
+      "kind": "sfx",
+      "tags": [
+        "reveal"
+      ],
+      "duration_s": 1.0,
+      "licence": "CC0-1.0",
+      "source_url": "generated:tools/audio/basic_sfx.py",
+      "lufs": -13.24
+    }
+  ]
+}
