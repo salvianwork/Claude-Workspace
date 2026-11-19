@@ -25,6 +25,8 @@ owner's existing Claude plan.
 **Goals**
 - One command (`/make-video "<topic>"`) produces an MP4 of 1–3 minutes.
 - Clear narration with natural intonation (not robotic).
+- Background music and sound effects that match the video's mood and make
+  it more engaging, **without ever making the voice harder to hear**.
 - A review gate after every step; feedback goes back to that step's agent
   before the pipeline continues.
 - The owner approves the script and the voice before work continues.
@@ -34,7 +36,7 @@ owner's existing Claude plan.
 **Non-goals (v1)**
 - Realistic or filmed-looking footage.
 - The hand-drawn cartoon style (`animation-studio`). Planned for v2.
-- Background music and sound effects.
+- AI-generated or code-synthesised music (v1 uses a curated library).
 - Uploading or publishing anywhere.
 - Running unattended or on a schedule.
 
@@ -42,6 +44,8 @@ owner's existing Claude plan.
 - A polished video with **wrong facts**.
 - Endless review loops over nitpicks.
 - A video where the visuals don't match what the voice is saying.
+- Music or sound effects that drown out the narration, or so many effects
+  that the video feels noisy.
 - Silent costs: anything that starts billing without the owner deciding it.
 - Sending the owner's personal data to outside services.
 
@@ -76,6 +80,13 @@ intonation), Piper (backup: faster, flatter), `edge-tts` (rejected: uses
 Microsoft's service unofficially and could stop working), paid voices like
 ElevenLabs (rejected for v1: cost).
 
+**Music and sound-effect options considered:** a curated library of free
+CC0 / no-attribution tracks and sounds downloaded once (**chosen by the
+owner**), music synthesised in code (rejected for music: sounds basic; kept
+as a backup for simple effects like pops and clicks), local AI music models
+such as MusicGen or Stable Audio Open (rejected: need a strong GPU, slow,
+and their free licences mostly forbid commercial use).
+
 ## 5. Tools (decided)
 
 | Purpose | Tool | Notes |
@@ -84,6 +95,8 @@ ElevenLabs (rejected for v1: cost).
 | Visuals and rendering | **Remotion** plugin (community, Anthropic Directory) | Needs Node.js |
 | Review of the finished video | **watch-video** plugin (community) | Needs ffmpeg + faster-whisper (local transcription) |
 | Voice | **Kokoro TTS**, run locally in Python | Backup: Piper |
+| Music and sound effects | Local **audio library** of CC0 / no-attribution files (e.g. Pixabay Music, Kenney sound packs, CC0 sounds on Freesound) | Downloaded once; nothing sent out per video |
+| Audio mixing and loudness checks | ffmpeg (ducking, fades, loudness measurement) | Already needed for review |
 | Fact checking | Claude's web search | Reviewer cites sources |
 | Notifications | Claude Code `Notification` hook → Windows desktop toast | Fires when the pipeline waits for the owner |
 
@@ -139,6 +152,9 @@ in the main session) passes file paths between them and runs the gates.
     on-screen text, layout, what moves and when, and the scene duration
     (taken from the voice manifest).
   - Style guide: colours, fonts, sizes. One style for the whole video.
+  - **Sound plan:** one music mood for the whole video (picked from the
+    library's mood tags), and sound-effect cues per scene (e.g. "scene 3,
+    when the arrow appears: whoosh"). See §6.5.
 - **Does not write animation code.** It plans; the Animator builds.
 
 **Animator agent**
@@ -149,6 +165,9 @@ in the main session) passes file paths between them and runs the gates.
 - Works by **filling in templates** from the shared library (§7). Writes a
   new custom component only when no template fits, and says so in its notes.
 - Burns in captions by default (my call: helps learning and accessibility).
+- Places the music and sound effects from the sound plan and mixes them
+  with the voice (see §6.5). Writes `04-video/credits.md` listing every
+  music and sound file used, with source and licence.
 
 **Reviewer agent**
 - Started fresh at every gate with that gate's checklist (§6.2).
@@ -165,8 +184,8 @@ in the main session) passes file paths between them and runs the gates.
 |---|---|---|
 | **1 Story** | A factual claim is wrong or unsupported; the length is outside 150–450 words; the order is confusing; the narration is hard to say aloud | Reads the script; checks every key claim with web search and cites a source |
 | **2 Voice** | A word is missing, wrong, or mispronounced; a scene is missing; the total length is outside 1–3 min | Transcribes the audio locally (faster-whisper) and compares it to the script. **Cannot judge intonation**; that's the owner's job at the checkpoint |
-| **3 Design** | A scene has no template or plan; on-screen text is too long to read in the scene's time; the style is inconsistent; a visual contradicts the narration | Reads the storyboard and style guide |
-| **4 Final video** | Visuals are out of sync with the voice; text is cut off or overlapping; a scene is missing; there are rendering glitches | watch-video: keyframes + transcript of the MP4, checked against the storyboard |
+| **3 Design** | A scene has no template or plan; on-screen text is too long to read in the scene's time; the style is inconsistent; a visual contradicts the narration; the music mood doesn't fit the topic; more sound effects than the limit in §6.5; a sound-effect cue lands on a key narration word | Reads the storyboard, style guide and sound plan |
+| **4 Final video** | Visuals are out of sync with the voice; text is cut off or overlapping; a scene is missing; there are rendering glitches; **the voice is not clearly louder than the music** (fails the measured check in §6.5); the transcript of the final MP4 misses words that the voice-only transcript had (a sign the mix is hiding speech); a music or sound file isn't in `credits.md` | watch-video: keyframes + transcript of the MP4, checked against the storyboard; ffmpeg loudness measurement |
 
 ### 6.3 Loop limits and escalation
 
@@ -185,6 +204,45 @@ in the main session) passes file paths between them and runs the gates.
   energy in scene 2", or a different voice).
 - Order is always **Reviewer first, then owner**, so the owner never sees
   work with obvious errors.
+
+### 6.5 Music and sound effects
+
+**Library.** A local folder `assets/audio/` holds:
+- `music/` — background tracks, each tagged with moods (e.g. curious,
+  upbeat, calm, inspiring, dramatic, playful).
+- `sfx/` — short effects, each tagged with a type (e.g. whoosh, pop, ding,
+  click, swoosh-in, reveal).
+- `library.json` — one entry per file: path, type, tags, length, licence,
+  source URL, and its measured loudness.
+
+**Licence rule:** only **CC0 or no-attribution** licences go in the
+library. Every entry records its source and licence. *Fact:* even free
+music can occasionally trigger an automatic YouTube copyright claim; CC0
+sources lower that risk and `credits.md` gives proof of where each file
+came from.
+
+**Choosing (Design agent):** one music mood per video; prefer a track at
+least as long as the video, otherwise the Animator loops it with a
+crossfade. To stop videos sounding alike, the library tracks how recently
+each track was used, and the least recently used track for the mood wins.
+
+**Sound-effect limit (my call):** effects mark key moments only (a
+reveal, a new step, a big number). Roughly **no more than one effect per
+scene on average**, and never on top of a key word of narration.
+
+**Mixing (Animator agent):**
+- Music fades in at the start and out at the end.
+- **Ducking:** the music automatically drops whenever the voice is
+  speaking and comes back up in pauses.
+- **Measured clarity check (my call; builder may tune the numbers):** while
+  the voice speaks, the music must sit at least **12 dB below** the voice.
+  The final mix is normalised to about **−14 LUFS** (a common loudness
+  level for online video).
+
+**Owner feedback on sound:** at the final hand-off the owner can say e.g.
+"different music" or "fewer effects". That goes back to the Design agent
+(sound plan only) and the Animator re-mixes and re-renders. The script
+and voice are not touched.
 
 ## 7. Scene template library
 
@@ -215,6 +273,7 @@ Claude Workspace/
 │   ├── commands/        make-video.md   (the orchestrator)
 │   └── settings.json    Notification hook → Windows toast
 ├── templates/           shared Remotion project with the scene templates
+├── assets/audio/       music/, sfx/, library.json  (curated CC0 / no-attribution library)
 ├── tools/voice/         Kokoro script: script scenes → wav files + manifest
 └── videos/
     └── <yyyy-mm-dd>-<topic-slug>/
@@ -223,7 +282,7 @@ Claude Workspace/
         ├── 01-script/script.md
         ├── 02-voice/scene-XX.wav, manifest.json
         ├── 03-design/storyboard.md, style.json
-        ├── 04-video/scenes.json, out/video.mp4
+        ├── 04-video/scenes.json, credits.md, out/video.mp4
         └── review/gate-<n>-round-<m>.md
 ```
 
@@ -234,7 +293,7 @@ Claude Workspace/
 
 - Format: 16:9, 1920×1080, 30 fps. Vertical 9:16 as an option later.
 - Captions: on.
-- Music: none in v1.
+- Music: on, from the curated library; sound effects used sparingly (§6.5).
 - One narrator voice per video.
 - Language: **English** (v1). See §13.
 
@@ -246,6 +305,11 @@ Claude Workspace/
 - The design of each template component and its data format.
 - How the orchestrator stores state in `status.json`.
 - The PowerShell command used for the Windows notification.
+- **Building the starter audio library:** roughly 15–20 music tracks across
+  ~6 moods and ~40 sound effects, all CC0 / no-attribution, with
+  `library.json` filled in. If a source can't be downloaded automatically,
+  give the owner a short download list with links and the target folder.
+- Exact ducking settings (how fast the music drops and recovers).
 - A one-time setup guide for the owner: Node.js, Python, ffmpeg,
   espeak-ng (needed by Kokoro), Kokoro, faster-whisper, and the Remotion
   and watch-video plugins.
@@ -259,6 +323,9 @@ Claude Workspace/
 | Free voice sounds flat | Script written for speech; per-scene re-recording; owner checkpoint; Piper/other voices as fallback; paid voice is a v2 option |
 | Setup on Windows is fiddly (Python + Node + ffmpeg + espeak-ng) | Step-by-step setup guide plus a "check setup" command |
 | Visuals look generic | Template library with a good default style; style guide per video |
+| Music drowns out the voice | Automatic ducking; measured 12 dB check at gate 4; transcript of the final mix compared to the voice-only transcript |
+| Videos start sounding alike | Least-recently-used track choice; grow the library over time |
+| Copyright claim on "free" music | CC0 / no-attribution only; source and licence recorded per file; `credits.md` per video |
 | Uses a lot of the Claude plan per video | Gates catch problems early, before expensive steps; reviewer reads files, not long conversations |
 
 ## 12. Decisions from the builder check
