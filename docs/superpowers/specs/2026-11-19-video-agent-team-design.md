@@ -1,7 +1,7 @@
 # Video Agent Team — Design
 
 **Date:** 2026-11-19
-**Status:** Draft, waiting for owner approval
+**Status:** Waiting for owner approval
 **Runs on:** the owner's Windows PC, in `C:\Users\PC\Documents\Claude Workspace`
 
 ---
@@ -236,7 +236,7 @@ Claude Workspace/
 - Captions: on.
 - Music: none in v1.
 - One narrator voice per video.
-- Language: see open questions.
+- Language: **English** (v1). See §13.
 
 ## 10. Left to the builder
 
@@ -285,6 +285,17 @@ Claude Workspace/
   voice script), and ships a `check-setup` script plus a short test
   checklist for each step for the owner to run.
 
-## 13. Open questions
+## 13. Language
 
-- **Narration language** — waiting for the owner.
+- **v1: English only** (owner's decision). Kokoro English voices,
+  English faster-whisper model, ~150 words/minute target.
+- **Later: Indonesian** (owner's wish, not committed). Kokoro does not
+  support Indonesian, so this needs a different free voice tool, to be
+  researched then. To keep that door open, the builder makes **language a
+  setting** in `brief.md` and keeps the voice step behind one small script
+  interface (text in → wav files + manifest out), so a different TTS engine
+  can be swapped in without touching the other agents.
+
+## 14. Open questions
+
+- None. Ready for owner approval.
