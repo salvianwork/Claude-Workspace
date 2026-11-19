@@ -47,7 +47,7 @@ It works in four steps. At each checkpoint, check these things:
 
 **Step 2 - Voice (you approve).** A notification, then the narration recordings in `videos\<run>\02-voice\`.
 - [ ] Open the `.wav` files and listen. Clear, natural, right speed, no missing or changed words.
-- [ ] You like the voice. If not, say which of `am_michael`, `am_fenrir`, `am_puck`, `am_adam`, `bm_george`, `bm_fable` to try.
+- [ ] You like the voice (default `am_adam`). If not, say which of `am_michael`, `am_fenrir`, `am_puck`, `bm_george`, `bm_fable` to try.
 
 **Step 3 - Design (automatic, reviewed).** Style and sound plan.
 - [ ] Nothing for you to do; wait for the next message.

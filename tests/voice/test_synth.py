@@ -58,7 +58,7 @@ def test_writes_one_wav_per_scene_and_manifest(paths):
     assert manifest["total_s"] == pytest.approx(sum(s["duration_s"] for s in manifest["scenes"]), abs=0.01)
     assert json.loads((out / "manifest.json").read_text()) == manifest
     assert manifest["sample_rate"] == 24000 and manifest["engine"] == "fake"
-    assert manifest["language"] == "en" and manifest["voice"] == "am_michael"  # male default (presenter is male)
+    assert manifest["language"] == "en" and manifest["voice"] == "am_adam"  # male default (presenter is male)
 
 
 def test_only_rerecords_selected_scenes(paths):
@@ -92,7 +92,7 @@ def test_cli_script_option_uses_given_file(paths, monkeypatch):
     assert synth_mod.main([str(run_dir), "--script", str(copy)]) == 0
     manifest = json.loads((out / "manifest.json").read_text())
     assert [s["id"] for s in manifest["scenes"]] == [1, 2]
-    assert manifest["voice"] == "am_michael"
+    assert manifest["voice"] == "am_adam"
 
 
 def test_cli_default_script_is_01_script(paths, monkeypatch):

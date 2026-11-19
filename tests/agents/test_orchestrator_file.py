@@ -79,7 +79,12 @@ def test_video_status_calls_status_tool():
 
 def test_settings_has_notification_hook():
     data = json.loads(SETTINGS.read_text(encoding="utf-8"))
-    assert "permissions" not in data
+    # The owner approved a narrow allow-list; risky commands must still prompt.
+    allow = data.get("permissions", {}).get("allow", [])
+    for broad in ("Bash", "Bash(*)", "Bash(python *)", "Bash(npm *)", "Bash(git *)", "Edit", "Write"):
+        assert broad not in allow, broad
+    assert not any(r.startswith(("Bash(rm", "Bash(git push", "Bash(pip", "Bash(npm install")) for r in allow)
+    assert "defaultMode" not in data.get("permissions", {})
     entries = data["hooks"]["Notification"]
     hooks = [h for e in entries for h in e["hooks"]]
     assert any(h["type"] == "command" and "notify.ps1" in h["command"] for h in hooks)

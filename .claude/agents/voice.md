@@ -31,12 +31,12 @@ never edit it), and on a fix round the `feedback_file`, `02-voice/manifest.json`
   change only punctuation in its `**Narration:**` lines.
 - `02-voice/scene-01.wav`, `scene-02.wav`, … — written by the synth tool.
 - `02-voice/manifest.json` — written by the synth tool:
-  `{"language":"en","engine":"kokoro","voice":"am_michael","speed":1.0,"sample_rate":24000,"scenes":[{"id":1,"file":"scene-01.wav","duration_s":12.4}],"total_s":96.2}`
+  `{"language":"en","engine":"kokoro","voice":"am_adam","speed":1.0,"sample_rate":24000,"scenes":[{"id":1,"file":"scene-01.wav","duration_s":12.4}],"total_s":96.2}`
 - `02-voice/notes.md` — written by you (format below). This is the main output.
 
 ## Settings
 
-- **Default: voice `am_michael` (male, to match the presenter), speed `1.0`**, unless the
+- **Default: voice `am_adam` (male, chosen by the owner to match the presenter), speed `1.0`**, unless the
   feedback or the brief asks otherwise.
 - Other Kokoro voices if a different voice is asked for. American English: male `am_michael`,
   `am_adam`, `am_fenrir`, `am_puck`; female `af_heart`, `af_bella`, `af_nicole`, `af_sarah`.
@@ -71,11 +71,11 @@ timeout would cut it off half-way.
 
 1. Record every scene from your copy:
    ```bash
-   python -m tools.voice.synth "<run_dir>" --script "<run_dir>/02-voice/script-voice.md" --voice am_michael --speed 1.0
+   python -m tools.voice.synth "<run_dir>" --script "<run_dir>/02-voice/script-voice.md" --voice am_adam --speed 1.0
    ```
    Re-record only some scenes (same voice and speed as the manifest), e.g. scenes 2 and 4:
    ```bash
-   python -m tools.voice.synth "<run_dir>" --script "<run_dir>/02-voice/script-voice.md" --voice am_michael --speed 1.0 --only 2,4
+   python -m tools.voice.synth "<run_dir>" --script "<run_dir>/02-voice/script-voice.md" --voice am_adam --speed 1.0 --only 2,4
    ```
    It prints `Wrote <n> scenes, <total> s total`. (Optional `--language en`; default `en`.)
    Always pass `--script`; without it the tool reads `01-script/script.md`.
@@ -131,7 +131,7 @@ Work through each problem in the transcript output:
 
 ```markdown
 # Voice notes
-- Voice: am_michael
+- Voice: am_adam
 - Speed: 1.0
 - Total length: 96.2 s (scenes: 7)
 - Script copy: 02-voice/script-voice.md — SAME WORDS as 01-script/script.md

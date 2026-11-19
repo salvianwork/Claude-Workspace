@@ -1,4 +1,20 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python -m tools.*)",
+      "Bash(python -c \"import sys, kokoro; print(sys.prefix)\")",
+      "Bash(cd templates)",
+      "Bash(npm run render *)",
+      "Bash(npm run stills*)",
+      "Bash(npm run character-sheet*)",
+      "Bash(npm test*)",
+      "Bash(ffprobe *)",
+      "Bash(git status*)",
+      "Edit(videos/**)",
+      "WebSearch",
+      "WebFetch"
+    ]
+  },
   "hooks": {
     "Notification": [
       {

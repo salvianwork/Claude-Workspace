@@ -144,8 +144,8 @@ A yellow warning is fine to ignore. A red cross shows a
 
 ## Things you can change
 
-**The narrator's voice.** The default is `am_michael` (male, matches the presenter). The choices
-you are comparing are `am_michael`, `am_fenrir`, `am_puck`, `am_adam`, `bm_george`, `bm_fable`
+**The narrator's voice.** The default is `am_adam` (male, chosen to match the presenter). Other choices
+include `am_michael`, `am_fenrir`, `am_puck`, `bm_george`, `bm_fable`
 (British voices such as `bm_george`, `bm_fable`, `bm_lewis` get a British accent automatically).
 To switch, ask Claude Code: "change the default voice to am_fenrir". It is one line in
 `tools/voice/synth.py` (`DEFAULT_VOICE`) and the same name in `.claude/agents/voice.md`.

@@ -82,7 +82,7 @@ def test_story_rules():
 def test_voice_rules():
     _, body = parse("voice")
     assert "never words" in body
-    for s in ["--only", "--voice", "--speed", "--script", "am_michael", "02-voice/notes.md",
+    for s in ["--only", "--voice", "--speed", "--script", "am_adam", "02-voice/notes.md",
               "02-voice/manifest.json", "02-voice/script-voice.md", "SAME WORDS"]:
         assert s in body
     assert "script-before-voice" not in body

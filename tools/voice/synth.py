@@ -12,7 +12,7 @@ from tools.pipeline.script import parse_script
 from tools.voice.engine import TTSEngine, get_engine
 
 PAD_S = 0.4
-DEFAULT_VOICE = "am_michael"  # male, to match the presenter; the owner picks the final voice
+DEFAULT_VOICE = "am_adam"  # male, chosen by the owner to match the presenter
 
 
 def _wav_name(scene_id: int) -> str:
