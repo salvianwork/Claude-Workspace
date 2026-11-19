@@ -1,16 +1,9 @@
 import React from "react";
-import { Composition, type CalculateMetadataFunction } from "remotion";
+import { Composition } from "remotion";
 import sample from "../fixtures/sample-scenes.json";
-import { VideoSchema, type VideoProps } from "./schema";
+import { calculateMetadata } from "./metadata";
+import { VideoSchema } from "./schema";
 import { Video } from "./Video";
-
-/** Duration, fps and size all come from scenes.json. */
-export const calculateMetadata: CalculateMetadataFunction<VideoProps> = ({ props }) => ({
-  durationInFrames: props.scenes.reduce((sum, s) => sum + s.durationInFrames, 0),
-  fps: props.fps,
-  width: props.width,
-  height: props.height,
-});
 
 export const Root: React.FC = () => (
   <Composition

@@ -3,7 +3,7 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import { ease, pop, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import type { PropsOf } from "../schema";
-import { fontStack, useScene, withAlpha } from "../theme";
+import { CANVAS, contentBox, fontStack, headingHeight, pickScale, SAFE, textLines, useScene, withAlpha } from "../theme";
 
 export const Bullets: React.FC<PropsOf<"Bullets">> = ({ title, items, icon }) => {
   const frame = useCurrentFrame();
@@ -12,9 +12,13 @@ export const Bullets: React.FC<PropsOf<"Bullets">> = ({ title, items, icon }) =>
   const { colors, fonts, sizes } = style;
   const starts = revealFrames(items.length, durationInFrames, 0.7, 14);
   const current = starts.filter((s) => frame >= s).length - 1;
-  const scale = items.length >= 5 ? 0.86 : items.length === 4 ? 0.94 : 1;
-  const size = Math.round(sizes.body * scale);
-  const gap = items.length >= 5 ? 16 : 22;
+  const gap = items.length >= 5 ? 18 : 24;
+  const headH = headingHeight(style, title, Boolean(icon)) + 44;
+  // Largest text that still fits above the captions (estimated line wraps included).
+  const listHeight = (sz: number) =>
+    items.reduce((h, it) => h + textLines(it, sz, CANVAS.width - 2 * SAFE - 64 - sz * 1.3 - 28) * sz * 1.28 + sz * 0.84, 0) +
+    gap * (items.length - 1);
+  const size = Math.round(sizes.body * pickScale((s) => headH + listHeight(sizes.body * s) <= contentBox(style).height));
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>

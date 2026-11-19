@@ -218,9 +218,10 @@ export const SceneSchema = z.discriminatedUnion("template", [
 ]);
 
 export const VideoSchema = z.object({
-  fps: z.number().int().min(1).max(120),
-  width: z.number().int().min(320).max(7680),
-  height: z.number().int().min(240).max(4320),
+  // Fixed by the project constraints: 1920×1080 at 30 fps.
+  fps: z.literal(30).default(30),
+  width: z.literal(1920).default(1920),
+  height: z.literal(1080).default(1080),
   style: StyleSchema,
   scenes: z.array(SceneSchema).min(1),
 });

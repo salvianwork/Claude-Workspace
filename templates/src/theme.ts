@@ -47,3 +47,18 @@ export const useScene = (): SceneInfo => {
 /** Shrinks a font size for long strings so they stay within a sensible number of lines. */
 export const fitSize = (base: number, length: number, charsAtBase: number, minScale = 0.6) =>
   length <= charsAtBase ? base : Math.round(base * Math.max(minScale, Math.sqrt(charsAtBase / length)));
+
+/** Estimated number of lines `text` wraps to (average glyph ≈ `em` × font size). */
+export const textLines = (text: string, size: number, width: number, em = 0.5) =>
+  Math.max(1, Math.ceil((text.length * em * size) / Math.max(1, width)));
+
+/** Estimated height of a <Heading> (title text + underline) for the given style. */
+export const headingHeight = (style: Style, text: string, hasIcon = false) => {
+  const size = fitSize(style.sizes.heading, text.length, 34, 0.7);
+  const width = CANVAS.width - 2 * SAFE - (hasIcon ? size * 1.25 + 24 : 0);
+  return textLines(text, size, width, 0.55) * size * 1.12 + 22 + 6;
+};
+
+/** Largest text scale (from `scales`, largest first) for which `fits(scale)` is true. */
+export const pickScale = (fits: (scale: number) => boolean, scales = [1.1, 1.05, 1, 0.95, 0.9, 0.85, 0.8, 0.75]) =>
+  scales.find(fits) ?? scales[scales.length - 1];

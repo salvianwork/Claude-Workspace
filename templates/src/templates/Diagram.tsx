@@ -4,16 +4,12 @@ import { ease, pop, progress, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import { Icon } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { contentBox, fontStack, useScene, withAlpha } from "../theme";
+import { contentBox, fontStack, headingHeight, textLines, useScene, withAlpha } from "../theme";
 
 type Node = PropsOf<"Diagram">["nodes"][number];
 
-const CIRCLE = 124; // icon node diameter
-const PILL_H = 84; // text-only node minimum height
-const PILL_MAX_W = 300; // = 2 × PAD_X, so a node at x=0 or x=1 stays inside the frame
-const PAD_X = 150; // keeps labels of nodes at x=0 / x=1 inside the frame
-const PAD_TOP = 70;
-const PAD_BOTTOM = 150;
+const CIRCLE = 180; // icon node diameter
+const PILL_H = 104; // text-only node minimum height
 
 export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, highlight }) => {
   const frame = useCurrentFrame();
@@ -22,17 +18,54 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
   const { colors, fonts, sizes } = style;
 
   const box = contentBox(style);
-  const headingH = title ? 128 : 0;
+  const headingH = title ? headingHeight(style, title) + 24 : 0;
   const W = box.width;
   const H = box.height - headingH;
-  const labelSize = Math.round(sizes.body * 0.8);
+
+  // Label width: as wide as possible while leaving room for an arrow (and its label) to the
+  // neighbour on the same row.
+  let minGap = 1;
+  for (const a of nodes) for (const b of nodes) {
+    if (a !== b && Math.abs(a.y - b.y) < 0.2) minGap = Math.min(minGap, Math.abs(a.x - b.x) || 1);
+  }
+  const labelW = Math.round(Math.max(220, Math.min(380, minGap * (W - 400) - 130)));
+  const baseLabel = sizes.body * (labelW >= 320 ? 1.1 : 0.95);
+
+  // Node geometry at scale k (1 = full size). Shrunk only when nodes stacked in a column
+  // would otherwise overlap (circle + label must fit between their centres).
+  const geometry = (k: number) => {
+    const circle = Math.round(CIRCLE * k);
+    const labelSize = Math.round(baseLabel * Math.max(0.8, k));
+    const iconLabelLines = (n: Node) => textLines(n.label, labelSize, labelW - 10, 0.55);
+    const pillLines = (n: Node) => textLines(n.label, labelSize, labelW - 64, 0.55);
+    const pillHeight = (n: Node) => Math.max(PILL_H * k, pillLines(n) * labelSize * 1.15 + 36);
+    const extentTop = (n: Node) => (n.icon ? circle / 2 + 12 : pillHeight(n) / 2 + 8);
+    const extentBottom = (n: Node) =>
+      n.icon ? circle / 2 + 18 + iconLabelLines(n) * labelSize * 1.15 : pillHeight(n) / 2 + 8;
+    // y is relative to the whole area, clamped so every node (with its label) stays inside.
+    const rawY = (n: Node) => Math.min(Math.max(n.y * H, extentTop(n)), H - extentBottom(n));
+    let fits = true;
+    for (const a of nodes) for (const b of nodes) {
+      if (a !== b && Math.abs(a.x - b.x) < 0.15 && a.y < b.y) {
+        if (rawY(b) - rawY(a) < extentBottom(a) + extentTop(b) + 16) fits = false;
+      }
+    }
+    return { circle, labelSize, pillHeight, extentTop, extentBottom, rawY, fits };
+  };
+  const g = [1, 0.9, 0.8, 0.7, 0.6].map(geometry).find((x) => x.fits) ?? geometry(0.6);
+  const { circle, labelSize, pillHeight, extentTop, extentBottom, rawY } = g;
+  // Keeps a node at x=0 or x=1 (circle and label) inside the safe margin.
+  const padX = Math.max(circle / 2, labelW / 2) + 8;
+  const pillHalfW = (n: Node) => Math.min(labelW / 2, n.label.length * labelSize * 0.29 + 32);
+  // Centre the whole drawing vertically in the space above the captions.
+  const top = Math.min(...nodes.map((n) => rawY(n) - extentTop(n)));
+  const bottom = Math.max(...nodes.map((n) => rawY(n) + extentBottom(n)));
+  const offsetY = (H - (bottom - top)) / 2 - top;
 
   const pos = (n: Node) => ({
-    x: PAD_X + n.x * (W - 2 * PAD_X),
-    y: PAD_TOP + n.y * (H - PAD_TOP - PAD_BOTTOM),
+    x: padX + n.x * (W - 2 * padX),
+    y: rawY(n) + offsetY,
   });
-  const pillHalfW = (n: Node) => Math.min(PILL_MAX_W / 2, n.label.length * labelSize * 0.29 + 30);
-  const pillLines = (n: Node) => (n.label.length * labelSize * 0.55 > PILL_MAX_W - 56 ? 2 : 1);
 
   // Reveal order: highlight order first (it follows the narration), then the remaining nodes.
   const order = [...new Set([...(highlight ?? []), ...nodes.map((n) => n.id)])];
@@ -51,9 +84,9 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
 
   /** Distance from a node centre to its edge in direction (dx, dy). */
   const edge = (n: Node, dx: number, dy: number) => {
-    if (n.icon) return CIRCLE / 2 + 14;
+    if (n.icon) return circle / 2 + 16;
     const hw = pillHalfW(n) + 12;
-    const hh = Math.max(PILL_H, pillLines(n) * labelSize * 1.15 + 28) / 2 + 12;
+    const hh = pillHeight(n) / 2 + 12;
     const tx = dx === 0 ? Infinity : hw / Math.abs(dx);
     const ty = dy === 0 ? Infinity : hh / Math.abs(dy);
     return Math.min(tx, ty);
@@ -91,9 +124,9 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
             const angle = (Math.atan2(uy, ux) * 180) / Math.PI;
             return (
               <g key={i} opacity={t > 0 ? 1 : 0}>
-                <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={color} strokeWidth={5} strokeLinecap="round" />
+                <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={color} strokeWidth={7} strokeLinecap="round" />
                 <polygon
-                  points="0,0 -22,-12 -22,12"
+                  points="0,0 -30,-16 -30,16"
                   fill={color}
                   transform={`translate(${ex},${ey}) rotate(${angle}) scale(${t})`}
                 />
@@ -117,12 +150,12 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
                 top: (p.y + q.y) / 2,
                 transform: `translate(-50%, -50%) scale(${0.8 + 0.2 * t})`,
                 opacity: t,
-                padding: "6px 18px",
+                padding: "8px 22px",
                 borderRadius: 999,
                 background: colors.background,
                 border: `2px solid ${withAlpha(colors.primary, 0.45)}`,
                 fontFamily: fontStack(fonts.body),
-                fontSize: Math.round(sizes.body * 0.62),
+                fontSize: Math.round(sizes.body * 0.8),
                 fontWeight: 600,
                 color: withAlpha(colors.text, 0.9),
                 whiteSpace: "nowrap",
@@ -156,10 +189,10 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
                 <div
                   style={{
                     position: "absolute",
-                    left: -CIRCLE / 2,
-                    top: -CIRCLE / 2,
-                    width: CIRCLE,
-                    height: CIRCLE,
+                    left: -circle / 2,
+                    top: -circle / 2,
+                    width: circle,
+                    height: circle,
                     borderRadius: "50%",
                     background: isActive
                   ? `linear-gradient(${withAlpha(colors.accent, 0.18)}, ${withAlpha(colors.accent, 0.18)}), ${colors.surface}`
@@ -171,14 +204,14 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
                     transform: `scale(${t * (isActive ? 1.08 : 1)})`,
                   }}
                 >
-                  <Icon name={n.icon} size={58} color={isActive ? colors.accent : colors.primary} strokeWidth={2} />
+                  <Icon name={n.icon} size={Math.round(circle * 0.48)} color={isActive ? colors.accent : colors.primary} strokeWidth={2} />
                 </div>
                 <div
                   style={{
                     position: "absolute",
-                    top: CIRCLE / 2 + 18,
-                    left: -150,
-                    width: 300,
+                    top: circle / 2 + 18,
+                    left: -labelW / 2,
+                    width: labelW,
                     textAlign: "center",
                     fontFamily: fontStack(fonts.heading),
                     fontSize: labelSize,
@@ -202,10 +235,10 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
                 top: y,
                 transform: `translate(-50%, -50%) scale(${t * (isActive ? 1.06 : 1)})`,
                 opacity: fade,
-                minHeight: PILL_H,
-                maxWidth: PILL_MAX_W,
+                minHeight: PILL_H * (circle / CIRCLE),
+                maxWidth: labelW,
                 width: "max-content",
-                padding: "14px 28px",
+                padding: "18px 32px",
                 textAlign: "center",
                 lineHeight: 1.15,
                 borderRadius: 24,

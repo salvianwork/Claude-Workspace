@@ -17,7 +17,7 @@ export const Quote: React.FC<PropsOf<"Quote">> = ({ text, attribution }) => {
   const attrStart = Math.round(wordsEnd * 0.8);
   const attrIn = ease(frame, fps, attrStart, 20);
   const line = ease(frame, fps, attrStart, 24);
-  const size = fitSize(Math.round(sizes.heading * 1.0), text.length, 90, 0.72);
+  const size = fitSize(Math.round(sizes.heading * 1.15), text.length, 80, 0.7);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>

@@ -12,7 +12,10 @@ npm run stills -- --props=path/to/scenes.json --frame=80%
 npm run render -- out.mp4 --props=path/to/scenes.json   # muted MP4; audio is added later
 ```
 
-Duration, fps and size come from `scenes.json` (`durationInFrames` of all scenes summed).
+Props are validated with `VideoSchema` at render time (`src/metadata.ts`): an invalid file stops
+with e.g. `Invalid scenes.json: scenes[1].props.items: Too big…`; defaults are filled in.
+`fps`/`width`/`height` are fixed to 30 / 1920 / 1080 (may be omitted). Duration = sum of the
+scenes' `durationInFrames`. Text sizes shrink automatically (estimated wraps) to fit above the captions.
 Each scene enters/exits in 12 frames, keeps text 96 px from every edge and shows captions
 from `narration` (words spread evenly over the scene, current word in the accent colour).
 On machines where Remotion cannot download its browser, set `REMOTION_BROWSER_EXECUTABLE`.

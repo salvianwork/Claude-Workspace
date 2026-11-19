@@ -4,7 +4,7 @@ import { ease, pop, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import { Icon } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { fontStack, useScene, withAlpha } from "../theme";
+import { contentBox, fontStack, headingHeight, pickScale, textLines, useScene, withAlpha } from "../theme";
 
 export const Steps: React.FC<PropsOf<"Steps">> = ({ title, steps }) => {
   const frame = useCurrentFrame();
@@ -15,10 +15,21 @@ export const Steps: React.FC<PropsOf<"Steps">> = ({ title, steps }) => {
   const starts = revealFrames(n, durationInFrames, 0.7, 14);
   const current = starts.filter((s) => frame >= s).length - 1;
 
-  const circle = n >= 6 ? 104 : n >= 5 ? 116 : 128;
-  const titleSize = Math.round(sizes.body * (n >= 5 ? 0.82 : 0.92));
-  const descSize = Math.round(sizes.body * (n >= 5 ? 0.66 : 0.72));
+  const circle = n >= 6 ? 124 : n >= 5 ? 140 : 156;
   const colWidth = 1728 / n;
+  // Largest text for which the tallest step (estimated wraps) fits above the captions.
+  const available = contentBox(style).height - (title ? headingHeight(style, title) + 64 : 0);
+  const stepHeight = (s: number, st: (typeof steps)[number]) => {
+    const t = sizes.body * (n >= 5 ? 0.95 : 1.1) * s;
+    const d = sizes.body * (n >= 5 ? 0.78 : 0.88) * s;
+    return (
+      circle + 30 + textLines(st.title, t, colWidth - 28, 0.55) * t * 1.18 +
+      (st.description ? 12 + textLines(st.description, d, colWidth - 28) * d * 1.35 : 0)
+    );
+  };
+  const scale = pickScale((s) => Math.max(...steps.map((st) => stepHeight(s, st))) <= available, [1, 0.95, 0.9, 0.85, 0.8]);
+  const titleSize = Math.round(sizes.body * (n >= 5 ? 0.95 : 1.1) * scale);
+  const descSize = Math.round(sizes.body * (n >= 5 ? 0.78 : 0.88) * scale);
 
   // Connector line from the first to the last circle centre, filled up to the current step.
   const lineStart = colWidth / 2;
@@ -103,14 +114,14 @@ export const Steps: React.FC<PropsOf<"Steps">> = ({ title, steps }) => {
                       position: "absolute",
                       top: -6,
                       right: -6,
-                      width: 40,
-                      height: 40,
+                      width: 48,
+                      height: 48,
                       borderRadius: "50%",
                       background: active ? colors.accent : colors.primary,
                       color: colors.background,
                       fontFamily: fontStack(fonts.heading),
                       fontWeight: 700,
-                      fontSize: 22,
+                      fontSize: 26,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

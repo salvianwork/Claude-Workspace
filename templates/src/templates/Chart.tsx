@@ -3,7 +3,7 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import { ease, progress, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import type { PropsOf } from "../schema";
-import { fontStack, useScene, withAlpha } from "../theme";
+import { contentBox, fontStack, headingHeight, useScene, withAlpha } from "../theme";
 
 /** Round axis ticks covering [min, max] (always including 0). */
 export const niceTicks = (min: number, max: number, target = 4): number[] => {
@@ -49,7 +49,7 @@ export const Chart: React.FC<PropsOf<"Chart">> = ({ title, type, labels, values,
   const abs = values.map(Math.abs);
   const hi = highlight ?? abs.indexOf(Math.max(...abs));
 
-  const H = 480; // svg height (content box minus heading)
+  const H = Math.round(contentBox(style).height - headingHeight(style, title) - 28); // fills the space above the captions
   const top = 56;
   const bottom = 64;
   const plotW = W - PLOT_LEFT - PLOT_RIGHT;
@@ -62,8 +62,8 @@ export const Chart: React.FC<PropsOf<"Chart">> = ({ title, type, labels, values,
   const cx = (i: number) => PLOT_LEFT + slot * (i + 0.5);
   const starts = revealFrames(n, durationInFrames, 0.6, 14);
   const axisIn = ease(frame, fps, 4, 20);
-  const labelSize = Math.round(sizes.body * 0.72);
-  const valueSize = Math.round(sizes.body * 0.8);
+  const labelSize = Math.round(sizes.body * 0.88);
+  const valueSize = Math.round(sizes.body * 0.95);
   const font = fontStack(fonts.body);
   const digits = decimalsFor(values);
   const tickDigits = decimalsFor(ticks);

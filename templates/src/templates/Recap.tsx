@@ -3,7 +3,7 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import { ease, pop, progress, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import type { PropsOf } from "../schema";
-import { fontStack, useScene, withAlpha } from "../theme";
+import { CANVAS, contentBox, fontStack, headingHeight, pickScale, SAFE, textLines, useScene, withAlpha } from "../theme";
 
 const Check: React.FC<{ t: number; size: number; color: string; stroke: string }> = ({ t, size, color, stroke }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
@@ -28,7 +28,13 @@ export const Recap: React.FC<PropsOf<"Recap">> = ({ title, points }) => {
   const { style, durationInFrames } = useScene();
   const { colors, fonts, sizes } = style;
   const starts = revealFrames(points.length, durationInFrames, 0.7, 14);
-  const size = Math.round(sizes.body * (points.length >= 5 ? 0.84 : points.length === 4 ? 0.92 : 0.96));
+  const gap = points.length >= 5 ? 22 : 30;
+  const headH = headingHeight(style, title, true) + 40;
+  const cardHeight = (sz: number) =>
+    80 +
+    points.reduce((h, p) => h + textLines(p, sz, CANVAS.width - 2 * SAFE - 104 - sz * 1.3 - 28) * sz * 1.28, 0) +
+    gap * (points.length - 1);
+  const size = Math.round(sizes.body * pickScale((s) => headH + cardHeight(sizes.body * s) <= contentBox(style).height));
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
@@ -39,13 +45,13 @@ export const Recap: React.FC<PropsOf<"Recap">> = ({ title, points }) => {
           width: "fit-content",
           minWidth: 1000,
           maxWidth: 1728,
-          padding: "36px 52px",
+          padding: "40px 52px",
           borderRadius: 28,
           background: withAlpha(colors.surface, 0.72),
           border: `1.5px solid ${withAlpha(colors.primary, 0.22)}`,
           display: "flex",
           flexDirection: "column",
-          gap: points.length >= 5 ? 22 : 28,
+          gap,
         }}
       >
         {points.map((p, i) => {
