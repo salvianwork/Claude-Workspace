@@ -1,4 +1,10 @@
-"""Mix voice, music and SFX with ducking: python -m tools.audio.mix <run_dir>."""
+"""Mix voice, music and SFX with ducking: python -m tools.audio.mix <run_dir>.
+
+Loudness: the summed mix gets one gain envelope (make-up gain to -14 LUFS times a
+look-ahead peak limiter with a -1 dBFS ceiling). The written stems (voice, music,
+sfx) are scaled by that SAME envelope, so they add up to mix.wav and check_mix
+measures the voice/music gap exactly as the listener hears it.
+"""
 from __future__ import annotations
 
 import argparse
@@ -16,8 +22,9 @@ from tools.audio import library as lib
 SR = 48000
 THRESHOLD_DBFS = -45.0
 WINDOW_S = 0.05
-MUSIC_BELOW_VOICE_DB = 6.0   # base music level vs voice RMS (over speech), before ducking
+MUSIC_BELOW_VOICE_DB = 10.0  # base music level vs voice RMS (over speech), before ducking
 DUCK_DB = 12.0               # extra attenuation while speech is on
+MASK_CLOSE_S = 0.3           # pauses shorter than this keep the music ducked (no pumping)
 ATTACK_S = 0.15
 RELEASE_S = 0.4
 FADE_IN_S = 1.5
@@ -27,7 +34,13 @@ TAIL_S = 1.0
 TARGET_LUFS = -14.0
 PEAK_LIMIT_DBFS = -1.0
 MIN_GAP_DB = 12.0
-SFX_PEAK = 0.5
+WARN_GAP_DB = 14.0           # build_mix warns below this (check_mix fails below MIN_GAP_DB)
+SFX_BELOW_VOICE_DB = 4.0     # loudest 100 ms of each effect vs voice speech RMS
+SFX_DUCK_DB = 6.0            # extra attenuation of effects while speech is on
+SFX_WINDOW_S = 0.1
+LIMIT_LOOKAHEAD_S = 0.005
+LIMIT_RELEASE_S = 0.08       # time for the limiter to recover 6 dB
+LIMIT_MARGIN_DB = 0.05       # aim a hair under the ceiling so 24-bit rounding never crosses it
 ENV_RATE = 1000  # Hz, rate of the ducking envelope computation
 
 
@@ -43,9 +56,27 @@ def _resample(x: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
     return np.interp(pos, np.arange(len(x)), x)
 
 
+def _upsample2(x: np.ndarray, half_taps: int = 32, beta: float = 8.0) -> np.ndarray:
+    """Exact 2x upsample with a Kaiser-windowed sinc (keeps the voice's top end clean)."""
+    x = np.asarray(x, dtype=np.float64)
+    if len(x) == 0:
+        return x
+    m = np.arange(-half_taps, half_taps)
+    n = 2 * m + 1  # odd output offsets
+    taps = np.sinc(n / 2) * np.kaiser(2 * half_taps, beta)
+    taps /= taps.sum()
+    odd = np.convolve(x, taps, mode="full")[half_taps:half_taps + len(x)]
+    out = np.empty(2 * len(x))
+    out[0::2], out[1::2] = x, odd
+    return out
+
+
 def _load_mono(path: Path, sr_out: int = SR) -> np.ndarray:
     data, sr = sf.read(str(path), always_2d=True)
-    return _resample(data.mean(axis=1), sr, sr_out)
+    mono = data.mean(axis=1)
+    if sr_out == 2 * sr:
+        return _upsample2(mono)
+    return _resample(mono, sr, sr_out)
 
 
 def speech_mask(voice: np.ndarray, sr: int, threshold_dbfs: float = THRESHOLD_DBFS) -> np.ndarray:
@@ -57,6 +88,81 @@ def speech_mask(voice: np.ndarray, sr: int, threshold_dbfs: float = THRESHOLD_DB
         if np.sqrt(np.mean(seg ** 2)) > thr:
             mask[s:s + win] = True
     return mask
+
+
+def close_gaps(mask: np.ndarray, sr: int, gap_s: float = MASK_CLOSE_S) -> np.ndarray:
+    """Fill pauses shorter than ``gap_s`` that sit between two stretches of speech."""
+    m = np.asarray(mask, dtype=bool).copy()
+    if not m.any():
+        return m
+    edges = np.flatnonzero(np.diff(m.astype(np.int8))) + 1
+    bounds = np.concatenate([[0], edges, [len(m)]])
+    max_gap = gap_s * sr
+    for a, b in zip(bounds[:-1], bounds[1:]):
+        if not m[a] and a > 0 and b < len(m) and (b - a) < max_gap:
+            m[a:b] = True
+    return m
+
+
+def _moving_mean(x: np.ndarray, n: int) -> np.ndarray:
+    """Mean of x[t-n+1 .. t] (trailing window; the start uses what is there)."""
+    if n <= 1:
+        return np.asarray(x, dtype=np.float64)
+    c = np.concatenate([[0.0], np.cumsum(x, dtype=np.float64)])
+    idx = np.arange(1, len(x) + 1)
+    lo = np.maximum(0, idx - n)
+    return (c[idx] - c[lo]) / (idx - lo)
+
+
+def _forward_max(x: np.ndarray, n: int) -> np.ndarray:
+    """max(x[t .. t+n-1]) for every t, in O(len) (van Herk / Gil-Werman)."""
+    if n <= 1 or len(x) == 0:
+        return np.asarray(x, dtype=np.float64)
+    L = len(x)
+    blocks = -(-(L + n) // n)
+    pad = np.full(blocks * n, -np.inf)
+    pad[:L] = x
+    b = pad.reshape(blocks, n)
+    prefix = np.maximum.accumulate(b, axis=1).ravel()
+    suffix = np.maximum.accumulate(b[:, ::-1], axis=1)[:, ::-1].ravel()
+    t = np.arange(L)
+    return np.maximum(suffix[t], prefix[t + n - 1])
+
+
+def _release(att_db: np.ndarray, sr: int, release_s: float, release_db: float = 6.0) -> np.ndarray:
+    """Attenuation may jump up at once but only falls back at release_db per release_s."""
+    rate = release_db / (release_s * sr)  # dB per sample
+    t = np.arange(len(att_db))
+    return np.maximum.accumulate(att_db + rate * t) - rate * t
+
+
+def limiter_gain(x: np.ndarray, sr: int, ceiling_db: float = PEAK_LIMIT_DBFS) -> np.ndarray:
+    """Look-ahead peak limiter gain (<= 1) so that |x * gain| <= ceiling everywhere.
+
+    Required attenuation is held over the look-ahead window, released slowly, then
+    smoothed with a box of the look-ahead length (so the gain ramps down *before* a
+    peak instead of clicking). Each step only ever increases the attenuation, so the
+    ceiling is guaranteed.
+    """
+    ceiling = 10 ** (ceiling_db / 20)
+    a = np.abs(x)
+    with np.errstate(divide="ignore"):
+        need = np.maximum(0.0, 20 * np.log10(np.maximum(a, 1e-12) / ceiling))
+    if not need.any():
+        return np.ones(len(x))
+    n = max(1, int(round(LIMIT_LOOKAHEAD_S * sr)))
+    att = _forward_max(need, n)
+    att = _release(att, sr, LIMIT_RELEASE_S)
+    att = _moving_mean(att, n)
+    return 10 ** (-att / 20)
+
+
+def _max_window_rms(x: np.ndarray, sr: int, window_s: float = SFX_WINDOW_S) -> float:
+    if len(x) == 0:
+        return 0.0
+    n = min(len(x), max(1, int(round(window_s * sr))))
+    c = np.concatenate([[0.0], np.cumsum(x ** 2)])
+    return float(np.sqrt(np.max(c[n:] - c[:-n]) / n))
 
 
 def _rms(x: np.ndarray) -> float:
@@ -86,13 +192,13 @@ def _loop(music: np.ndarray, length: int) -> np.ndarray:
     return out[:length]
 
 
-def _duck_gain(mask: np.ndarray, sr: int) -> np.ndarray:
-    """Smoothed gain curve: 1.0 without speech, -DUCK_DB with speech."""
+def _duck_gain(mask: np.ndarray, sr: int, duck_db: float = DUCK_DB) -> np.ndarray:
+    """Smoothed gain curve: 1.0 without speech, -duck_db with speech."""
     step = sr // ENV_RATE
     n_env = len(mask) // step + 1
     padded = np.zeros(n_env * step, dtype=bool)
     padded[:len(mask)] = mask
-    target = np.where(padded.reshape(n_env, step).any(axis=1), 10 ** (-DUCK_DB / 20), 1.0)
+    target = np.where(padded.reshape(n_env, step).any(axis=1), 10 ** (-duck_db / 20), 1.0)
     a_att = 1 - np.exp(-1 / (ATTACK_S * ENV_RATE))
     a_rel = 1 - np.exp(-1 / (RELEASE_S * ENV_RATE))
     env = np.empty(n_env)
@@ -106,6 +212,28 @@ def _duck_gain(mask: np.ndarray, sr: int) -> np.ndarray:
 def _write(path: Path, x: np.ndarray) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(path), x, SR, subtype="PCM_24")
+
+
+def _lufs(x: np.ndarray) -> float:
+    return float(pyln.Meter(SR).integrated_loudness(np.stack([x, x], axis=1)))
+
+
+def _loudness_envelope(total: np.ndarray, sr: int) -> np.ndarray:
+    """Gain envelope that brings ``total`` to TARGET_LUFS with peaks <= PEAK_LIMIT_DBFS.
+
+    Make-up gain to the target, then the look-ahead limiter; limiting lowers the
+    loudness a little, so re-measure and correct (two or three passes converge).
+    """
+    ceiling_db = PEAK_LIMIT_DBFS - LIMIT_MARGIN_DB
+    g = 10 ** ((TARGET_LUFS - _lufs(total)) / 20)
+    env = np.full(len(total), g)
+    for _ in range(4):
+        env = g * limiter_gain(total * g, sr, ceiling_db)
+        err = TARGET_LUFS - _lufs(total * env)
+        if abs(err) < 0.1:
+            break
+        g *= 10 ** (err / 20)
+    return env
 
 
 @dataclass
@@ -130,15 +258,19 @@ def build_mix(run_dir: Path, lib_root: Path) -> MixResult:
     mask = speech_mask(voice, SR)
     if not mask.any():
         raise MixCheckError("no speech found in the voice track")
-    total_s = len(voice) / SR
-    length = len(voice) + int(TAIL_S * SR)
-    voice = np.concatenate([voice, np.zeros(length - len(voice))])
+    voice_len = len(voice)
+    total_s = voice_len / SR
+    length = voice_len + int(TAIL_S * SR)
+    voice = np.concatenate([voice, np.zeros(length - voice_len)])
     mask = np.concatenate([mask, np.zeros(length - len(mask), dtype=bool)])
+    duck_mask = close_gaps(mask, SR)
+    speech_rms = _rms(voice[mask])
 
     warnings: list[str] = []
     used: list[dict] = []
 
-    # music
+    # music: fades in, sits MUSIC_BELOW_VOICE_DB under the voice, ducks under speech,
+    # and fades out so it is silent exactly when the voice ends (the mux cuts the tail)
     track, w = lib.pick_music(lib_root, sound.get("music_mood", ""), total_s + TAIL_S)
     warnings += w
     used.append(track)
@@ -146,37 +278,45 @@ def build_mix(run_dir: Path, lib_root: Path) -> MixResult:
     base_rms = _rms(music)
     if base_rms == 0:
         raise MixCheckError(f"music track {track['id']} is silent")
-    music = music * (_rms(voice[mask]) * 10 ** (-MUSIC_BELOW_VOICE_DB / 20) / base_rms)
-    fi, fo = int(FADE_IN_S * SR), int(FADE_OUT_S * SR)
+    music = music * (speech_rms * 10 ** (-MUSIC_BELOW_VOICE_DB / 20) / base_rms)
+    fi = min(int(FADE_IN_S * SR), voice_len)
+    fo = min(int(FADE_OUT_S * SR), voice_len)
     music[:fi] *= np.linspace(0, 1, fi)
-    music[-fo:] *= np.linspace(1, 0, fo)
-    music = music * _duck_gain(mask, SR)
+    music[voice_len - fo:voice_len] *= np.linspace(1, 0, fo)
+    music[voice_len:] = 0.0
+    music = music * _duck_gain(duck_mask, SR)
 
-    # sfx
+    # sfx: loudest 100 ms sits SFX_BELOW_VOICE_DB under the voice, ducked under speech
     sfx = np.zeros(length)
+    sfx_target = speech_rms * 10 ** (-SFX_BELOW_VOICE_DB / 20)
     for ev in sound.get("sfx", []):
         item = lib.pick_sfx(lib_root, ev["type"])
         if item not in used:
             used.append(item)
         clip = _load_mono(lib_root / item["path"])
-        peak = np.max(np.abs(clip)) if len(clip) else 0
-        if peak > 0:
-            clip = clip * (SFX_PEAK / peak)
+        loud = _max_window_rms(clip, SR)
+        if loud > 0:
+            clip = clip * (sfx_target / loud)
         s = starts[ev["scene"]] + int(round(ev["at_s"] * SR))
         e = min(length, s + len(clip))
         if s < length:
             sfx[s:e] += clip[:e - s]
+    sfx = sfx * _duck_gain(duck_mask, SR, SFX_DUCK_DB)
 
-    # loudness: normalise the sum, apply the same gain to every stem
+    # loudness: one gain envelope (make-up gain x look-ahead limiter) for the whole sum,
+    # applied identically to every stem, so the stems add up to the mix and check_mix
+    # measures the voice/music gap exactly as it is in the final mix
     total = voice + music + sfx
-    meter = pyln.Meter(SR)
-    stereo = np.stack([total, total], axis=1)
-    g = 10 ** ((TARGET_LUFS - meter.integrated_loudness(stereo)) / 20)
-    peak_lim = 10 ** (PEAK_LIMIT_DBFS / 20)
-    peak = np.max(np.abs(total)) * g
-    if peak > peak_lim:
-        g *= peak_lim / peak
-    stems = {"voice": voice * g, "music": music * g, "sfx": sfx * g}
+    env = _loudness_envelope(total, SR)
+    stems = {"voice": voice * env, "music": music * env, "sfx": sfx * env}
+    mixed = total * env
+
+    gap = voice_music_gap_db(stems["voice"], stems["music"], SR)
+    lufs = _lufs(mixed)
+    if gap < WARN_GAP_DB:
+        warnings.append(f"music is only {gap:.1f} dB below the voice (aim for {WARN_GAP_DB:.0f} dB or more)")
+    if not -15 <= lufs <= -13:
+        warnings.append(f"mix loudness is {lufs:.1f} LUFS (aim for -15 to -13)")
 
     audio_dir = run_dir / "04-video" / "audio"
     paths = {}
@@ -184,7 +324,6 @@ def build_mix(run_dir: Path, lib_root: Path) -> MixResult:
         paths[name] = audio_dir / f"{name}.wav"
         _write(paths[name], x)
     mix_path = audio_dir / "mix.wav"
-    mixed = total * g
     _write(mix_path, np.stack([mixed, mixed], axis=1))
 
     lib.mark_used(lib_root, [i["id"] for i in used])
@@ -193,6 +332,7 @@ def build_mix(run_dir: Path, lib_root: Path) -> MixResult:
 
 
 def check_mix(run_dir: Path) -> dict:
+    """Measure the written mix; the stems carry the mix's own gain envelope (see top)."""
     run_dir = Path(run_dir)
     audio = run_dir / "04-video" / "audio"
     voice, sr = sf.read(str(audio / "voice.wav"))
