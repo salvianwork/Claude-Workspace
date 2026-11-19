@@ -1,0 +1,153 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "style": {
+    "colors": {
+      "background": "#0F172A",
+      "surface": "#1E293B",
+      "primary": "#38BDF8",
+      "accent": "#F59E0B",
+      "text": "#F1F5F9"
+    },
+    "fonts": { "heading": "Poppins", "body": "Inter" },
+    "sizes": { "title": 104, "heading": 64, "body": 40, "caption": 40 }
+  },
+  "scenes": [
+    {
+      "id": 1,
+      "template": "TitleCard",
+      "durationInFrames": 150,
+      "props": {
+        "title": "How Solar Panels Work",
+        "subtitle": "From a ray of sunlight to the socket in your wall",
+        "icon": "sun"
+      },
+      "narration": "Every hour, enough sunlight hits the Earth to power the planet for a year. So how do we catch it?"
+    },
+    {
+      "id": 2,
+      "template": "Bullets",
+      "durationInFrames": 165,
+      "props": {
+        "title": "Why solar matters",
+        "icon": "leaf",
+        "items": [
+          "No fuel to burn, so no smoke or carbon",
+          "Panels last 25 years or more",
+          "Works on rooftops, fields and even satellites",
+          "Now one of the cheapest kinds of electricity"
+        ]
+      },
+      "narration": "Solar burns no fuel, panels last decades, they work almost anywhere, and today they are one of the cheapest ways to make power."
+    },
+    {
+      "id": 3,
+      "template": "Diagram",
+      "durationInFrames": 180,
+      "props": {
+        "title": "Where the power goes",
+        "nodes": [
+          { "id": "sun", "label": "Sunlight", "icon": "sun", "x": 0.1, "y": 0.5 },
+          { "id": "panel", "label": "Solar panel", "icon": "grid-3x3", "x": 0.37, "y": 0.5 },
+          { "id": "inverter", "label": "Inverter", "icon": "zap", "x": 0.63, "y": 0.5 },
+          { "id": "home", "label": "Your home", "icon": "house", "x": 0.9, "y": 0.22 },
+          { "id": "grid", "label": "Power grid", "icon": "utility-pole", "x": 0.9, "y": 0.78 }
+        ],
+        "arrows": [
+          { "from": "sun", "to": "panel", "label": "light" },
+          { "from": "panel", "to": "inverter", "label": "DC" },
+          { "from": "inverter", "to": "home", "label": "AC" },
+          { "from": "inverter", "to": "grid", "label": "extra" }
+        ],
+        "highlight": ["sun", "panel", "inverter", "home", "grid"]
+      },
+      "narration": "Light strikes the panel, which makes direct current. An inverter turns it into the alternating current your home uses, and any extra flows to the grid."
+    },
+    {
+      "id": 4,
+      "template": "Comparison",
+      "durationInFrames": 165,
+      "props": {
+        "title": "Solar vs. coal",
+        "left": {
+          "title": "Solar",
+          "icon": "sun",
+          "points": ["No fuel costs", "Silent and clean", "Output follows the weather"]
+        },
+        "right": {
+          "title": "Coal",
+          "icon": "factory",
+          "points": ["Fuel must be mined and shipped", "Smoke and CO2", "Runs day and night"]
+        }
+      },
+      "narration": "Compared with coal, solar needs no fuel and makes no smoke, but it only works while the sun is shining."
+    },
+    {
+      "id": 5,
+      "template": "BigNumber",
+      "durationInFrames": 135,
+      "props": {
+        "value": "173,000 TW",
+        "label": "of sunlight reaches the Earth",
+        "context": "About ten thousand times all the energy humanity uses",
+        "icon": "sun-medium"
+      },
+      "narration": "About one hundred seventy three thousand terawatts of sunlight reach us, thousands of times what we use."
+    },
+    {
+      "id": 6,
+      "template": "Steps",
+      "durationInFrames": 180,
+      "props": {
+        "title": "Inside a solar cell",
+        "steps": [
+          { "title": "Light arrives", "description": "Photons hit the silicon", "icon": "sun" },
+          { "title": "Electrons break free", "description": "Energy knocks them loose", "icon": "atom" },
+          { "title": "Current flows", "description": "Metal contacts collect them", "icon": "cable" },
+          { "title": "Power is used", "description": "Lights, fridges, chargers", "icon": "plug-zap" }
+        ]
+      },
+      "narration": "Inside each cell, light hits silicon, knocks electrons free, and metal contacts collect them as a current we can use."
+    },
+    {
+      "id": 7,
+      "template": "Chart",
+      "durationInFrames": 165,
+      "props": {
+        "title": "Solar keeps getting cheaper",
+        "type": "bar",
+        "labels": ["2010", "2013", "2016", "2019", "2022", "2024"],
+        "values": [2.0, 0.75, 0.45, 0.28, 0.25, 0.12],
+        "unit": "$/W",
+        "highlight": 5
+      },
+      "narration": "Since twenty ten, the price of a solar module has fallen by more than ninety percent."
+    },
+    {
+      "id": 8,
+      "template": "Quote",
+      "durationInFrames": 150,
+      "props": {
+        "text": "I'd put my money on the sun and solar energy. What a source of power!",
+        "attribution": "Thomas Edison, 1931"
+      },
+      "narration": "Nearly a century ago, Thomas Edison already said he would put his money on the sun."
+    },
+    {
+      "id": 9,
+      "template": "Recap",
+      "durationInFrames": 165,
+      "props": {
+        "title": "Quick recap",
+        "points": [
+          "Sunlight frees electrons in silicon cells",
+          "The panel makes DC, the inverter makes AC",
+          "Extra power can flow back to the grid",
+          "Solar has become cheap and clean"
+        ]
+      },
+      "narration": "So: light frees electrons, the inverter makes usable power, extra goes to the grid, and it keeps getting cheaper."
+    }
+  ]
+}
