@@ -103,6 +103,12 @@ presenter beside (not over) the content and captions. (If Remotion cannot find a
 
 ## Step 3 — run the tools, in this order (from the workspace root)
 
+**Run each command with the Bash tool's `timeout: 600000`** (10 minutes). The render can take
+longer than that on a home PC: run the render command with `run_in_background: true` and the
+same `timeout: 600000`, then wait for it to finish (you are told when it exits; check its output
+with the tool that reads background output) before you go on. Never start a second render
+while one is still running.
+
 1. Mouth movement from the voice loudness (adds `mouth` to every scene in `scenes.json`):
    ```bash
    python -m tools.voice.mouth "<run_dir>"

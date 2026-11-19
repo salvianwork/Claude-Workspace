@@ -38,8 +38,10 @@ never edit it), and on a fix round the `feedback_file`, `02-voice/manifest.json`
 
 - **Default: voice `am_michael` (male, to match the presenter), speed `1.0`**, unless the
   feedback or the brief asks otherwise.
-- Other American-English Kokoro voices if a different voice is asked for: male `am_michael`,
+- Other Kokoro voices if a different voice is asked for. American English: male `am_michael`,
   `am_adam`, `am_fenrir`, `am_puck`; female `af_heart`, `af_bella`, `af_nicole`, `af_sarah`.
+  British English: male `bm_george`, `bm_fable`, `bm_lewis` (the tool picks the British
+  accent automatically for any voice starting with `b`).
 - Sensible speed range: `0.85` (slower, calmer) to `1.2` (faster). Change in small steps (0.05).
 - **One voice and one speed for the whole video.** If you change voice or speed, re-record
   **all** scenes (no `--only`), so every scene matches the manifest.
@@ -63,6 +65,10 @@ The voice always reads your copy, never `01-script/script.md` directly:
 
 ## Commands (run from the workspace root; quote paths, they may contain spaces)
 
+**Run every command below with the Bash tool's `timeout: 600000`** (10 minutes). Recording
+and transcribing a whole video on a home PC takes several minutes; the default 2-minute
+timeout would cut it off half-way.
+
 1. Record every scene from your copy:
    ```bash
    python -m tools.voice.synth "<run_dir>" --script "<run_dir>/02-voice/script-voice.md" --voice am_michael --speed 1.0
@@ -81,6 +87,8 @@ The voice always reads your copy, never `01-script/script.md` directly:
    It prints JSON `{"scenes":[{"id":1,"problems":[...]}],"ok":true|false}`. Problems read
    `missing: "<words>"`, `extra: "<words>"` or `wrong: "<script words>" heard as "<heard words>"`.
    (Punctuation is ignored, so your copy and the approved script compare the same.)
+   It also saves what it heard to `review/voice-transcripts.json`, so the final-video check
+   does not have to listen to every scene again.
 
 3. Read `02-voice/manifest.json`: every script scene has an entry, and `total_s` is
    **60–180 seconds** (1–3 minutes).

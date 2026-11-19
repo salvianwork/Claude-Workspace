@@ -97,7 +97,8 @@ style, word choice, a better hook.
 
 ## Gate 2 — Voice
 
-Read `01-script/script.md`, `02-voice/manifest.json` and `02-voice/notes.md`. Run:
+Read `01-script/script.md`, `02-voice/manifest.json` and `02-voice/notes.md`. Run (with the
+Bash tool's `timeout: 600000` — transcribing every scene takes minutes):
 
 ```bash
 python -m tools.review.transcript voice "<run_dir>"
@@ -181,7 +182,8 @@ Inputs: `04-video/out/video.mp4`, `04-video/scenes.json`, `04-video/credits.md`,
 
 **1. Watch it.** If the Skill tool offers the **watch-video** skill, use it on
 `04-video/out/video.mp4` (keyframes + transcript). Otherwise (or if it fails), fall back to
-`extract_keyframes` (one frame every 2 s) and look at the frames with Read:
+`extract_keyframes` (one frame every 2 s) and look at the frames with Read (run it with the
+Bash tool's `timeout: 600000`):
 
 ```bash
 python -c "import sys; from pathlib import Path; from tools.review.keyframes import extract_keyframes; print(len(extract_keyframes(Path(sys.argv[1]) / '04-video' / 'out' / 'video.mp4', Path(sys.argv[1]) / 'review' / sys.argv[2], 2.0)), 'keyframes')" "<run_dir>" frames-gate4-round-<m>
@@ -217,7 +219,8 @@ ffmpeg -v error -y -ss <seconds> -i "<run_dir>/04-video/out/video.mp4" -frames:v
 ```
 
 **3. Transcript of the final MP4** (always run it, even after watch-video — it also compares
-with the voice-only transcript):
+with the voice-only transcript, reusing `review/voice-transcripts.json` from gate 2 when the
+recordings have not changed). Run it with the Bash tool's `timeout: 600000`:
 
 ```bash
 python -m tools.review.transcript final "<run_dir>"

@@ -130,3 +130,25 @@ def test_every_status_update_runs_against_the_real_parser(tmp_path):
         except SystemExit as e:  # argparse error
             code = e.code
         assert code == 0, cmd
+
+
+def test_make_video_preflight_checks_the_venv_first():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    section1 = text.split("## 1. Start or resume", 1)[1]
+    pre = section1.index('python -c "import sys, kokoro; print(sys.prefix)"')
+    assert pre < section1.index("starts with `--resume`") and pre < section1.index("tools.pipeline.status init")
+    assert ".venv\\Scripts\\activate" in section1 and "SAME terminal" in section1
+    assert "stop" in section1[pre:pre + 600].lower()
+
+
+@pytest.mark.parametrize("agent,needles", [
+    ("animator", ["timeout: 600000", "run_in_background: true"]),
+    ("voice", ["timeout: 600000", "bm_george", "bm_fable", "bm_lewis"]),
+    ("reviewer", ["timeout: 600000"]),
+])
+def test_long_commands_get_long_timeouts(agent, needles):
+    text = (ROOT / ".claude" / "agents" / f"{agent}.md").read_text(encoding="utf-8")
+    for n in needles:
+        assert n in text, n
+    if agent == "reviewer":
+        assert text.count("timeout: 600000") >= 3  # gate-2 transcript, keyframes, final transcript

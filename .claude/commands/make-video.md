@@ -23,6 +23,18 @@ checkpoints. You coordinate only:
 
 ## 1. Start or resume
 
+**Preflight (always first, also for `--resume`).** Check that Claude Code was started from
+the project's Python environment:
+
+```bash
+python -c "import sys, kokoro; print(sys.prefix)"
+```
+
+If the command fails, or the printed folder does not end with `.venv`, print exactly this one
+line to the owner and **stop** (start no agent, write no file):
+
+`Please close Claude Code, open a terminal in the project folder, run .venv\Scripts\activate, then type claude in that SAME terminal and run /make-video again.`
+
 **`$ARGUMENTS` starts with `--resume`** → the rest is `<run_dir>`. Go to section 8.
 
 **Otherwise** `$ARGUMENTS` is `"<topic>" [notes]`: the quoted part (or, with no quotes, the

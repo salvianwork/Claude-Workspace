@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="script to read narration from (default: <run_dir>/01-script/script.md)")
     a = p.parse_args(argv)
     only = [int(x) for x in a.only.split(",")] if a.only else None
-    engine = get_engine("kokoro", a.language)
+    engine = get_engine("kokoro", a.language, a.voice)
     script = a.script if a.script is not None else a.run_dir / "01-script" / "script.md"
     m = synth_scenes(script, a.run_dir / "02-voice",
                      engine, a.voice, a.speed, only, a.language)

@@ -36,7 +36,12 @@ class KokoroEngine:
         return np.concatenate(chunks)
 
 
-def get_engine(name: str, language: str) -> TTSEngine:
+def kokoro_lang_code(voice: str | None) -> str:
+    """Kokoro pipeline accent for a voice: British voices (bf_*, bm_*) need "b", else "a"."""
+    return "b" if voice and voice.lower().startswith("b") else "a"
+
+
+def get_engine(name: str, language: str, voice: str | None = None) -> TTSEngine:
     if name == "kokoro" and language == "en":
-        return KokoroEngine(lang_code="a")
+        return KokoroEngine(lang_code=kokoro_lang_code(voice))
     raise ValueError(f"No voice engine for language {language!r} (engine {name!r})")
