@@ -76,7 +76,7 @@ const PresenterLayer: React.FC<{ scene: Scene; prev?: Scene; next?: Scene; offse
         size={scene.presenter.size}
         width={box.width}
         height={box.height}
-        accent={style.colors.accent}
+        outfit={style.presenterOutfit}
         seed={scene.id}
         offset={offset}
         from={

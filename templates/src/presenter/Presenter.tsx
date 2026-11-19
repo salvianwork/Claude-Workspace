@@ -1,7 +1,7 @@
 import React, { useId } from "react";
 import { useCurrentFrame } from "remotion";
 import { blinkAmount, bob, breath, headTilt, sway } from "../alive/motion";
-import type { PresenterExpression, PresenterPose } from "../schema";
+import type { PresenterExpression, PresenterOutfit, PresenterPose } from "../schema";
 import { LOOK, palette, type Look } from "./look";
 import { Arm } from "./parts/Arms";
 import { Face } from "./parts/Face";
@@ -10,16 +10,22 @@ import { Head } from "./parts/Head";
 import { CollarBack, Neck, Torso } from "./parts/Torso";
 import { armPoints, blendPoses, faceAt, POSES, RIG, TALK_MIRROR, type Face as FaceParams, type Pose } from "./poses";
 
-/** Drawing area in body units: x is placed per pose, y runs from the hair top to the waist crop. */
-const VIEW_W = 760;
-const VIEW_TOP = 8;
-const VIEW_BOTTOM = RIG.waist;
-const VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+/** Drawing area in body units (y): from above the hair to the crop line. */
+const VIEW_TOP = 34;
+/** Crop line for calm poses (hands near the body): a closer, larger framing. */
+const CALM_BOTTOM = 724;
+/** Crop line when the arms need more room (pointing, celebrating): the figure gets smaller. */
+const FULL_BOTTOM = RIG.waist;
+/** Height of the soft fade at the crop line. */
+const FADE = 72;
 
 /** Pose changes between scenes blend over this many frames. */
 export const POSE_BLEND = 8;
 
 export type Side = "left" | "right" | "center";
+
+/** The visible window of the drawing, in body units (x, y top-left; w, h size). */
+export type Frame = { x: number; y: number; w: number; h: number };
 
 export type FigureProps = {
   pose: Pose;
@@ -32,7 +38,7 @@ export type FigureProps = {
   t: number;
   /** Which side of the frame he stands on: he shifts slightly towards the content. */
   side: Side;
-  accent: string;
+  outfit?: PresenterOutfit;
   look?: Look;
   /** "head" crops to the head (character sheet close-ups). */
   crop?: "full" | "head";
@@ -40,32 +46,75 @@ export type FigureProps = {
   height: number;
   /** Freeze breathing/bob/sway (for the character sheet). */
   still?: boolean;
-  /** Body centre in the drawing; default: fitted to `pose`. */
-  centreX?: number;
+  /** Visible window; default: fitted to `pose` and the box. */
+  frame?: Frame;
 };
 
-/** Body centre for a named pose, steady over its whole motion (talk swaps hands). */
-export const poseCentre = (name: PresenterPose, side: Side) =>
-  bodyCentre(name === "talk" ? [POSES.talk, TALK_MIRROR] : [POSES[name]], side);
-
-/** Horizontal position of the body centre so both hands of every given pose stay inside the drawing. */
-const bodyCentre = (poses: Pose[], side: Side) => {
-  const xs: number[] = [];
+/** Horizontal extent (body units, relative to the centre line) and top of the arms and hands of the given poses. */
+export const extent = (poses: Pose[]) => {
+  const xs: number[] = [-200, 200];
+  let top = Infinity;
   for (const [p, m] of poses.flatMap((pose) => [[pose.left, -1], [pose.right, 1]] as const)) {
     const { e, w } = armPoints(p);
-    const tip = (p.hand === "point" ? 92 : 72) * 1.28;
+    const tip = (p.hand === "point" ? 92 : 74) * 1.3 + 8;
     const a = ((p.elbow + p.wrist) * Math.PI) / 180;
     const hx = w.x - Math.sin(a) * tip;
-    for (const x of [e.x - 36, e.x + 36, w.x - 40, w.x + 40, hx - 22, hx + 22]) xs.push(m === -1 ? x : -x);
+    const hy = w.y + Math.cos(a) * tip;
+    for (const x of [e.x - 34, e.x + 34, w.x - 30, w.x + 30, hx - 26, hx + 26]) xs.push(m === -1 ? x : -x);
+    top = Math.min(top, e.y - 34, w.y - 30, hy - 26);
   }
-  xs.push(-190, 190);
-  const min = Math.min(...xs);
-  const max = Math.max(...xs);
-  const preferred = VIEW_W / 2 + (side === "left" ? -24 : side === "right" ? 24 : 0);
-  const lo = -min + 6;
-  const hi = VIEW_W - 6 - max;
-  return lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, preferred));
+  return { min: Math.min(...xs), max: Math.max(...xs), top };
 };
+
+/**
+ * The visible window for `poses` in a box of `aspect` (width / height). Calm poses get a close
+ * framing (cropped a little higher, so he fills his box); poses whose hands need more room zoom
+ * out just enough. The body shifts slightly towards the content (`side`) when there is room.
+ */
+export const fitFrame = (poses: Pose[], side: Side, aspect: number): Frame => {
+  const { min, max, top } = extent(poses);
+  const y = Math.min(VIEW_TOP, top - 6);
+  const span = max - min + 12;
+  let h = CALM_BOTTOM - y;
+  let w = h * aspect;
+  if (w < span) {
+    w = span;
+    h = Math.min(FULL_BOTTOM - y, w / aspect);
+    w = Math.max(w, h * aspect);
+  }
+  const lo = -min + 6;
+  const hi = w - 6 - max;
+  const preferred = w / 2 + (side === "left" ? -1 : side === "right" ? 1 : 0) * w * 0.03;
+  const cx = lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, preferred));
+  return { x: -cx, y, w, h };
+};
+
+/** Every arm position a named pose passes through while it moves (talk swaps hands, wave rocks...). */
+const motionSamples = (name: PresenterPose): Pose[] => {
+  const loud = Array.from({ length: 240 }, (_, f) => 0.5 + 0.5 * Math.sin(f / 3));
+  const frames = Array.from({ length: 48 }, (_, i) => i * 5);
+  return [POSES[name], ...frames.map((f) => animatedPose(name, f, loud)), ...frames.map((f) => animatedPose(name, f, []))];
+};
+
+const frameCache = new Map<string, Frame>();
+
+/** Framing for a named pose, steady over its whole motion (talk swaps hands). */
+export const poseFrame = (name: PresenterPose, side: Side, aspect: number) => {
+  const key = `${name}|${side}|${aspect.toFixed(4)}`;
+  let f = frameCache.get(key);
+  if (!f) {
+    f = fitFrame(motionSamples(name), side, aspect);
+    frameCache.set(key, f);
+  }
+  return f;
+};
+
+const lerpFrame = (a: Frame, b: Frame, t: number): Frame => ({
+  x: a.x + (b.x - a.x) * t,
+  y: a.y + (b.y - a.y) * t,
+  w: a.w + (b.w - a.w) * t,
+  h: a.h + (b.h - a.h) * t,
+});
 
 /** The presenter as pure SVG for one explicit state (no hooks except an id). */
 export const PresenterFigure: React.FC<FigureProps> = ({
@@ -75,23 +124,24 @@ export const PresenterFigure: React.FC<FigureProps> = ({
   blink,
   t,
   side,
-  accent,
+  outfit = "blazer",
   look = LOOK,
   crop = "full",
   width,
   height,
   still = false,
-  centreX,
+  frame,
 }) => {
   const uid = "p" + useId().replace(/[^a-zA-Z0-9]/g, "");
-  const pal = palette(look, accent);
+  const pal = palette(look, outfit);
   const b = still ? 0 : breath(t);
-  const lift = -b * (VIEW_BOTTOM - 344);
+  const lift = -b * (RIG.waist - 344);
   const dy = still ? 0 : bob(t);
   const tilt = pose.tilt + (still ? 0 : headTilt(t));
   const swayFn = (phase: number) => (still ? 0 : sway(t, phase));
-  const cx = crop === "head" ? 0 : (centreX ?? bodyCentre([pose], side));
-  const viewBox = crop === "head" ? "-138 30 276 300" : `${-cx} ${VIEW_TOP} ${VIEW_W} ${VIEW_H}`;
+  const f = frame ?? fitFrame([pose], side, width / height);
+  const bottom = f.y + f.h;
+  const viewBox = crop === "head" ? "-138 30 276 300" : `${f.x} ${f.y} ${f.w} ${f.h}`;
   const fade = `${uid}-fade`;
   const mask = `${uid}-mask`;
 
@@ -107,7 +157,7 @@ export const PresenterFigure: React.FC<FigureProps> = ({
   return (
     <svg width={width} height={height} viewBox={viewBox} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }}>
       <defs>
-        <linearGradient id={fade} gradientUnits="userSpaceOnUse" x1={0} y1={VIEW_BOTTOM - 90} x2={0} y2={VIEW_BOTTOM}>
+        <linearGradient id={fade} gradientUnits="userSpaceOnUse" x1={0} y1={bottom - FADE} x2={0} y2={bottom}>
           {/* eased fade: no visible edge where it starts */}
           <stop offset="0" stopColor="#fff" stopOpacity={1} />
           <stop offset="0.3" stopColor="#fff" stopOpacity={0.9} />
@@ -116,8 +166,8 @@ export const PresenterFigure: React.FC<FigureProps> = ({
         </linearGradient>
         <mask id={mask} maskUnits="userSpaceOnUse" x={-2000} y={-2000} width={4000} height={4000}>
           {/* solid above the fade, overlapping it slightly so no seam shows */}
-          <rect x={-2000} y={-2000} width={4000} height={2000 + VIEW_BOTTOM - 86} fill="#fff" />
-          <rect x={-2000} y={VIEW_BOTTOM - 90} width={4000} height={90} fill={`url(#${fade})`} />
+          <rect x={-2000} y={-2000} width={4000} height={2000 + bottom - FADE + 4} fill="#fff" />
+          <rect x={-2000} y={bottom - FADE} width={4000} height={FADE} fill={`url(#${fade})`} />
         </mask>
       </defs>
       {crop === "head" ? (
@@ -129,7 +179,7 @@ export const PresenterFigure: React.FC<FigureProps> = ({
               <CollarBack pal={pal} />
               <Neck pal={pal} uid={uid} />
             </g>
-            <g transform={`translate(0 ${VIEW_BOTTOM}) scale(${1 + b * 0.4} ${1 + b}) translate(0 ${-VIEW_BOTTOM})`}>
+            <g transform={`translate(0 ${RIG.waist}) scale(${1 + b * 0.4} ${1 + b}) translate(0 ${-RIG.waist})`}>
               <Torso pal={pal} uid={uid} />
             </g>
             {head}
@@ -175,8 +225,8 @@ export const animatedPose = (name: PresenterPose, frame: number, mouth: number[]
       const beat = (mouth[frame] ?? 0) * 6;
       return {
         ...p,
-        left: arm(p.left, act * 6 * (1 - g), -act * 10 * (1 - g) - beat * (1 - g), beat * (1 - g)),
-        right: arm(p.right, act * 6 * g, -act * 10 * g - beat * g, beat * g),
+        left: arm(p.left, act * 4 * (1 - g), -act * 8 * (1 - g) - beat * (1 - g), beat * (1 - g)),
+        right: arm(p.right, act * 4 * g, -act * 8 * g - beat * g, beat * g),
       };
     }
     case "wave": {
@@ -227,7 +277,8 @@ export const Presenter: React.FC<{
   size: "large" | "small";
   width: number;
   height: number;
-  accent: string;
+  /** The video's outfit (style.presenterOutfit). */
+  outfit?: PresenterOutfit;
   /** Scene id: seeds the blinks. */
   seed: number;
   /** Frame of the scene start in the video, so breathing continues across scenes. */
@@ -235,7 +286,7 @@ export const Presenter: React.FC<{
   /** The previous scene's presenter, to blend from. */
   from?: PresenterState;
   look?: Look;
-}> = ({ pose, expression, mouth, side, width, height, accent, seed, offset = 0, from, look }) => {
+}> = ({ pose, expression, mouth, side, width, height, outfit = "blazer", seed, offset = 0, from, look }) => {
   const frame = useCurrentFrame();
   const target = animatedPose(pose, frame, mouth);
   const k = from ? Math.min(1, frame / POSE_BLEND) : 1;
@@ -243,19 +294,21 @@ export const Presenter: React.FC<{
   const face = faceAt(from ? from.expression : expression, expression, k);
   const gazeBias = side === "left" ? 0.25 : -0.25;
   const p = blendPoses(start, target, k);
-  // The body centre moves (smoothly) only when the pose needs a different amount of room.
+  // The framing changes (smoothly) only when the pose needs a different amount of room.
   const s = k * k * (3 - 2 * k);
-  const centreX = from ? poseCentre(from.pose, side) + (poseCentre(pose, side) - poseCentre(from.pose, side)) * s : poseCentre(pose, side);
+  const aspect = width / height;
+  const to = poseFrame(pose, side, aspect);
+  const view = from ? lerpFrame(poseFrame(from.pose, side, aspect), to, s) : to;
   return (
     <PresenterFigure
-      centreX={centreX}
+      frame={view}
       pose={{ ...p, gazeX: Math.max(-1, Math.min(1, p.gazeX + gazeBias)) }}
       face={face}
       mouth={mouth[frame] ?? 0}
       blink={blinkAmount(frame, seed)}
       t={frame + offset}
       side={side}
-      accent={accent}
+      outfit={outfit}
       look={look}
       width={width}
       height={height}

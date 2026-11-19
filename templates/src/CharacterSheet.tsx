@@ -4,7 +4,15 @@ import { loadBundledFonts } from "./fonts";
 import { LOOK, palette } from "./presenter/look";
 import { PresenterFigure } from "./presenter/Presenter";
 import { EXPRESSIONS, faceAt, POSES } from "./presenter/poses";
-import { PRESENTER_EXPRESSIONS, PRESENTER_POSES, type PresenterExpression, type PresenterPose, type Style } from "./schema";
+import {
+  PRESENTER_EXPRESSIONS,
+  PRESENTER_OUTFITS,
+  PRESENTER_POSES,
+  type PresenterExpression,
+  type PresenterOutfit,
+  type PresenterPose,
+  type Style,
+} from "./schema";
 import { fontStack, withAlpha } from "./theme";
 
 loadBundledFonts();
@@ -28,12 +36,22 @@ const MOUTHS: [string, string, number][] = [
   ["wide", "≥ 0.7", 0.85],
 ];
 
-/** One-page sheet of the presenter: every pose, the four talk mouth shapes and every expression. */
+const OUTFIT_TITLE: Record<PresenterOutfit, [string, string]> = {
+  blazer: ["Navy blazer", "default · any topic"],
+  labcoat: ["Lab coat", "science · health · technology"],
+};
+
+/** The sheet is taller than a video frame: every pose in both outfits, mouths and expressions. */
+export const SHEET_WIDTH = 1920;
+export const SHEET_HEIGHT = 1680;
+
+/** One-page sheet of the presenter: every pose in both outfits, the four talk mouth shapes and every expression. */
 export const CharacterSheet: React.FC<{ style: Style }> = ({ style }) => {
   const { colors, fonts } = style;
-  const pal = palette(LOOK, colors.accent);
-  const label = (text: string, sub?: string) => (
-    <div style={{ textAlign: "center", lineHeight: 1.15 }}>
+  const blazer = palette(LOOK, "blazer");
+  const lab = palette(LOOK, "labcoat");
+  const label = (text: string, sub?: string, align: "center" | "left" | "right" = "center") => (
+    <div style={{ textAlign: align, lineHeight: 1.15 }}>
       <div style={{ fontFamily: fontStack(fonts.heading), fontWeight: 700, fontSize: 24, color: colors.text }}>{text}</div>
       {sub ? <div style={{ fontFamily: fontStack(fonts.body), fontSize: 17, color: withAlpha(colors.text, 0.55) }}>{sub}</div> : null}
     </div>
@@ -57,7 +75,6 @@ export const CharacterSheet: React.FC<{ style: Style }> = ({ style }) => {
       blink={0}
       t={0}
       side="center"
-      accent={colors.accent}
       crop="head"
       width={150}
       height={164}
@@ -72,18 +89,20 @@ export const CharacterSheet: React.FC<{ style: Style }> = ({ style }) => {
             Presenter <span style={{ color: colors.accent }}>character sheet</span>
           </div>
           <div style={{ fontFamily: fontStack(fonts.body), fontSize: 19, color: withAlpha(colors.text, 0.6) }}>
-            {PRESENTER_POSES.length} poses · 4 talk mouth shapes · {PRESENTER_EXPRESSIONS.length} expressions · look settings in
-            templates/src/presenter/look.ts
+            {PRESENTER_POSES.length} poses × {PRESENTER_OUTFITS.length} outfits · 4 talk mouth shapes · {PRESENTER_EXPRESSIONS.length} expressions ·
+            look settings in templates/src/presenter/look.ts
           </div>
         </div>
         <div style={{ display: "flex", gap: 18, fontFamily: fontStack(fonts.body), fontSize: 17, color: withAlpha(colors.text, 0.7) }}>
           {[
-            ["skin", pal.skin],
-            ["hair", pal.hair],
-            ["shirt (style accent)", pal.shirt],
-            ["collar", pal.shirtDark],
+            ["skin", blazer.skin],
+            ["hair", blazer.hair],
+            ["blazer", blazer.jacket],
+            ["shirt", blazer.shirt],
+            ["lab coat", lab.jacket],
+            ["shirt", lab.shirt],
           ].map(([name, c]) => (
-            <div key={name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={name + c} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 26, height: 26, borderRadius: 8, background: c, border: `2px solid ${withAlpha(colors.text, 0.25)}` }} />
               {name}
             </div>
@@ -91,28 +110,41 @@ export const CharacterSheet: React.FC<{ style: Style }> = ({ style }) => {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(2, 344px)", gap: 14 }}>
-        {PRESENTER_POSES.map((p) => {
-          const [expression, mouth] = POSE_LOOK[p];
-          return (
-            <div key={p} style={card}>
-              <PresenterFigure
-                pose={POSES[p]}
-                face={faceAt(expression, expression, 1)}
-                mouth={mouth}
-                blink={0}
-                t={0}
-                side="center"
-                accent={colors.accent}
-                width={430}
-                height={290}
-                still
-              />
-              {label(p, expression)}
+      {PRESENTER_OUTFITS.map((outfit) => (
+        <div key={outfit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 14, height: 34 }}>
+            <div style={{ fontFamily: fontStack(fonts.heading), fontWeight: 700, fontSize: 28, color: colors.text }}>{OUTFIT_TITLE[outfit][0]}</div>
+            <div style={{ fontFamily: fontStack(fonts.body), fontSize: 18, color: withAlpha(colors.text, 0.55) }}>
+              presenterOutfit: "{outfit}" · {OUTFIT_TITLE[outfit][1]}
             </div>
-          );
-        })}
-      </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(2, 292px)", gap: 12 }}>
+            {PRESENTER_POSES.map((p) => {
+              const [expression, mouth] = POSE_LOOK[p];
+              return (
+                <div key={p} style={{ ...card, position: "relative", paddingBottom: 0 }}>
+                  <PresenterFigure
+                    pose={POSES[p]}
+                    face={faceAt(expression, expression, 1)}
+                    mouth={mouth}
+                    blink={0}
+                    t={0}
+                    side="center"
+                    outfit={outfit}
+                    width={434}
+                    height={288}
+                    still
+                  />
+                  {/* label in the bottom corner away from the pointing arm */}
+                  <div style={{ position: "absolute", bottom: 12, ...(p === "point-right" ? { right: 18 } : { left: 18 }) }}>
+                    {label(p, expression, p === "point-right" ? "right" : "left")}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       <div style={{ display: "flex", gap: 14, flex: 1 }}>
         {[

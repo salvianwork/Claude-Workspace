@@ -97,6 +97,20 @@ def test_design_lists_allowed_values():
         assert s in body
 
 
+def test_design_picks_presenter_outfit():
+    _, body = parse("design")
+    for s in ["presenterOutfit", "`blazer`", "`labcoat`", "science", "health",
+              "technology", "history"]:
+        assert s in body, f"design.md must mention {s!r}"
+
+
+def test_reviewer_checks_presenter_outfit():
+    _, body = parse("reviewer")
+    gate3 = body[body.index("## Gate 3"):body.index("## Gate 4")]
+    for s in ["presenterOutfit", "`blazer`", "`labcoat`", "mismatched"]:
+        assert s in gate3, f"reviewer.md gate 3 must mention {s!r}"
+
+
 def test_animator_lists_templates_and_schema():
     _, body = parse("animator")
     for v in TEMPLATE_NAMES:

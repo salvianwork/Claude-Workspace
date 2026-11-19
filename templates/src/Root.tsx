@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition, Still } from "remotion";
 import sample from "../fixtures/sample-scenes.json";
-import { CharacterSheet } from "./CharacterSheet";
+import { CharacterSheet, SHEET_HEIGHT, SHEET_WIDTH } from "./CharacterSheet";
 import { calculateMetadata } from "./metadata";
 import { StyleSchema, VideoSchema } from "./schema";
 import { Video } from "./Video";
@@ -27,8 +27,8 @@ export const Root: React.FC = () => (
       id="CharacterSheet"
       component={CharacterSheet}
       defaultProps={{ style: StyleSchema.parse(defaults.style) }}
-      width={1920}
-      height={1080}
+      width={SHEET_WIDTH}
+      height={SHEET_HEIGHT}
     />
   </>
 );

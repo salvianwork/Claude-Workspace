@@ -61,6 +61,7 @@ by one across the first ~70 % of the scene; order them in the order the narratio
 - expression: `neutral`, `happy`, `curious`, `surprised`, `thinking`
 - position: `left`, `right`, `none` (`none` = hidden; content gets the full width)
 - size: `large` (34 % of the width), `small` (22 %)
+- outfit (per video, in `style.json` → `presenterOutfit`): `blazer`, `labcoat` (rule below)
 
 **Music moods** (`MUSIC_MOODS`): `curious`, `upbeat`, `calm`, `inspiring`, `dramatic`, `playful`
 
@@ -155,11 +156,19 @@ Exact shape; hex colours; fonts only from the bundled set `Inter`, `Poppins`, `M
 ```json
 {"colors": {"background": "#0F172A", "surface": "#1E293B", "primary": "#38BDF8", "accent": "#F59E0B", "text": "#F1F5F9"},
  "fonts": {"heading": "Poppins", "body": "Inter"},
- "sizes": {"title": 104, "heading": 64, "body": 40, "caption": 40}}
+ "sizes": {"title": 104, "heading": 64, "body": 40, "caption": 40},
+ "presenterOutfit": "blazer"}
 ```
 
 If you change colours, keep strong contrast between `text` and `background`/`surface`.
 One style for the whole video.
+
+**`presenterOutfit`** (`PRESENTER_OUTFITS`): always write it; one outfit for the whole video,
+never mixed between scenes.
+- `labcoat` (white lab coat over a teal shirt) for **science, health, medicine, technology,
+  engineering** topics (e.g. how vaccines work, how solar panels work, what a CPU does).
+- `blazer` (navy blazer over a light-blue shirt) for everything else: **history, money,
+  society, skills, how-to** and any topic that is not clearly one of the above.
 
 ## `sound.json`
 
@@ -175,7 +184,7 @@ One style for the whole video.
 For every scene: template is one of the nine; props respect the limits; on-screen words ≤ 2 ×
 duration; presenter line has pose, expression, position, size and follows the size and
 pointing rules; SFX count ≤ scenes; no SFX within 0.6 s of a key word; `sound.json` and
-`style.json` are valid JSON (check with
+`style.json` are valid JSON and `style.json` has a `presenterOutfit` that fits the topic (check with
 `python -c "import json,sys; [json.load(open(f, encoding='utf-8')) for f in sys.argv[1:]]; print('ok')" "<run_dir>/03-design/style.json" "<run_dir>/03-design/sound.json"`).
 
 ## Fix rounds (`feedback_file` given)

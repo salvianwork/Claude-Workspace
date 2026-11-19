@@ -1,19 +1,37 @@
 import React from "react";
 import type { Palette } from "../look";
 
-/** Shirt silhouette, shoulders to below the waist (body space, centre line x = 0). */
-export const TORSO_PATH =
-  "M -46 344 C -80 349 -116 354 -140 366 C -160 378 -170 398 -170 424 C -168 470 -160 560 -146 640 L -150 820 " +
-  "L 150 820 L 146 640 C 160 560 168 470 170 424 C 170 398 160 378 140 366 C 116 354 80 349 46 344 Z";
+/** Jacket outline, shoulders to below the waist (body space, centre line x = 0); open at the neck. */
+const TORSO_OUTLINE =
+  "M -44 344 C -84 350 -128 356 -158 370 C -182 382 -192 402 -192 430 C -190 500 -180 580 -170 650 L -172 840 " +
+  "L 172 840 L 170 650 C 180 580 190 500 192 430 C 192 402 182 382 158 370 C 128 356 84 350 44 344";
 
-/** The collar band behind the neck (drawn before the neck). */
+/** Jacket silhouette (closed behind the collar, below the neck). */
+export const TORSO_PATH = TORSO_OUTLINE + " C 24 372 -24 372 -44 344 Z";
+
+/** Per outfit: how deep the jacket opening goes, lapel width and button rows. */
+const CUT = {
+  blazer: { v: 592, lapel: 96, notchY: 424, buttons: [640, 742] },
+  labcoat: { v: 640, lapel: 112, notchY: 436, buttons: [684, 790] },
+} as const;
+
+/** The shirt collar band behind the neck (drawn before the neck). */
 export const CollarBack: React.FC<{ pal: Palette }> = ({ pal }) => (
-  <path d="M -52 352 C -50 322 50 322 52 352 Z" fill={pal.shirtDark} stroke={pal.shirtLine} strokeWidth={3} strokeLinejoin="round" />
+  <path d="M -48 356 C -48 318 48 318 48 356 Z" fill={pal.shirtShade} stroke={pal.shirtLine} strokeWidth={3} strokeLinejoin="round" />
 );
 
-/** Shirt body: base, soft 3/4 shading, open collar, placket with buttons, chest pocket with a pen. */
+/** One lapel (screen-left; the right one is mirrored), from the neck down to the top button. */
+const lapelPath = (v: number, w: number, notchY: number) =>
+  `M -42 344 L -1 ${v} C -26 ${v - 50} -${w * 0.72} ${notchY + 70} -${w} ${notchY + 6} ` +
+  `L -${w - 18} ${notchY - 8} L -${w - 6} ${notchY - 24} C -${w - 22} ${notchY - 52} -70 362 -56 344 Z`;
+
+/** Jacket (navy blazer or lab coat) over a collared shirt, no tie. */
 export const Torso: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => {
   const clip = `${uid}-torso`;
+  const cut = CUT[pal.outfit];
+  const lab = pal.outfit === "labcoat";
+  const lapel = lapelPath(cut.v, cut.lapel, cut.notchY);
+  const line = { stroke: pal.jacketLine, strokeWidth: 3, strokeLinejoin: "round" as const };
   return (
     <g>
       <defs>
@@ -21,53 +39,69 @@ export const Torso: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => 
           <path d={TORSO_PATH} />
         </clipPath>
       </defs>
-      <path d={TORSO_PATH} fill={pal.shirt} />
+      <path d={TORSO_PATH} fill={pal.jacket} />
       <g clipPath={`url(#${clip})`}>
-        {/* Light comes from the upper left: the right side of the body is in shade. */}
-        <path d="M 96 354 C 150 366 176 396 174 430 C 170 500 160 570 150 640 L 154 820 L 100 820 C 110 700 116 560 112 450 C 110 410 104 380 96 354 Z" fill={pal.shirtShade} />
-        <path d="M -150 410 C -130 392 -104 384 -84 384 C -110 400 -130 430 -140 470 Z" fill={pal.shirtLight} opacity={0.55} />
-        {/* Shadow cast by the head and collar. */}
-        <ellipse cx={0} cy={366} rx={74} ry={26} fill={pal.shirtShade} />
-        {/* Soft folds at the arm pits and the belt line. */}
-        <path d="M -128 520 C -118 560 -116 600 -120 650" fill="none" stroke={pal.shirtShade} strokeWidth={5} strokeLinecap="round" />
-        <path d="M 128 520 C 118 560 116 600 120 650" fill="none" stroke={pal.shirtDark} strokeWidth={5} strokeLinecap="round" opacity={0.6} />
+        {/* Rim light along the whole silhouette: separates him from a dark background. */}
+        <path d={TORSO_PATH} fill="none" stroke={pal.rim} strokeWidth={14} opacity={lab ? 0.25 : 0.4} />
+        {/* Light from the upper left: the right side of the body is in shade. */}
+        <path d="M 104 360 C 156 370 178 398 176 432 C 172 500 162 570 152 640 L 156 840 L 110 840 C 120 700 124 560 120 450 C 118 410 112 380 104 360 Z" fill={pal.jacketShade} />
+        <path d="M -176 420 C -156 396 -130 384 -104 382 C -132 402 -152 440 -162 490 Z" fill={pal.jacketLight} opacity={0.7} />
+        {/* Shirt in the opening, with a soft shadow under the collar. */}
+        <path d={`M -46 340 L 0 ${cut.v + 8} L 46 340 Z`} fill={pal.shirt} />
+        <path d={`M -30 360 L 0 ${cut.v + 8} L 30 360 Z`} fill={pal.shirtShade} opacity={0.35} />
+        {/* Shirt placket and buttons. */}
+        <path d={`M 3 420 L 3 ${cut.v}`} stroke={pal.shirtShade} strokeWidth={3} />
+        {[452, 520].filter((y) => y < cut.v - 20).map((y) => (
+          <circle key={y} cx={3} cy={y} r={4.5} fill={pal.shirtShade} stroke={pal.shirtLine} strokeWidth={1.2} />
+        ))}
+        {/* Front edge of the jacket below the top button. */}
+        <path d={`M 0 ${cut.v} C 4 ${cut.v + 80} 4 ${cut.v + 160} 2 860`} fill="none" stroke={pal.jacketLine} strokeWidth={3} />
+        <path d={`M -10 ${cut.v + 10} C -6 ${cut.v + 80} -6 ${cut.v + 160} -8 860`} fill="none" stroke={pal.jacketShade} strokeWidth={6} opacity={0.6} />
+        {/* Soft folds at the arm pits. */}
+        <path d="M -150 520 C -140 560 -138 600 -142 650" fill="none" stroke={pal.jacketShade} strokeWidth={6} strokeLinecap="round" />
+        <path d="M 150 520 C 140 560 138 600 142 650" fill="none" stroke={pal.jacketLine} strokeWidth={4} strokeLinecap="round" opacity={0.4} />
       </g>
-      <path d={TORSO_PATH} fill="none" stroke={pal.shirtLine} strokeWidth={3.5} strokeLinejoin="round" />
+      <path d={TORSO_OUTLINE} fill="none" {...line} strokeWidth={3.5} />
 
-      {/* Chest pocket with a pen. */}
-      <rect x={-106} y={452} width={8} height={36} rx={3} fill={pal.pen} stroke={pal.shirtLine} strokeWidth={2} />
-      <rect x={-107} y={448} width={10} height={9} rx={3} fill={pal.glasses} />
-      <path d="M -126 476 L -72 476 L -74 528 C -74 534 -78 538 -84 538 L -114 538 C -120 538 -124 534 -124 528 Z" fill={pal.shirtShade} stroke={pal.shirtLine} strokeWidth={2.5} strokeLinejoin="round" />
-      <path d="M -126 476 L -72 476 L -73 488 L -125 488 Z" fill={pal.shirtDark} />
-
-      {/* Placket and buttons. */}
-      <path d="M 0 420 L 0 820" stroke={pal.shirtDark} strokeWidth={3} />
-      <path d="M 9 424 L 9 820" stroke={pal.shirtShade} strokeWidth={2} />
-      {[478, 556, 634, 712].map((y) => (
-        <g key={y}>
-          <circle cx={4.5} cy={y} r={6} fill={pal.shirtDark} />
-          <circle cx={3} cy={y - 1.5} r={2} fill={pal.shirtLight} opacity={0.7} />
-        </g>
+      {/* Open neck (skin V; top button undone) and the shirt collar points. */}
+      <path d="M -24 350 L 0 410 L 24 350 Z" fill={pal.skin} />
+      <path d="M -24 350 L 0 410 L 24 350 C 10 362 -10 362 -24 350 Z" fill={pal.skinShade} opacity={0.6} />
+      {[-1, 1].map((sd) => (
+        <path
+          key={sd}
+          d={`M ${sd * 46} 330 C ${sd * 38} 360 ${sd * 22} 392 ${sd * 2} 414 L ${sd * 36} 424 C ${sd * 48} 400 ${sd * 60} 376 ${sd * 66} 352 C ${sd * 60} 342 ${sd * 54} 334 ${sd * 46} 330 Z`}
+          fill={pal.shirt}
+          stroke={pal.shirtLine}
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
       ))}
 
-      {/* Open neck (skin V) and collar flaps. */}
-      <path d="M -40 344 L 0 424 L 40 344 Z" fill={pal.skinShade} />
-      <path d="M -24 368 L 0 424 L 24 368 C 10 376 -10 376 -24 368 Z" fill={pal.skin} />
-      <path
-        d="M -48 334 C -36 366 -20 396 -2 424 L -42 430 C -56 412 -72 388 -84 364 C -74 352 -62 340 -48 334 Z"
-        fill={pal.shirtDark}
-        stroke={pal.shirtLine}
-        strokeWidth={3}
-        strokeLinejoin="round"
-      />
-      <path
-        d="M 48 334 C 36 366 20 396 2 424 L 42 430 C 56 412 72 388 84 364 C 74 352 62 340 48 334 Z"
-        fill={pal.shirtDark}
-        stroke={pal.shirtLine}
-        strokeWidth={3}
-        strokeLinejoin="round"
-      />
-      <path d="M -44 344 C -34 370 -22 394 -8 416" fill="none" stroke={pal.shirtShade} strokeWidth={3} strokeLinecap="round" opacity={0.8} />
+      {/* Lapels: same cloth with a lit facing on the left one; shadow under the right one. */}
+      <path d={lapel} transform="scale(-1 1)" fill={pal.jacketShade} {...line} />
+      <path d={lapel} fill={pal.jacket} {...line} />
+      <path d={`M -40 352 L -4 ${cut.v - 14}`} stroke={pal.jacketLight} strokeWidth={4} strokeLinecap="round" opacity={0.8} />
+      <path d={`M ${-cut.lapel + 8} ${cut.notchY + 10} C -${cut.lapel * 0.62} ${cut.notchY + 70} -30 ${cut.v - 60} -8 ${cut.v - 6}`} fill="none" stroke={pal.jacketShade} strokeWidth={4} strokeLinecap="round" opacity={0.7} />
+
+      {/* Chest pocket: blazer welt; lab coat patch pocket with a pen. */}
+      {lab ? (
+        <g>
+          <rect x={92} y={470} width={9} height={44} rx={3} fill={pal.pen} stroke={pal.jacketLine} strokeWidth={2} />
+          <rect x={91} y={466} width={11} height={10} rx={3} fill={pal.shirt} />
+          <path d="M 72 488 L 146 486 L 144 552 C 144 558 140 562 134 562 L 84 562 C 78 562 74 558 74 552 Z" fill={pal.jacket} {...line} strokeWidth={2.5} />
+          <path d="M 72 488 L 146 486 L 146 498 L 73 500 Z" fill={pal.jacketShade} opacity={0.8} />
+        </g>
+      ) : (
+        <path d="M 74 484 L 134 478" stroke={pal.jacketLine} strokeWidth={5} strokeLinecap="round" />
+      )}
+
+      {/* Buttons. */}
+      {cut.buttons.map((y) => (
+        <g key={y}>
+          <circle cx={7} cy={y} r={8} fill={pal.button} stroke={pal.jacketLine} strokeWidth={2} />
+          <circle cx={5} cy={y - 2} r={2.5} fill={pal.jacketLight} opacity={0.6} />
+        </g>
+      ))}
     </g>
   );
 };
@@ -75,7 +109,7 @@ export const Torso: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => 
 /** Neck with the shadow under the jaw. */
 export const Neck: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => {
   const clip = `${uid}-neck`;
-  const d = "M -31 262 L -33 352 C -20 366 20 366 33 352 L 31 262 Z";
+  const d = "M -35 262 L -37 356 C -22 370 22 370 37 356 L 35 262 Z";
   return (
     <g>
       <defs>
@@ -85,8 +119,8 @@ export const Neck: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => {
       </defs>
       <path d={d} fill={pal.skin} />
       <g clipPath={`url(#${clip})`}>
-        <ellipse cx={0} cy={300} rx={40} ry={34} fill={pal.skinShade} />
-        <rect x={14} y={260} width={30} height={110} fill={pal.skinShade} opacity={0.6} />
+        <ellipse cx={0} cy={298} rx={44} ry={36} fill={pal.skinShade} />
+        <rect x={16} y={260} width={30} height={110} fill={pal.skinShade} opacity={0.6} />
       </g>
       <path d={d} fill="none" stroke={pal.skinLine} strokeWidth={3} strokeLinejoin="round" />
     </g>

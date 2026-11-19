@@ -73,45 +73,73 @@ export const capsule = (ax: number, ay: number, ra: number, bx: number, by: numb
 };
 
 /** Hands are drawn a little larger than life, as in most explainer illustration. */
-const HAND_SCALE = 1.28;
+const HAND_SCALE = 1.3;
 
-/** One arm (rolled-up sleeve, forearm, hand). `mirror` draws the screen-right arm. */
-export const Arm: React.FC<{ pose: ArmPose; mirror: boolean; pal: Palette }> = ({ pose, mirror, pal }) => {
+/** Sleeve outline of an arm (upper arm and forearm as two tapered capsules) in body space. */
+export const armShapes = (pose: ArmPose) => {
   const { s, e, w } = armPoints(pose);
+  const upper = capsule(s.x, s.y, RIG.shoulderWidth / 2, e.x, e.y, RIG.elbowWidth / 2);
+  const fore = capsule(e.x, e.y, RIG.elbowWidth / 2 - 1, w.x, w.y, RIG.wristWidth / 2);
+  return { s, e, w, upper, fore };
+};
+
+/** One arm (jacket sleeve, shirt cuff, hand). `mirror` draws the screen-right arm. */
+export const Arm: React.FC<{ pose: ArmPose; mirror: boolean; pal: Palette }> = ({ pose, mirror, pal }) => {
+  const { s, e, w, upper, fore } = armShapes(pose);
   const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
   const ux = (e.x - s.x) / len;
   const uy = (e.y - s.y) / len;
-  const fx = (w.x - e.x) / RIG.forearm;
-  const fy = (w.y - e.y) / RIG.forearm;
-  // Normal of the forearm, pointing to its shaded side.
+  const flen = Math.hypot(w.x - e.x, w.y - e.y) || 1;
+  const fx = (w.x - e.x) / flen;
+  const fy = (w.y - e.y) / flen;
+  // Normals pointing to the shaded side of each segment.
   const nx = -fy;
   const ny = fx;
-  const sr = RIG.sleeveWidth / 2;
-  const sleeve = capsule(s.x, s.y, sr + 2, e.x, e.y, sr - 3);
-  const fore = capsule(e.x, e.y, RIG.forearmWidth / 2 + 1, w.x, w.y, RIG.forearmWidth / 2 - 4);
   const handAngle = pose.elbow + pose.wrist;
+  const cuffW = RIG.wristWidth - 4;
   return (
     <g transform={mirror ? "scale(-1 1)" : undefined}>
-      {/* sleeve with a shaded underside */}
-      <path d={sleeve} fill={pal.shirt} stroke={pal.shirtLine} strokeWidth={LINE} strokeLinejoin="round" />
-      <path
-        d={capsule(s.x + ux * 22 - uy * 15, s.y + uy * 22 + ux * 15, 8, e.x - ux * 6 - uy * 13, e.y - uy * 6 + ux * 13, 7)}
-        fill={pal.shirtShade}
-        opacity={len > 60 ? 1 : 0}
-      />
-      {/* forearm */}
-      <path d={fore} fill={pal.skin} stroke={pal.skinLine} strokeWidth={LINE} strokeLinejoin="round" />
-      <path
-        d={capsule(e.x + fx * 30 + nx * 9, e.y + fy * 30 + ny * 9, 5, w.x - fx * 10 + nx * 7, w.y - fy * 10 + ny * 7, 3.5)}
-        fill={pal.skinShade}
-      />
-      {/* rolled-up cuff just below the elbow */}
-      <g transform={`translate(${e.x} ${e.y}) rotate(${pose.elbow})`}>
-        <rect x={-sr - 2} y={-8} width={2 * sr + 4} height={26} rx={10} fill={pal.shirtDark} stroke={pal.shirtLine} strokeWidth={LINE} />
-        <path d={`M ${-sr + 4} 5 L ${sr - 4} 5`} stroke={pal.shirtShade} strokeWidth={3} strokeLinecap="round" />
+      {/* union outline: the two sleeve parts read as one bent arm */}
+      <g fill={pal.jacketLine} stroke={pal.jacketLine} strokeWidth={LINE * 2} strokeLinejoin="round">
+        <path d={upper} />
+        <path d={fore} />
       </g>
-      <g transform={`translate(${w.x} ${w.y}) rotate(${handAngle}) scale(${HAND_SCALE})`}>
+      <g fill={pal.jacket}>
+        <path d={upper} />
+        <path d={fore} />
+      </g>
+      {/* shaded underside of the upper arm and forearm (soft, wide, along the inner edge) */}
+      {len > 50 ? (
+        <path
+          d={capsule(s.x + ux * 30 + uy * 24, s.y + uy * 30 - ux * 24, 11, e.x - ux * 2 + uy * 19, e.y - uy * 2 - ux * 19, 9)}
+          fill={pal.jacketShade}
+          opacity={0.85}
+        />
+      ) : null}
+      {flen > 40 ? (
+        <path
+          d={capsule(e.x + fx * 24 + nx * 14, e.y + fy * 24 + ny * 14, 9, w.x - fx * 10 + nx * 12, w.y - fy * 10 + ny * 12, 7)}
+          fill={pal.jacketShade}
+          opacity={0.85}
+        />
+      ) : null}
+      {/* elbow crease */}
+      <path
+        d={`M ${e.x + nx * 6 - fx * 4} ${e.y + ny * 6 - fy * 4} q ${fx * 10} ${fy * 10} ${nx * 16} ${ny * 16}`}
+        fill="none"
+        stroke={pal.jacketLine}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        opacity={0.55}
+      />
+      {/* hand, then the shirt cuff over the wrist */}
+      <g transform={`translate(${w.x + fx * 8} ${w.y + fy * 8}) rotate(${handAngle}) scale(${HAND_SCALE})`}>
         <Hand shape={pose.hand} pal={pal} />
+      </g>
+      <g transform={`translate(${w.x} ${w.y}) rotate(${pose.elbow})`}>
+        <rect x={-cuffW / 2} y={-4} width={cuffW} height={14} rx={5} fill={pal.shirt} stroke={pal.shirtLine} strokeWidth={2.5} />
+        {/* sleeve hem over the cuff */}
+        <path d={`M ${-RIG.wristWidth / 2 - 1} -4 L ${RIG.wristWidth / 2 + 1} -4`} stroke={pal.jacketLine} strokeWidth={LINE} strokeLinecap="round" />
       </g>
     </g>
   );

@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { blinkAmount, blinkStarts, breath, popIn } from "../alive/motion";
-import { PRESENTER_EXPRESSIONS, PRESENTER_POSES, PresenterSchema, SceneSchema, VideoSchema } from "../schema";
+import { PRESENTER_EXPRESSIONS, PRESENTER_OUTFITS, PRESENTER_POSES, PresenterSchema, SceneSchema, StyleSchema, VideoSchema } from "../schema";
 import { mouthShape, POSES, poseAt } from "./poses";
+import { animatedPose, extent, poseFrame } from "./Presenter";
 
 const fixture = () =>
   JSON.parse(readFileSync(fileURLToPath(new URL("../../fixtures/sample-scenes.json", import.meta.url)), "utf8"));
@@ -38,6 +39,28 @@ describe("presenter schema", () => {
   });
 });
 
+describe("presenter outfit (style.presenterOutfit)", () => {
+  const style = () => ({ ...fixture().style });
+
+  it("has the exact outfit list", () => {
+    expect([...PRESENTER_OUTFITS]).toEqual(["blazer", "labcoat"]);
+  });
+
+  it("defaults to the blazer when the style has no outfit", () => {
+    const { presenterOutfit: _, ...rest } = style();
+    expect(StyleSchema.parse(rest).presenterOutfit).toBe("blazer");
+  });
+
+  it("accepts a lab coat style and rejects an unknown outfit", () => {
+    expect(StyleSchema.parse({ ...style(), presenterOutfit: "labcoat" }).presenterOutfit).toBe("labcoat");
+    expect(StyleSchema.safeParse({ ...style(), presenterOutfit: "hoodie" }).success).toBe(false);
+  });
+
+  it("the fixture sets the blazer explicitly", () => {
+    expect(fixture().style.presenterOutfit).toBe("blazer");
+  });
+});
+
 describe("presenter animation helpers", () => {
   it("maps loudness to the four mouth shapes", () => {
     expect([0, 0.14, 0.15, 0.39, 0.4, 0.69, 0.7, 1].map(mouthShape)).toEqual([
@@ -50,7 +73,8 @@ describe("presenter animation helpers", () => {
     const a = poseAt("idle", "celebrate", 0);
     const b = poseAt("idle", "celebrate", 1);
     expect(a.left.shoulder).toBeCloseTo(POSES.idle.left.shoulder);
-    expect(b.right.elbow).toBeCloseTo(POSES.celebrate.right.elbow);
+    // Angles blend the shortest way round, so the end may differ by a full turn.
+    expect((((b.right.elbow - POSES.celebrate.right.elbow) % 360) + 360) % 360).toBeCloseTo(0);
     const mid = poseAt("idle", "celebrate", 0.5).left.shoulder;
     expect(mid).toBeGreaterThan(Math.min(POSES.idle.left.shoulder, POSES.celebrate.left.shoulder));
     expect(mid).toBeLessThan(Math.max(POSES.idle.left.shoulder, POSES.celebrate.left.shoulder));
@@ -105,6 +129,37 @@ describe("fixture presenter lines", () => {
       if (s.presenter.pose === "point-left") expect(s.presenter.position).toBe("right");
       if (s.presenter.pose === "point-right") expect(s.presenter.position).toBe("left");
       expect(s.mouth).toHaveLength(s.durationInFrames);
+    }
+  });
+});
+
+describe("presenter framing", () => {
+  const aspects = [653 / 705, 422 / 456];
+
+  it("calm poses get a closer framing than poses with the arms out", () => {
+    for (const a of aspects) {
+      const idle = poseFrame("idle", "right", a);
+      expect(poseFrame("talk", "right", a).h).toBeCloseTo(idle.h);
+      for (const wide of ["point-left", "point-right", "celebrate"] as const) {
+        expect(poseFrame(wide, "right", a).h).toBeGreaterThan(idle.h);
+      }
+    }
+  });
+
+  it("keeps both hands inside the box through the whole motion of every pose", () => {
+    const mouth = fixture().scenes[1].mouth as number[];
+    for (const a of aspects) {
+      for (const name of PRESENTER_POSES) {
+        for (const side of ["left", "right"] as const) {
+          const f = poseFrame(name, side, a);
+          for (let frame = 0; frame < mouth.length; frame += 3) {
+            const e = extent([animatedPose(name, frame, mouth)]);
+            expect(e.min).toBeGreaterThanOrEqual(f.x);
+            expect(e.max).toBeLessThanOrEqual(f.x + f.w);
+            expect(e.top).toBeGreaterThanOrEqual(f.y);
+          }
+        }
+      }
     }
   });
 });

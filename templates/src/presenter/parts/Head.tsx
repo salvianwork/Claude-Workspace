@@ -32,6 +32,8 @@ export const Head: React.FC<{ pal: Palette; uid: string }> = ({ pal, uid }) => {
         <ellipse cx={0} cy={318} rx={70} ry={16} fill={pal.skinShade} opacity={0.7} />
         {/* Shadow of the curls on the forehead. */}
         <ellipse cx={0} cy={150} rx={96} ry={24} fill={pal.skinShade} />
+        {/* Faint stubble shadow along the jaw: reads as an adult, not a kid. */}
+        <path d="M -88 232 C -82 292 -42 318 0 318 C 42 318 82 292 88 232 C 74 268 44 278 24 276 C 14 262 -10 262 -22 276 C -44 278 -74 268 -88 232 Z" fill={pal.hair} opacity={0.13} />
         {/* Cheekbone highlight. */}
         <ellipse cx={-50} cy={236} rx={18} ry={12} fill={pal.skinLight} opacity={0.55} />
       </g>

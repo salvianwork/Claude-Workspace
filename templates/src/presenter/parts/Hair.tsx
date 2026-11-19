@@ -3,25 +3,25 @@ import type { Palette } from "../look";
 
 type Curl = readonly [x: number, y: number, r: number];
 
-/** Dark back layer: gives the curly mop its depth and scalloped silhouette. */
+/** Dark back layer: gives the (short, neat) curly crop its depth and scalloped silhouette. */
 const BACK: Curl[] = [
-  [-98, 152, 26], [-103, 122, 30], [-90, 90, 32], [-62, 70, 34], [-24, 60, 36], [16, 58, 36],
-  [54, 66, 34], [85, 87, 31], [101, 113, 28], [103, 143, 24], [95, 168, 18],
+  [-94, 166, 17], [-99, 140, 22], [-93, 112, 24], [-76, 90, 24], [-50, 76, 25], [-18, 70, 25], [16, 70, 25],
+  [48, 75, 25], [75, 88, 24], [93, 110, 23], [99, 138, 21], [94, 164, 16],
 ];
 
-/** Front curls in groups that sway with their own phase; drawn back to front. */
+/** Front curls in groups that sway with their own phase; drawn back to front. Small and tight. */
 const CLUSTERS: { pivot: [number, number]; phase: number; curls: Curl[] }[] = [
-  // Left (fuller side: the slight 3/4 turn shows more hair on the left).
-  { pivot: [-62, 140], phase: 0, curls: [[-84, 112, 28], [-62, 92, 30], [-90, 141, 24], [-66, 122, 24], [-82, 166, 17]] },
+  // Left side.
+  { pivot: [-62, 140], phase: 0, curls: [[-80, 112, 19], [-62, 94, 19], [-88, 138, 16], [-68, 120, 17], [-86, 160, 12]] },
   // Top.
-  { pivot: [0, 124], phase: 1.7, curls: [[-28, 78, 32], [8, 73, 32], [42, 82, 30], [-34, 106, 26], [2, 99, 28], [36, 107, 26]] },
-  // Right.
-  { pivot: [60, 140], phase: 3.1, curls: [[69, 100, 28], [87, 126, 23], [64, 127, 22], [82, 155, 16]] },
-  // Fringe along the hairline, with two curls dipping onto the forehead.
+  { pivot: [0, 124], phase: 1.7, curls: [[-38, 86, 19], [-6, 81, 20], [26, 82, 19], [54, 93, 18], [-24, 106, 18], [8, 103, 18], [38, 108, 17]] },
+  // Right side.
+  { pivot: [60, 140], phase: 3.1, curls: [[74, 110, 18], [86, 134, 16], [64, 130, 15], [86, 158, 12]] },
+  // Neat fringe along the hairline.
   {
     pivot: [0, 132],
     phase: 4.4,
-    curls: [[-60, 149, 18], [-38, 143, 19], [-14, 139, 20], [10, 139, 19], [33, 143, 18], [54, 149, 17], [-24, 161, 11], [21, 159, 9]],
+    curls: [[-62, 146, 14], [-42, 140, 15], [-20, 137, 15], [3, 136, 15], [26, 138, 15], [48, 142, 14], [66, 148, 12]],
   },
 ];
 
@@ -54,7 +54,7 @@ const CurlBlob: React.FC<{ c: Curl; pal: Palette; i: number }> = ({ c: [x, y, r]
 /** Back hair (behind the face). */
 export const HairBack: React.FC<{ pal: Palette; sway: (phase: number) => number }> = ({ pal, sway }) => (
   <g transform={`rotate(${sway(0.8) * 0.5} 0 140)`}>
-    <ellipse cx={0} cy={128} rx={94} ry={66} fill={pal.hairShade} />
+    <ellipse cx={0} cy={130} rx={92} ry={60} fill={pal.hairShade} />
     {BACK.map(([x, y, r], i) => (
       <circle key={i} cx={x} cy={y} r={r} fill={pal.hairShade} stroke={pal.hairLine} strokeWidth={2.5} />
     ))}
@@ -67,7 +67,7 @@ export const HairFront: React.FC<{ pal: Palette; sway: (phase: number) => number
     {[-1, 1].map((s) => (
       <path
         key={s}
-        d={`M ${s * 87} 156 L ${s * 72} 156 L ${s * 76} 208 C ${s * 80} 212 ${s * 84} 212 ${s * 86} 206 Z`}
+        d={`M ${s * 88} 156 L ${s * 74} 156 L ${s * 77} 196 C ${s * 80} 200 ${s * 85} 200 ${s * 87} 194 Z`}
         fill={pal.hair}
         stroke={pal.hairLine}
         strokeWidth={2}

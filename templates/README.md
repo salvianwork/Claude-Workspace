@@ -10,7 +10,7 @@ npm test                                # schema tests
 npm run stills                          # out/stills/scene-<n>-<Template>.png (frame 30 of each scene)
 npm run stills -- --props=path/to/scenes.json --frame=80%
 npm run render -- out.mp4 --props=path/to/scenes.json   # muted MP4; audio is added later
-npm run character-sheet                 # out/character-sheet.png: every pose, mouth shape, expression
+npm run character-sheet                 # out/character-sheet.png (1920×1680): every pose in both outfits, mouth shapes, expressions
 ```
 
 Props are validated with `VideoSchema` at render time (`src/metadata.ts`): an invalid file stops
@@ -23,12 +23,21 @@ On machines where Remotion cannot download its browser, set `REMOTION_BROWSER_EX
 
 **Style** (`style.json`): `colors` background, surface, primary, accent, text (hex);
 `fonts` heading, body (bundled offline: Inter, Poppins, Montserrat, Merriweather; anything
-else falls back to Segoe UI/Arial); `sizes` title, heading, body, caption (px).
+else falls back to Segoe UI/Arial); `sizes` title, heading, body, caption (px); `presenterOutfit` `blazer` (default) or `labcoat` — one
+outfit for the whole video.
 
 ## Presenter
 
-A curly-haired presenter drawn in SVG (`src/presenter/`; change his look in `look.ts`:
-skin, hair, eye colour, shirt — default the style accent — and glasses). Every scene may carry:
+A curly-haired presenter drawn in SVG (`src/presenter/`), styled as a calm, trustworthy expert:
+thin dark glasses, a neat short curly crop, a slight confident smile. Change his look in `look.ts`
+(skin, hair, eye colour, glasses, and the colours of both outfits). His clothes never use orange:
+orange stays reserved for on-screen highlights.
+
+- **Outfit** (per video, `style.presenterOutfit`): `blazer` = navy blazer over a light-blue collared
+  shirt (default, any topic); `labcoat` = off-white lab coat over a teal shirt (science, health,
+  medicine, technology, engineering). A soft rim light keeps the navy blazer visible on dark backgrounds.
+
+Every scene may carry:
 
 ```json
 "presenter": { "pose": "point-left", "expression": "happy", "position": "right", "size": "small" },
@@ -38,7 +47,9 @@ skin, hair, eye colour, shirt — default the style accent — and glasses). Eve
 - `pose`: `idle talk point-left point-right think surprised celebrate wave` (default `idle`);
   `expression`: `neutral happy curious surprised thinking` (default `neutral`).
 - `position`: `left` / `right` / `none` (default `none` = hidden); `size`: `large` (34 % of the
-  width) / `small` (22 %). He stands on the caption line, faded at the waist. The content gets the
+  width) / `small` (22 %). He stands on the caption line, faded at the waist. Calm poses (idle,
+  talk, think, wave) use a closer framing so he fills his box; poses with the arms out (pointing,
+  celebrate, surprised) zoom out just enough that the hands stay inside the box. The content gets the
   remaining width (`contentBox` / `presenterBox` in `theme.ts`), so he never covers content or captions.
   Rules: `large` on TitleCard, BigNumber, Quote, Recap; `small` or `none` on Diagram, Chart,
   Comparison. Point towards the content (`point-left` when he stands `right`).

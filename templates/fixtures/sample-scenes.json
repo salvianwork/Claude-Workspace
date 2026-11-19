@@ -11,7 +11,8 @@
       "text": "#F1F5F9"
     },
     "fonts": { "heading": "Poppins", "body": "Inter" },
-    "sizes": { "title": 104, "heading": 64, "body": 40, "caption": 40 }
+    "sizes": { "title": 104, "heading": 64, "body": 40, "caption": 40 },
+    "presenterOutfit": "blazer"
   },
   "scenes": [
     {

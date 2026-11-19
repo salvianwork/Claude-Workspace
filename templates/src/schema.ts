@@ -31,6 +31,10 @@ const rel = z.number().min(0).max(1);
 
 // ---------- style ----------
 
+/** The presenter's outfit, one per video: navy blazer (default) or lab coat (science/health/tech). */
+export const PRESENTER_OUTFITS = ["blazer", "labcoat"] as const;
+export type PresenterOutfit = (typeof PRESENTER_OUTFITS)[number];
+
 export const StyleSchema = z.object({
   colors: z.object({
     background: hex,
@@ -49,6 +53,7 @@ export const StyleSchema = z.object({
     body: z.number().min(20).max(90),
     caption: z.number().min(20).max(80),
   }),
+  presenterOutfit: z.enum(PRESENTER_OUTFITS).default("blazer"),
 });
 
 // ---------- per-template props ----------

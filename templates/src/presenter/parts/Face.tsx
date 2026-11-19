@@ -3,9 +3,14 @@ import type { Palette } from "../look";
 import { mouthShape, type Brow, type Face as FaceParams } from "../poses";
 
 const EYE_X = 35;
-const EYE_Y = 225;
-const EYE_RX = 14.5;
-const EYE_RY = 16;
+const EYE_Y = 226;
+const EYE_RX = 13.5;
+const EYE_RY = 13.5;
+
+/** Glasses: rounded-rectangle lenses, centred on the eyes, below the brows. */
+const LENS_W = 56;
+const LENS_H = 40;
+const LENS_Y = EYE_Y + 2;
 
 const Eye: React.FC<{
   pal: Palette;
@@ -23,7 +28,7 @@ const Eye: React.FC<{
   const bottom = Math.max(0.6, EYE_RY * (1 - face.squint * 0.6) * (0.25 + 0.75 * (1 - blink)));
   const d = `M ${cx - EYE_RX} ${EYE_Y} A ${EYE_RX} ${top} 0 0 1 ${cx + EYE_RX} ${EYE_Y} A ${EYE_RX} ${bottom} 0 0 1 ${cx - EYE_RX} ${EYE_Y} Z`;
   const clip = `${uid}-eye${side}`;
-  const iris = 10.5 * (face.eyeOpen > 1.15 ? 0.82 : 1);
+  const iris = 9.5 * (face.eyeOpen > 1.15 ? 0.84 : 1);
   const ix = cx + gazeX * 4.5;
   const iy = EYE_Y + gazeY * 4.5 + 1;
   const shut = blink > 0.82;
@@ -40,8 +45,7 @@ const Eye: React.FC<{
           <g clipPath={`url(#${clip})`}>
             <circle cx={ix} cy={iy} r={iris} fill={pal.eye} />
             <circle cx={ix} cy={iy} r={iris * 0.5} fill="#120A08" />
-            <circle cx={ix - iris * 0.36} cy={iy - iris * 0.4} r={iris * 0.3} fill="#FFFFFF" />
-            <circle cx={ix + iris * 0.34} cy={iy + iris * 0.3} r={iris * 0.13} fill="#FFFFFF" opacity={0.85} />
+            <circle cx={ix - iris * 0.34} cy={iy - iris * 0.38} r={iris * 0.24} fill="#FFFFFF" />
             {/* upper-lid shadow on the eyeball */}
             <ellipse cx={cx} cy={EYE_Y - top} rx={EYE_RX + 2} ry={5} fill={pal.skinDeep} opacity={0.35} />
           </g>
@@ -77,9 +81,9 @@ const Eye: React.FC<{
 };
 
 const Eyebrow: React.FC<{ pal: Palette; side: -1 | 1; b: Brow }> = ({ pal, side, b }) => {
-  const inner = { x: side * 15, y: 193 + b.raise + b.inner };
-  const outer = { x: side * 54, y: 197 + b.raise };
-  const mid = { x: side * 35, y: 186 + b.raise - b.arch };
+  const inner = { x: side * 14, y: 194 + b.raise + b.inner };
+  const outer = { x: side * 56, y: 196 + b.raise };
+  const mid = { x: side * 35, y: 188 + b.raise - b.arch };
   // Tapered brow: thick at the inner end, thin at the outer end.
   const d =
     `M ${inner.x} ${inner.y + 4} Q ${mid.x} ${mid.y + 4} ${outer.x} ${outer.y + 1.5} ` +
@@ -142,6 +146,32 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
   );
 };
 
+/** Thin dark frames with a faint lens glint; the eyes and brows stay clear. */
+const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
+  const lens = (cx: number) => ({ x: cx - LENS_W / 2, y: LENS_Y - LENS_H / 2, width: LENS_W, height: LENS_H, rx: 13 });
+  return (
+    <g>
+      {[-1, 1].map((sd) => (
+        <g key={sd}>
+          <rect {...lens(sd * EYE_X)} fill="#DCEBFF" opacity={0.1} />
+          {/* glint */}
+          <path
+            d={`M ${sd * EYE_X - 18} ${LENS_Y + 8} L ${sd * EYE_X - 6} ${LENS_Y - 12}`}
+            stroke="#FFFFFF"
+            strokeWidth={3}
+            strokeLinecap="round"
+            opacity={0.22}
+          />
+          <rect {...lens(sd * EYE_X)} fill="none" stroke={pal.glasses} strokeWidth={3.6} />
+          {/* temple arm towards the ear */}
+          <path d={`M ${sd * (EYE_X + LENS_W / 2)} ${LENS_Y - 10} L ${sd * 84} ${LENS_Y - 14}`} stroke={pal.glasses} strokeWidth={3.6} strokeLinecap="round" />
+        </g>
+      ))}
+      <path d={`M ${-EYE_X + LENS_W / 2} ${LENS_Y - 6} Q 0 ${LENS_Y - 14} ${EYE_X - LENS_W / 2} ${LENS_Y - 6}`} fill="none" stroke={pal.glasses} strokeWidth={3.6} strokeLinecap="round" />
+    </g>
+  );
+};
+
 export const Face: React.FC<{
   pal: Palette;
   face: FaceParams;
@@ -166,12 +196,6 @@ export const Face: React.FC<{
     <g transform="translate(2 286) scale(1.22) translate(-2 -286)">
       <Mouth pal={pal} face={face} v={mouth} uid={uid} />
     </g>
-    {glasses ? (
-      <g fill="none" stroke={pal.glasses} strokeWidth={4}>
-        <circle cx={-EYE_X} cy={EYE_Y} r={23} />
-        <circle cx={EYE_X} cy={EYE_Y} r={23} />
-        <path d="M -12 222 Q 0 216 12 222" />
-      </g>
-    ) : null}
+    {glasses ? <Glasses pal={pal} /> : null}
   </g>
 );

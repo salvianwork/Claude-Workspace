@@ -138,7 +138,8 @@ Read `03-design/storyboard.md`, `03-design/style.json`, `03-design/sound.json`,
 Allowed values: templates `TitleCard Bullets Diagram Comparison BigNumber Steps Chart Quote Recap`;
 moods `curious upbeat calm inspiring dramatic playful`; SFX types
 `whoosh pop ding click swoosh-in reveal`; poses `idle talk point-left point-right think surprised celebrate wave`;
-expressions `neutral happy curious surprised thinking`; position `left right none`; size `large small`.
+expressions `neutral happy curious surprised thinking`; position `left right none`; size `large small`;
+outfit (`style.json` → `presenterOutfit`) `blazer labcoat`.
 Check the JSON files parse:
 `python -c "import json,sys; [json.load(open(f, encoding='utf-8')) for f in sys.argv[1:]]; print('ok')" "<run_dir>/03-design/style.json" "<run_dir>/03-design/sound.json"`
 
@@ -167,6 +168,11 @@ Check the JSON files parse:
 - [ ] **Presenter**: `large` on a dense scene — `large` is allowed only on TitleCard,
   BigNumber, Quote and Recap; Diagram, Chart and Comparison (and Bullets, Steps) must be
   `small` or `none`.
+- [ ] **Presenter outfit**: `style.json` has no `presenterOutfit`, a value other than `blazer` /
+  `labcoat`, or one clearly mismatched to the topic — `labcoat` is for science, health,
+  medicine, technology and engineering topics; `blazer` for everything else (history, money,
+  society, skills, how-to). A lab coat on a history video, or a blazer on a clearly medical
+  one, is a must-fix.
 - [ ] **Presenter** points away from the content (`point-left` while `position: left`, or
   `point-right` while `position: right`).
 
