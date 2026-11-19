@@ -1,22 +1,37 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { ease, pop, rise } from "../anim";
+import {ease, rise } from "../anim";
+import { popIn } from "../alive/motion";
 import { Icon } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { fitSize, fontStack, useScene, withAlpha } from "../theme";
+import { fitSize, fontStack, pickScale, textLines, useScene, withAlpha } from "../theme";
 
 export const TitleCard: React.FC<PropsOf<"TitleCard">> = ({ title, subtitle, icon }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { style } = useScene();
+  const { style, box } = useScene();
   const { colors, fonts, sizes } = style;
 
-  const iconIn = pop(frame, fps, 2);
+  const iconIn = popIn(frame, 2);
   const titleIn = ease(frame, fps, icon ? 8 : 2, 22);
   const lineIn = ease(frame, fps, 18, 24);
   const subIn = ease(frame, fps, 22, 22);
-  const titleSize = fitSize(sizes.title, title.length, 24, 0.62);
-  const iconSize = Math.round(sizes.title * 1.45);
+  const baseTitle = fitSize(sizes.title, title.length, 24, 0.62);
+  const subBase = Math.round(sizes.body * 1.1);
+  const maxW = Math.min(1500, box.width);
+  // Largest scale at which icon, title (≤ 3 lines) and subtitle fit the content box.
+  const k = pickScale(
+    (s) =>
+      textLines(title, baseTitle * s, maxW, 0.56) <= 3 &&
+      (icon ? sizes.title * 1.45 * s + 44 : 0) +
+        textLines(title, baseTitle * s, maxW, 0.56) * baseTitle * s * 1.06 +
+        42 +
+        (subtitle ? 32 + textLines(subtitle, subBase * s, Math.min(1300, box.width), 0.5) * subBase * s * 1.35 : 0) <=
+        box.height,
+    [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65],
+  );
+  const titleSize = Math.round(baseTitle * k);
+  const iconSize = Math.round(sizes.title * 1.45 * k);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
@@ -47,7 +62,7 @@ export const TitleCard: React.FC<PropsOf<"TitleCard">> = ({ title, subtitle, ico
           lineHeight: 1.06,
           letterSpacing: "-0.025em",
           color: colors.text,
-          maxWidth: 1500,
+          maxWidth: maxW,
           textWrap: "balance",
           ...rise(titleIn, 40),
         }}
@@ -60,11 +75,11 @@ export const TitleCard: React.FC<PropsOf<"TitleCard">> = ({ title, subtitle, ico
           style={{
             marginTop: 32,
             fontFamily: fontStack(fonts.body),
-            fontSize: Math.round(sizes.body * 1.1),
+            fontSize: Math.round(subBase * k),
             fontWeight: 400,
             lineHeight: 1.35,
             color: withAlpha(colors.text, 0.78),
-            maxWidth: 1300,
+            maxWidth: Math.min(1300, box.width),
             textWrap: "balance",
             ...rise(subIn, 24),
           }}

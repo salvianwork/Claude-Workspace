@@ -192,6 +192,24 @@ export const RecapProps = z
   })
   .strict();
 
+// ---------- presenter ----------
+
+export const PRESENTER_POSES = ["idle", "talk", "point-left", "point-right", "think", "surprised", "celebrate", "wave"] as const;
+export const PRESENTER_EXPRESSIONS = ["neutral", "happy", "curious", "surprised", "thinking"] as const;
+
+export type PresenterPose = (typeof PRESENTER_POSES)[number];
+export type PresenterExpression = (typeof PRESENTER_EXPRESSIONS)[number];
+
+/** The presenter line of a scene. position "none" hides him and gives the content the full width. */
+export const PresenterSchema = z
+  .object({
+    pose: z.enum(PRESENTER_POSES).default("idle"),
+    expression: z.enum(PRESENTER_EXPRESSIONS).default("neutral"),
+    position: z.enum(["left", "right", "none"]).default("none"),
+    size: z.enum(["large", "small"]).default("small"),
+  })
+  .strict();
+
 // ---------- scenes ----------
 
 const sceneBase = {
@@ -200,6 +218,9 @@ const sceneBase = {
   durationInFrames: z.number().int().min(30).max(30 * 60 * 5),
   /** Spoken text, shown as captions. Empty string = no captions. */
   narration: z.string().max(2000).default(""),
+  presenter: PresenterSchema.default({ pose: "idle", expression: "neutral", position: "none", size: "small" }),
+  /** Mouth opening per frame of the scene (0 = closed, 1 = wide), from the voice loudness. [] = closed. */
+  mouth: z.array(z.number().min(0).max(1)).max(30 * 60 * 5).default([]),
 };
 
 const scene = <T extends TemplateName, P extends z.ZodType>(template: T, props: P) =>
@@ -228,5 +249,6 @@ export const VideoSchema = z.object({
 
 export type Style = z.infer<typeof StyleSchema>;
 export type Scene = z.infer<typeof SceneSchema>;
+export type Presenter = z.infer<typeof PresenterSchema>;
 export type VideoProps = z.infer<typeof VideoSchema>;
 export type PropsOf<T extends TemplateName> = Extract<Scene, { template: T }>["props"];

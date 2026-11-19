@@ -1,23 +1,27 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { ease, pop, rise } from "../anim";
+import {ease, rise } from "../anim";
+import { popIn } from "../alive/motion";
 import type { PropsOf } from "../schema";
-import { fitSize, fontStack, useScene, withAlpha } from "../theme";
+import { fitSize, fontStack, pickScale, textLines, useScene, withAlpha } from "../theme";
 
 export const Quote: React.FC<PropsOf<"Quote">> = ({ text, attribution }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { style, durationInFrames } = useScene();
+  const { style, durationInFrames, box } = useScene();
   const { colors, fonts, sizes } = style;
 
   const words = text.split(/\s+/).filter(Boolean);
   // Words fade in one after another over the first ~45 % of the scene.
   const wordsEnd = Math.max(20, durationInFrames * 0.45);
-  const markIn = pop(frame, fps, 0);
+  const markIn = popIn(frame, 0);
   const attrStart = Math.round(wordsEnd * 0.8);
   const attrIn = ease(frame, fps, attrStart, 20);
   const line = ease(frame, fps, attrStart, 24);
-  const size = fitSize(Math.round(sizes.heading * 1.15), text.length, 80, 0.7);
+  const base = fitSize(Math.round(sizes.heading * 1.15), text.length, 80, 0.7);
+  const maxW = Math.min(1450, box.width);
+  const k = pickScale((s) => 120 + textLines(text, base * s, maxW, 0.52) * base * s * 1.3 + 48 + sizes.body * 1.4 <= box.height, [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]);
+  const size = Math.round(base * k);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -36,7 +40,7 @@ export const Quote: React.FC<PropsOf<"Quote">> = ({ text, attribution }) => {
       </div>
       <div
         style={{
-          maxWidth: 1450,
+          maxWidth: maxW,
           textAlign: "center",
           fontFamily: fontStack(fonts.heading),
           fontSize: size,

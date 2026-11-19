@@ -1,10 +1,11 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { ease, pop, revealFrames } from "../anim";
+import {ease, revealFrames } from "../anim";
+import { popIn } from "../alive/motion";
 import { Heading } from "../components/Heading";
 import { IconBadge } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { contentBox, fontStack, headingHeight, pickScale, useScene, withAlpha } from "../theme";
+import { fontStack, headingHeight, pickScale, useScene, withAlpha } from "../theme";
 
 type Column = PropsOf<"Comparison">["left"];
 
@@ -15,8 +16,8 @@ const BODY = 1.05; // point text, × style body size
 const TITLE = 0.95; // column title, × style heading size
 
 /** Rough height of a card at text scale `s` (average glyph ≈ 0.5em body, 0.55em heading). */
-const cardHeight = (col: Column, body: number, heading: number, s: number) => {
-  const inner = (1728 - GAP) / 2 - 2 * PAD;
+const cardHeight = (col: Column, body: number, heading: number, s: number, width: number) => {
+  const inner = (width - GAP) / 2 - 2 * PAD;
   const size = body * BODY * s;
   const titleSize = heading * TITLE * s;
   const titleW = inner - (col.icon ? ICON + 24 : 0);
@@ -75,7 +76,7 @@ const Card: React.FC<{ col: Column; color: string; enter: number; starts: number
       <div style={{ display: "flex", flexDirection: "column", gap: Math.round(28 * scale) }}>
         {col.points.map((p, i) => {
           const pt = ease(frame, fps, starts[i], 18);
-          const dot = pop(frame, fps, starts[i]);
+          const dot = popIn(frame, starts[i]);
           return (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 20, opacity: pt, transform: `translateY(${(1 - pt) * 16}px)` }}>
               <div
@@ -102,8 +103,7 @@ const Card: React.FC<{ col: Column; color: string; enter: number; starts: number
 
 export const Comparison: React.FC<PropsOf<"Comparison">> = ({ title, left, right }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const { style, durationInFrames } = useScene();
+  const { style, durationInFrames, box } = useScene();
   const { colors, fonts } = style;
   // Left card and its points first, then the right card and its points.
   const n = left.points.length + right.points.length;
@@ -111,12 +111,12 @@ export const Comparison: React.FC<PropsOf<"Comparison">> = ({ title, left, right
   const leftStarts = all.slice(0, left.points.length);
   const rightEnter = all[left.points.length];
   const rightStarts = all.slice(left.points.length + 1);
-  const vs = pop(frame, fps, rightEnter);
+  const vs = popIn(frame, rightEnter);
 
   // Cards fill the height above the captions; text is as large as fits (estimated wraps).
-  const available = contentBox(style).height - (title ? headingHeight(style, title) + 44 : 0);
+  const available = box.height - (title ? headingHeight(style, title, false, box.width) + 44 : 0);
   const scale = pickScale(
-    (s) => Math.max(...[left, right].map((c) => cardHeight(c, style.sizes.body, style.sizes.heading, s))) <= available - 40, // 40 px slack: estimates are rough
+    (s) => Math.max(...[left, right].map((c) => cardHeight(c, style.sizes.body, style.sizes.heading, s, box.width))) <= available - 40, // 40 px slack: estimates are rough
     [1.1, 1.05, 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7],
   );
 

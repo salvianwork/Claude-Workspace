@@ -3,7 +3,7 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import { ease, progress, revealFrames } from "../anim";
 import { Heading } from "../components/Heading";
 import type { PropsOf } from "../schema";
-import { contentBox, fontStack, headingHeight, useScene, withAlpha } from "../theme";
+import { fontStack, headingHeight, useScene, withAlpha } from "../theme";
 
 /** Round axis ticks covering [min, max] (always including 0). */
 export const niceTicks = (min: number, max: number, target = 4): number[] => {
@@ -36,20 +36,20 @@ export const formatValue = (v: number, digits: number, unit?: string) => {
   return s;
 };
 
-const W = 1728;
 const PLOT_LEFT = 120;
 const PLOT_RIGHT = 40;
 
 export const Chart: React.FC<PropsOf<"Chart">> = ({ title, type, labels, values, unit, highlight }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { style, durationInFrames } = useScene();
+  const { style, durationInFrames, box } = useScene();
+  const W = box.width;
   const { colors, fonts, sizes } = style;
   const n = values.length;
   const abs = values.map(Math.abs);
   const hi = highlight ?? abs.indexOf(Math.max(...abs));
 
-  const H = Math.round(contentBox(style).height - headingHeight(style, title) - 28); // fills the space above the captions
+  const H = Math.round(box.height - headingHeight(style, title, false, box.width) - 28); // fills the space above the captions
   const top = 56;
   const bottom = 64;
   const plotW = W - PLOT_LEFT - PLOT_RIGHT;

@@ -1,10 +1,11 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { ease, pop, progress, revealFrames } from "../anim";
+import {ease, progress, revealFrames } from "../anim";
+import { popIn } from "../alive/motion";
 import { Heading } from "../components/Heading";
 import { Icon } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { contentBox, fontStack, headingHeight, textLines, useScene, withAlpha } from "../theme";
+import { fontStack, headingHeight, textLines, useScene, withAlpha } from "../theme";
 
 type Node = PropsOf<"Diagram">["nodes"][number];
 
@@ -14,11 +15,10 @@ const PILL_H = 104; // text-only node minimum height
 export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, highlight }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { style, durationInFrames } = useScene();
+  const { style, durationInFrames, box } = useScene();
   const { colors, fonts, sizes } = style;
 
-  const box = contentBox(style);
-  const headingH = title ? headingHeight(style, title) + 24 : 0;
+  const headingH = title ? headingHeight(style, title, false, box.width) + 24 : 0;
   const W = box.width;
   const H = box.height - headingH;
 
@@ -48,6 +48,12 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
     for (const a of nodes) for (const b of nodes) {
       if (a !== b && Math.abs(a.x - b.x) < 0.15 && a.y < b.y) {
         if (rawY(b) - rawY(a) < extentBottom(a) + extentTop(b) + 16) fits = false;
+      }
+      // Neighbours on the same row need room for a visible arrow between them (narrow boxes
+      // beside the presenter): circle + label pill + a visible arrow (~190 px).
+      const span = W - 2 * (Math.max(circle / 2, labelW / 2) + 8);
+      if (a !== b && Math.abs(a.y - b.y) < 0.2 && a.x < b.x && (a.icon || b.icon)) {
+        if ((b.x - a.x) * span < circle + 190) fits = false;
       }
     }
     return { circle, labelSize, pillHeight, extentTop, extentBottom, rawY, fits };
@@ -124,7 +130,17 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
             const angle = (Math.atan2(uy, ux) * 180) / Math.PI;
             return (
               <g key={i} opacity={t > 0 ? 1 : 0}>
-                <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={color} strokeWidth={7} strokeLinecap="round" />
+                {/* the line draws itself from the source node to the target */}
+                <path
+                  d={`M ${x1} ${y1} L ${x2} ${y2}`}
+                  stroke={color}
+                  strokeWidth={7}
+                  strokeLinecap="round"
+                  fill="none"
+                  pathLength={1}
+                  strokeDasharray="1 1"
+                  strokeDashoffset={1 - t}
+                />
                 <polygon
                   points="0,0 -30,-16 -30,16"
                   fill={color}
@@ -168,7 +184,7 @@ export const Diagram: React.FC<PropsOf<"Diagram">> = ({ title, nodes, arrows, hi
 
         {nodes.map((n) => {
           const { x, y } = pos(n);
-          const t = pop(frame, fps, reveal.get(n.id)!);
+          const t = popIn(frame, reveal.get(n.id)!);
           const fade = ease(frame, fps, reveal.get(n.id)!, 14);
           const isActive = active === n.id;
           const ring = isActive ? colors.accent : withAlpha(colors.primary, 0.7);

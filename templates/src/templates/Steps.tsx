@@ -1,24 +1,25 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { ease, pop, revealFrames } from "../anim";
+import {ease, revealFrames } from "../anim";
+import { popIn } from "../alive/motion";
 import { Heading } from "../components/Heading";
 import { Icon } from "../components/Icon";
 import type { PropsOf } from "../schema";
-import { contentBox, fontStack, headingHeight, pickScale, textLines, useScene, withAlpha } from "../theme";
+import { fontStack, headingHeight, pickScale, textLines, useScene, withAlpha } from "../theme";
 
 export const Steps: React.FC<PropsOf<"Steps">> = ({ title, steps }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { style, durationInFrames } = useScene();
+  const { style, durationInFrames, box } = useScene();
   const { colors, fonts, sizes } = style;
   const n = steps.length;
   const starts = revealFrames(n, durationInFrames, 0.7, 14);
   const current = starts.filter((s) => frame >= s).length - 1;
 
   const circle = n >= 6 ? 124 : n >= 5 ? 140 : 156;
-  const colWidth = 1728 / n;
+  const colWidth = box.width / n;
   // Largest text for which the tallest step (estimated wraps) fits above the captions.
-  const available = contentBox(style).height - (title ? headingHeight(style, title) + 64 : 0);
+  const available = box.height - (title ? headingHeight(style, title, false, box.width) + 64 : 0);
   const stepHeight = (s: number, st: (typeof steps)[number]) => {
     const t = sizes.body * (n >= 5 ? 0.95 : 1.1) * s;
     const d = sizes.body * (n >= 5 ? 0.78 : 0.88) * s;
@@ -56,20 +57,33 @@ export const Steps: React.FC<PropsOf<"Steps">> = ({ title, steps }) => {
             background: withAlpha(colors.text, 0.12),
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            top: circle / 2 - 3,
-            left: lineStart,
-            width: lineLen * fill,
-            height: 6,
-            borderRadius: 3,
-            background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})`,
-          }}
-        />
+        {/* the connector draws itself up to the current step */}
+        <svg
+          width={lineLen + 6}
+          height={6}
+          style={{ position: "absolute", top: circle / 2 - 3, left: lineStart - 3, overflow: "visible" }}
+        >
+          <defs>
+            <linearGradient id="steps-line" x1="0" y1="0" x2={lineLen} y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor={colors.primary} />
+              <stop offset="1" stopColor={colors.accent} />
+            </linearGradient>
+          </defs>
+          <path
+            d={`M 3 3 L ${lineLen + 3} 3`}
+            stroke="url(#steps-line)"
+            strokeWidth={6}
+            strokeLinecap="round"
+            fill="none"
+            pathLength={1}
+            strokeDasharray="1 1"
+            strokeDashoffset={1 - fill}
+            opacity={fill > 0.001 ? 1 : 0}
+          />
+        </svg>
         {steps.map((s, i) => {
           const t = ease(frame, fps, starts[i], 20);
-          const badge = pop(frame, fps, starts[i]);
+          const badge = popIn(frame, starts[i]);
           const active = i === current;
           const done = i < current;
           const ring = active ? colors.accent : done ? colors.primary : withAlpha(colors.text, 0.2);

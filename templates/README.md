@@ -10,6 +10,7 @@ npm test                                # schema tests
 npm run stills                          # out/stills/scene-<n>-<Template>.png (frame 30 of each scene)
 npm run stills -- --props=path/to/scenes.json --frame=80%
 npm run render -- out.mp4 --props=path/to/scenes.json   # muted MP4; audio is added later
+npm run character-sheet                 # out/character-sheet.png: every pose, mouth shape, expression
 ```
 
 Props are validated with `VideoSchema` at render time (`src/metadata.ts`): an invalid file stops
@@ -23,6 +24,32 @@ On machines where Remotion cannot download its browser, set `REMOTION_BROWSER_EX
 **Style** (`style.json`): `colors` background, surface, primary, accent, text (hex);
 `fonts` heading, body (bundled offline: Inter, Poppins, Montserrat, Merriweather; anything
 else falls back to Segoe UI/Arial); `sizes` title, heading, body, caption (px).
+
+## Presenter
+
+A curly-haired presenter drawn in SVG (`src/presenter/`; change his look in `look.ts`:
+skin, hair, eye colour, shirt — default the style accent — and glasses). Every scene may carry:
+
+```json
+"presenter": { "pose": "point-left", "expression": "happy", "position": "right", "size": "small" },
+"mouth": [0, 0.12, 0.55, ...]
+```
+
+- `pose`: `idle talk point-left point-right think surprised celebrate wave` (default `idle`);
+  `expression`: `neutral happy curious surprised thinking` (default `neutral`).
+- `position`: `left` / `right` / `none` (default `none` = hidden); `size`: `large` (34 % of the
+  width) / `small` (22 %). He stands on the caption line, faded at the waist. The content gets the
+  remaining width (`contentBox` / `presenterBox` in `theme.ts`), so he never covers content or captions.
+  Rules: `large` on TitleCard, BigNumber, Quote, Recap; `small` or `none` on Diagram, Chart,
+  Comparison. Point towards the content (`point-left` when he stands `right`).
+- `mouth`: loudness per frame of the scene (0–1, from `python -m tools.voice.mouth`); `[]` = closed.
+  <0.15 closed, <0.4 slight, <0.7 open, else wide. `talk` swaps the gesturing hand while he speaks.
+- Alive: blinks every 2–5 s (seeded by the scene id, so renders are identical), breathes, bobs,
+  curls sway. Same position and size in the next scene: he stays and the pose blends over 8 frames;
+  otherwise he slides in/out within the scene's own 12-frame entry/exit (durations never change).
+
+Background shapes drift slowly; icons, numbers and list items pop in (`popIn` in `src/alive/motion.ts`);
+Diagram arrows and the Steps connector draw themselves.
 
 **Icons**: any [lucide](https://lucide.dev/icons) name, e.g. `"flame"`, `"plug-zap"`.
 
