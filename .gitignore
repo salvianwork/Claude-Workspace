@@ -1,0 +1,12 @@
+.superpowers/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+templates/out/
+videos/
+assets/audio/music/*
+assets/audio/sfx/*
+!assets/audio/music/.gitkeep
+!assets/audio/sfx/.gitkeep
