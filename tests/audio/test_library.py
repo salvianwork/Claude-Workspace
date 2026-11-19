@@ -89,8 +89,9 @@ def test_pick_music_prefers_long_enough(root, tmp_path):
     picked, _ = lib.pick_music(root, "calm", 4.0)
     assert picked["id"] == long_["id"]
     # none long enough -> still returns something
-    picked, _ = lib.pick_music(root, "calm", 60.0)
+    picked, warnings = lib.pick_music(root, "calm", 60.0)
     assert picked["id"] == short["id"]
+    assert len(warnings) == 1 and "looped" in warnings[0]
 
 
 def test_missing_mood_falls_back_with_warning(root, tmp_path):

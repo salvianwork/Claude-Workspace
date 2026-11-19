@@ -17,3 +17,15 @@ def test_generate_basic_sfx(tmp_path):
     assert lib.validate(root) == []
     assert basic_sfx.generate_basic_sfx(root) == []
     assert len(lib.load_items(root)) == 6
+
+
+def test_regenerates_missing_wav(tmp_path):
+    root = tmp_path / "audio"
+    root.mkdir()
+    items = basic_sfx.generate_basic_sfx(root)
+    victim = root / items[0]["path"]
+    victim.unlink()
+    assert basic_sfx.generate_basic_sfx(root) == []
+    assert victim.exists()
+    assert len(lib.load_items(root)) == 6
+    assert lib.validate(root) == []

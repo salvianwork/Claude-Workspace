@@ -71,7 +71,11 @@ def generate_basic_sfx(lib_root: Path) -> list[dict]:
     with tempfile.TemporaryDirectory() as tmp:
         for kind in lib.SFX_TYPES:
             name = f"basic-{kind}"
+            dest = lib_root / "sfx" / f"{name}.wav"
             if f"sfx-{name}" in existing:
+                if not dest.exists():  # entry present, file lost: rewrite it
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    sf.write(str(dest), _normalise(_make(kind)), SR, subtype="PCM_16")
                 continue
             f = Path(tmp) / f"{name}.wav"
             sf.write(str(f), _normalise(_make(kind)), SR, subtype="PCM_16")

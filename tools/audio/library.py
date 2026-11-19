@@ -115,7 +115,11 @@ def pick_music(lib_root: Path, mood: str, min_length_s: float) -> tuple[dict, li
 
     def choose(pool: list[dict]) -> dict:
         long_enough = [i for i in pool if i["duration_s"] >= min_length_s]
-        return _lru(long_enough or pool, usage)
+        pick = _lru(long_enough or pool, usage)
+        if not long_enough and pick["duration_s"] < min_length_s:
+            warnings.append(f"track {pick['id']} is {pick['duration_s']:.0f}s, shorter than the "
+                            f"{min_length_s:.0f}s needed; it will be looped")
+        return pick
 
     pool = [i for i in music if mood in i["tags"]]
     if pool:

@@ -8,6 +8,7 @@ templates/out/
 videos/
 assets/audio/music/*
 assets/audio/sfx/*
+!assets/audio/sfx/basic-*.wav
 !assets/audio/music/.gitkeep
 !assets/audio/sfx/.gitkeep
 *.egg-info/
