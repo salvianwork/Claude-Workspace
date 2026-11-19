@@ -95,12 +95,21 @@ def _tool(name: str, fix: str, args: list[str] | None = None) -> Check:
     return Check(name, True, path)
 
 
+def check_espeak_path(path: str | None) -> Check:
+    """espeak-ng on PATH is optional: the voice engine brings its own copy (espeakng_loader)."""
+    if path:
+        return Check("espeak-ng program", True, path)
+    return Check("espeak-ng program", None, "not on PATH (fine: the voice engine has its own copy)",
+                 "Optional: winget install -e --id eSpeak-NG.eSpeak-NG")
+
+
 def _node() -> Check:
     path = shutil.which("node")
     if not path:
         return check_node(None)
     try:
-        v = subprocess.run([path, "--version"], capture_output=True, text=True).stdout.strip()
+        v = subprocess.run([path, "--version"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace").stdout.strip()
     except OSError:
         return check_node(None)
     return check_node(v)
@@ -135,7 +144,8 @@ def run_checks() -> list[Check]:
         _node(),
         _tool("ffmpeg", "winget install -e --id Gyan.FFmpeg (then reopen the terminal)"),
         _tool("ffprobe", "winget install -e --id Gyan.FFmpeg (ffprobe comes with ffmpeg)"),
-        _tool("espeak-ng", "winget install -e --id eSpeak-NG.eSpeak-NG (then reopen the terminal)"),
+        _import_check("espeak-ng (voice helper)", "espeakng_loader", 'pip install -e ".[voice,review,dev]"'),
+        check_espeak_path(shutil.which("espeak-ng")),
         _import_check("kokoro (voice)", "kokoro", 'pip install -e ".[voice,review,dev]"'),
         _import_check("faster-whisper (review)", "faster_whisper", 'pip install -e ".[voice,review,dev]"'),
         _spacy(),

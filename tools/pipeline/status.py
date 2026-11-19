@@ -164,6 +164,10 @@ def _list_runs(videos_root: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to a narrow code page
+    except Exception:  # noqa: BLE001
+        pass
     p = argparse.ArgumentParser(prog="python -m tools.pipeline.status")
     sub = p.add_subparsers(dest="cmd", required=True)
     pi = sub.add_parser("init", help="create a new run folder")

@@ -82,3 +82,17 @@ def test_main_exit_code(monkeypatch, capsys):
     monkeypatch.setattr(cs, "run_checks", lambda: [cs.Check("a", False, "bad", "fix it")])
     assert cs.main() == 1
     assert "fix it" in capsys.readouterr().out
+
+
+def test_espeak_on_path_is_only_a_warning():
+    assert cs.check_espeak_path("/usr/bin/espeak-ng").ok is True
+    c = cs.check_espeak_path(None)
+    assert c.ok is None and "own copy" in c.detail
+
+
+def test_run_checks_needs_espeakng_loader_not_the_program(monkeypatch):
+    monkeypatch.setattr(cs.shutil, "which", lambda name: None)
+    checks = {c.name: c for c in cs.run_checks()}
+    assert checks["espeak-ng program"].ok is None
+    assert "espeak-ng (voice helper)" in checks
+    assert "espeak-ng" not in checks

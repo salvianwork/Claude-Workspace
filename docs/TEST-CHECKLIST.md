@@ -3,6 +3,9 @@
 Tick each box as you go. If something fails, copy the red text and tell Claude Code.
 Start with the setup from `docs\SETUP.md`.
 
+Before you start, make sure **Claude Code is installed** (official page https://claude.ai/download,
+or `npm install -g @anthropic-ai/claude-code`). `claude --version` should print a version number.
+
 ## 1. Setup check
 
 Open a terminal, then:
@@ -27,7 +30,9 @@ python -m tools.check_setup
 
 ## 3. A real video
 
-Open Claude Code in the project folder and type:
+Open a terminal in the project folder, run `.venv\Scripts\activate`, then type `claude` in that
+SAME terminal (Claude Code must start inside the `(.venv)` terminal, or it cannot find the voice).
+In Claude Code, type:
 
 ```
 /make-video "How volcanoes work"
@@ -53,7 +58,8 @@ It works in four steps. At each checkpoint, check these things:
 - [ ] The presenter appears, never covers text or captions, and his mouth moves while he talks.
 - [ ] Music is quiet under the voice; you can always hear the voice clearly.
 - [ ] No more than about one sound effect per scene, and none that drowns a word.
-- [ ] `credits.md` sits next to the video and lists the music used.
+- [ ] `videos\<run>\04-video\credits.md` lists the music and sound effects used (the video
+      itself is `videos\<run>\04-video\out\video.mp4`).
 
 ## 4. If a run stops
 

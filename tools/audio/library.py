@@ -173,6 +173,10 @@ def validate(lib_root: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to a narrow code page
+    except Exception:  # noqa: BLE001
+        pass
     ap = argparse.ArgumentParser(prog="tools.audio.library")
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     sub = ap.add_subparsers(dest="cmd", required=True)

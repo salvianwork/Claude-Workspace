@@ -41,7 +41,8 @@ def validate_scene_timing(scenes_json: dict, manifest: dict) -> list[str]:
 
 def _run(cmd: list[str], cwd: Path, what: str) -> None:
     try:
-        r = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+        r = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
     except OSError as e:
         raise RenderError(f"{what} could not start: {e}") from e
     if r.returncode != 0:
