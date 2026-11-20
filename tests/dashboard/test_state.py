@@ -185,3 +185,15 @@ def test_list_runs_sorted_newest_first(tmp_path):
     assert rows[0] == {"run": "b-new", "topic": "How volcanoes work", "step": "done",
                        "state": "done", "updated": "2026-11-20T11:30:00"}
     assert list_runs(tmp_path / "missing") == []
+
+
+def test_done_word_boundary_and_unreadable_status(tmp_path):
+    from tools.dashboard.state import _kind
+    assert _kind("abandoned") is None
+    assert _kind("all done") == "done"
+    run = tmp_path / "r"
+    shutil.copytree(FIX / "gate1-waiting", run)
+    (run / "status.json").unlink()
+    (run / "status.json").mkdir()  # reading it raises an OSError, not a decode error
+    assert run_state(run, load_team(Path(__file__).resolve().parents[2]))["state"] == "starting"
+    assert list_runs(tmp_path) == []

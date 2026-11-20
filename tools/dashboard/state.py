@@ -69,7 +69,7 @@ def list_runs(videos_root: Path) -> list[dict]:
             continue
         try:
             s = load_status(d)
-        except RunStateError:
+        except (RunStateError, OSError):
             continue
         rows.append({"run": d.name, "topic": s.get("topic", ""), "step": s.get("step", ""),
                      "state": s.get("state", ""), "updated": _last_time(s)})
@@ -105,7 +105,7 @@ def _kind(event: str) -> str | None:
         return "fix"
     if "waiting for owner" in low:
         return "owner"
-    if "done" in low:
+    if re.search(r"\bdone\b", low):
         return "done"
     return None
 
@@ -232,7 +232,7 @@ def _video(run_dir: Path) -> dict | None:
 
 def _done_time(history) -> datetime | None:
     for h in reversed(history if isinstance(history, list) else []):
-        if isinstance(h, dict) and "done" in str(h.get("event", "")).lower():
+        if isinstance(h, dict) and re.search(r"\bdone\b", str(h.get("event", "")).lower()):
             return _parse_time(h.get("time"))
     return None
 
@@ -245,7 +245,7 @@ def run_state(run_dir: Path, team: dict, now: datetime | None = None) -> dict:
             "answered": None, "summary": None, "voice": None, "events": [], "video": None}
     try:
         status = load_status(run_dir)
-    except RunStateError:
+    except (RunStateError, OSError):
         return base
     step, state = str(status.get("step", "story")), str(status.get("state", "working"))
     history = status.get("history")

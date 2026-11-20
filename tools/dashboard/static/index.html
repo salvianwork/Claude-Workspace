@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body><h1>Studio</h1><pre id="out">loading...</pre>
+<script>
+fetch("/api/runs").then(r => r.json()).then(async runs => {
+  const first = runs[0];
+  const st = first ? await (await fetch("/api/state?run=" + encodeURIComponent(first.run))).json() : null;
+  document.getElementById("out").textContent = JSON.stringify({runs, state: st}, null, 2);
+});
+</script></body></html>
