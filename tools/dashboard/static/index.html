@@ -114,6 +114,23 @@
   .footer { display: flex; justify-content: flex-end; margin-top: auto; }
   .idle { font-size: 22px; line-height: 1.5; }
   .idle code { color: var(--c-waiting); }
+  .box { max-height: 34vh; overflow-y: auto; }
+  /* short screens (1366x768 laptops): keep buttons + text box above the fold; text stays 18px */
+  @media (max-height: 860px) {
+    #board { gap: 10px; padding-top: 12px; }
+    section[data-part="controls"] { gap: 10px; }
+    .topic { font-size: 22px; margin-top: 0; }
+    h2.waiting { font-size: 26px; }
+    .req-title { font-size: 20px; margin-top: 2px; }
+    .label { margin: 6px 0 2px; }
+    .links { margin-top: 4px; }
+    .box { max-height: 26vh; padding: 6px 10px; }
+    .btn { min-height: 52px; padding: 8px 12px; }
+    .btn.play { min-height: 46px; }
+    .decisions { gap: 12px 14px; }
+    #reply { height: 78px; min-height: 78px; }
+    #reply-wrap label { margin-bottom: 2px; }
+  }
   @media (max-width: 900px) {
     body { grid-template-columns: 1fr; overflow: auto; }
     #studio { height: 40vh; } #board { height: auto; border-left: 0; border-top: 6px solid var(--c-ink); }

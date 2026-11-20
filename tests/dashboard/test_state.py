@@ -197,3 +197,39 @@ def test_done_word_boundary_and_unreadable_status(tmp_path):
     (run / "status.json").mkdir()  # reading it raises an OSError, not a decode error
     assert run_state(run, load_team(Path(__file__).resolve().parents[2]))["state"] == "starting"
     assert list_runs(tmp_path) == []
+
+
+def test_waiting_events_read_as_waiting_for_you():
+    assert st("gate1-waiting")["events"][-1]["text"] == "Waiting for you: script approval"
+    assert st("gate2-waiting")["events"][-1]["text"] == "Waiting for you: voice approval"
+    stuck = st("stuck-gate3")["events"][-1]
+    assert stuck["text"] == "Waiting for you: stuck gate 3" and stuck["kind"] == "owner"
+
+
+@pytest.mark.parametrize("agent,detail,want", [
+    ("story", "gate 1: script", "script approval"),
+    ("voice", "gate 2: voice", "voice approval"),
+    ("story", "gate 1: changed lines for owner-gate-2-1", "changed lines approval"),
+    ("animator", "final video", "final video"),
+    ("orchestrator", "question", "a question"),
+    ("animator", "", "final video"),
+])
+def test_waiting_event_wording(tmp_path, agent, detail, want):
+    run = tmp_path / "r"
+    shutil.copytree(FIX / "gate1-waiting", run)
+    data = json.loads((run / "status.json").read_text(encoding="utf-8"))
+    data["history"].append({"time": "2026-11-20T10:30:00", "agent": agent,
+                            "event": "waiting for owner", "detail": detail})
+    (run / "status.json").write_text(json.dumps(data), encoding="utf-8")
+    ev = run_state(run, TEAM, now=NOW)["events"][-1]
+    assert ev == {"time": "10:30", "agent": agent, "text": f"Waiting for you: {want}", "kind": "owner"}
+
+
+def test_waiting_event_wording_from_progress_log(tmp_path):
+    run = tmp_path / "r"
+    shutil.copytree(FIX / "gate2-waiting", run)
+    data = json.loads((run / "status.json").read_text(encoding="utf-8"))
+    del data["history"]
+    (run / "status.json").write_text(json.dumps(data), encoding="utf-8")
+    ev = run_state(run, TEAM, now=NOW)["events"]
+    assert ev[-1]["text"] == "Waiting for you: voice approval" and ev[-1]["kind"] == "owner"

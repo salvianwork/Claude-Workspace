@@ -23,6 +23,7 @@ const context = await browser.newContext({ viewport: { width: 1920, height: 1080
 await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
 const page = await context.newPage();
 page.on("pageerror", (e) => out.errors.push(String(e)));
+page.on("dialog", (d) => { out.errors.push("dialog: " + d.message()); d.dismiss().catch(() => {}); });
 page.on("console", (m) => { if (m.type() === "error") out.errors.push("console: " + m.text()); });
 
 const T = 8000;
@@ -42,6 +43,16 @@ try {
       case "buttons": r = await page.locator(s.selector || "#board button:visible").allInnerTexts(); break;
       case "text": r = await page.locator(s.selector).first().innerText(); break;
       case "eval": r = await page.evaluate(s.js); break;
+      case "reload": await page.reload(); break;
+      case "hang_once": {
+        // the first matching request never gets an answer (a hung server)
+        let hung = false;
+        await page.route(s.pattern, (route) => {
+          if (!hung) { hung = true; return; }
+          return route.continue();
+        });
+        break;
+      }
       case "sleep": await page.waitForTimeout(s.ms); break;
       case "mock_answer":
         await page.route("**/api/answer", (route) =>

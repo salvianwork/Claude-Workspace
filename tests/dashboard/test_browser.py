@@ -23,7 +23,7 @@ TOKEN = "browsertoken"
 
 
 @contextmanager
-def studio(tmp_path, runs=(), answers=None):
+def studio(tmp_path, runs=(), answers=None, mutate=None):
     """Serve a tmp project holding copies of the given fixture runs."""
     (tmp_path / "team.json").write_text((REPO / "team.json").read_text(encoding="utf-8"), encoding="utf-8")
     (tmp_path / "videos").mkdir(exist_ok=True)
@@ -33,6 +33,8 @@ def studio(tmp_path, runs=(), answers=None):
         board = tmp_path / "videos" / run / "board"
         board.mkdir(parents=True, exist_ok=True)
         (board / f"answer-{rid}.json").write_text(json.dumps(ans), encoding="utf-8")
+    if mutate:
+        mutate(tmp_path / "videos")
     server = make_server(tmp_path, port=0, token=TOKEN)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
@@ -243,7 +245,9 @@ LAYOUT_JS = """(() => {
   const small = [...b.querySelectorAll('*')].filter(e => e.childNodes.length && [...e.childNodes]
       .some(n => n.nodeType === 3 && n.textContent.trim()) && e.offsetParent !== null
       && parseFloat(getComputedStyle(e).fontSize) < 18).map(e => e.tagName + ':' + e.textContent.slice(0, 30));
-  return {overflowX: b.scrollWidth > b.clientWidth + 1,
+  const must = [...document.querySelectorAll('#board button.decision, #reply')].filter(e => e.offsetParent !== null);
+  return {overflowX: b.scrollWidth > b.clientWidth + 1, controls: must.length,
+          belowFold: must.filter(e => e.getBoundingClientRect().bottom > innerHeight).map(e => e.id || e.textContent),
           pageOverflowX: document.documentElement.scrollWidth > innerWidth + 1, small};
 })()"""
 
@@ -259,5 +263,62 @@ def test_board_layout_every_state(tmp_path, state):
             {"op": "eval", "js": LAYOUT_JS},
         ])
         big, small = out["results"][2], out["results"][4]
-        assert big == {"overflowX": False, "pageOverflowX": False, "small": []}
+        assert (big["overflowX"], big["pageOverflowX"], big["small"], big["belowFold"]) == (False, False, [], [])
         assert not small["overflowX"] and not small["pageOverflowX"]
+        if state in ("gate1-waiting", "gate2-waiting", "stuck-gate3"):
+            assert small["controls"] >= 3 and small["belowFold"] == [], small  # buttons + text box above the fold
+
+
+def test_board_key_survives_reload(tmp_path):
+    with studio(tmp_path, ["gate1-waiting"]) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "WAITING FOR YOU"},
+            {"op": "reload"},
+            {"op": "wait_text", "text": "WAITING FOR YOU"},
+            {"op": "eval", "js": "location.href"},
+            {"op": "click", "name": "Approve"},
+            {"op": "wait_text", "text": "Sent ✓ — Quill is on it"},
+        ])
+        assert "key=" not in out["results"][4]
+        assert answer_file(s, "gate1-waiting", "gate-1-1").exists()
+
+
+def test_board_recovers_from_hung_request(tmp_path):
+    with studio(tmp_path, ["gate1-waiting"]) as s:
+        drive([
+            {"op": "hang_once", "pattern": "**/api/state*"},
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "WAITING FOR YOU", "timeout": 20000},
+        ])
+
+
+XSS = '<img src=x onerror=alert(1)>'
+
+
+def _poison(videos):
+    run = videos / "stuck-gate3"
+    req = json.loads((run / "board" / "request.json").read_text(encoding="utf-8"))
+    req.update(title="T " + XSS, body="B " + XSS, links=[{"label": "L " + XSS, "path": "01-script/script.md"}])
+    (run / "board" / "request.json").write_text(json.dumps(req), encoding="utf-8")
+    review = run / "review" / "gate-3-round-3.md"
+    review.write_text(f"# Gate 3, round 3: FIX\n## Must-fix\n- R {XSS} `{XSS}`\n", encoding="utf-8")
+    status = json.loads((run / "status.json").read_text(encoding="utf-8"))
+    status["topic"] = "Topic " + XSS
+    (run / "status.json").write_text(json.dumps(status), encoding="utf-8")
+
+
+def test_board_escapes_html(tmp_path):
+    with studio(tmp_path, ["stuck-gate3"], mutate=_poison) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "T " + XSS},
+            {"op": "wait_text", "text": "R " + XSS},
+            {"op": "sleep", "ms": 500},
+            {"op": "count", "selector": "img"},
+            {"op": "text", "selector": "#board"},
+        ])
+        assert out["results"][4] == 0
+        text = out["results"][5]
+        for want in ("Topic " + XSS, "B " + XSS, "L " + XSS):
+            assert want in text

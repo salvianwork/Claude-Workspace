@@ -31,6 +31,8 @@ CREDITS = "04-video/credits.md"
 _REVIEW_RE = re.compile(r"^gate-1-round-(\d+)\.md$")
 _REVIEW_HEAD_RE = re.compile(r"^#\s*Gate\s+1,\s*round\s+(\d+)\s*:\s*(PASS|FIX)\b", re.I)
 _GATE_EVENT_RE = re.compile(r"gate\s+(\d+)\s+(PASS|FIX)", re.I)
+_STUCK_RE = re.compile(r"\bgate\s+(\d+)\s+stuck\b", re.I)
+_OWNER_FALLBACK = {"story": "script approval", "voice": "voice approval", "animator": "final video"}
 _LOG_RE = re.compile(r"^(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d(?::\d\d)?)\s*\|\s*\[\d/\d\]\s*(\w+)\s*\|\s*(.*)$")
 
 
@@ -95,8 +97,31 @@ def _name(team: dict, agent: str) -> str:
     return "The studio" if agent in ("orchestrator", "") else str(agent).capitalize()
 
 
+def _is_waiting(event: str) -> bool:
+    low = event.lower()
+    return "waiting for owner" in low or low.startswith("waiting_owner")
+
+
+def _owner_text(event: str, detail: str, agent: str) -> str | None:
+    """'Waiting for you: <what>' for owner checkpoints, else None."""
+    m = _STUCK_RE.search(event)
+    if m:
+        return f"Waiting for you: stuck gate {m.group(1)}"
+    if not _is_waiting(event):
+        return None
+    low = detail.lower()
+    for key, what in (("changed lines", "changed lines approval"), ("script", "script approval"),
+                      ("voice", "voice approval"), ("final", "final video"), ("video", "final video"),
+                      ("question", "a question")):
+        if key in low:
+            return f"Waiting for you: {what}"
+    return f"Waiting for you: {_OWNER_FALLBACK.get(agent, 'your answer')}"
+
+
 def _kind(event: str) -> str | None:
     low = event.lower()
+    if _STUCK_RE.search(event) or _is_waiting(event):
+        return "owner"
     if "started" in low:
         return "start"
     if "PASS" in event:
@@ -111,6 +136,9 @@ def _kind(event: str) -> str | None:
 
 
 def _event_text(team: dict, agent: str, event: str, detail: str) -> str:
+    owner = _owner_text(event, detail, agent)
+    if owner:
+        return owner
     name = _name(team, agent)
     m = _GATE_EVENT_RE.search(event)
     if m and agent == "reviewer":

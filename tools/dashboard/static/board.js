@@ -13,16 +13,14 @@ const NEEDS_TEXT = {
   directions: "Type your directions first, then press Give directions.",
   answer: "Type your answer first, then press Send answer.",
 };
-const BOX_LABEL = {
-  changes: "Your changes (needed for Request changes)",
-  directions: "Your directions (needed for Give directions)",
-  answer: "Your answer",
-};
+const BOX_LABEL = { changes: "Your changes:", directions: "Your directions:", answer: "Your answer:" };
 const KEY_MSG = "Studio key missing — reopen the link printed by <code>python -m tools.dashboard</code>";
 const TRACK = { story: "STORY", owner: "YOU", voice: "VOICE", design: "DESIGN", animator: "ANIMATE" };
 const THING = { story: "script", voice: "voice-over", design: "storyboard", animator: "video" };
 const STUCK_ROLE = { 1: "story", 2: "voice", 3: "design", 4: "animator" };
 const CHIME_KEY = "studio.chime";
+const KEY_STORE = "studio.key"; // sessionStorage: survives a reload in this tab only
+const FETCH_TIMEOUT_MS = 10000;
 
 // 16x16 pixel clapperboard drawn from rects (no emoji font needed).
 const CLAPPER = (() => {
@@ -202,7 +200,7 @@ function stuckExtras(st, req) {
   const path = `review/gate-${n}-round-${str(st.round, MAX_ROUNDS)}.md`;
   const md = runText(st.run, path, req.id);
   const reviewer = nameOf(st, "reviewer");
-  let h = `<p class="body">${esc(reviewer)} still finds problems after ${esc(st.round)} rounds.</p><div class="label">OPEN MUST-FIX ITEMS</div><div class="box">`;
+  let h = `<p class="body">${esc(reviewer)}: still <span class="fix">FIX</span> after ${esc(st.round)} rounds.</p><div class="label">OPEN MUST-FIX ITEMS</div><div class="box">`;
   if (md === undefined) h += `<p>Loading ${esc(reviewer)}'s review…</p>`;
   else if (md === null) h += `<p>${esc(reviewer)}'s review file was not found.</p>`;
   else {
@@ -304,7 +302,8 @@ function renderControls(st) {
     `<button class="btn decision ${o}${S.armed === o ? " armed" : ""}" data-act="decide" data-decision="${o}"${S.sending ? " disabled" : ""}><span aria-hidden="true">${ICONS[o]}</span>${LABELS[o]}</button>`
   ).join(""));
   const need = opts.find((o) => BOX_LABEL[o]);
-  P.label.textContent = need ? BOX_LABEL[need] : "Note (optional)";
+  P.label.textContent = need ? BOX_LABEL[need] : "Note (optional):";
+  P.reply.placeholder = need ? `Needed for ${LABELS[need]} — e.g. “make scene 3 simpler for kids”` : "Optional note";
   P.reply.disabled = S.sending;
   setHTML(P.msg, S.msg ? `<span class="${S.msg.err ? "err" : ""}">${S.msg.html}</span>` : "");
   P.msg.className = "msg" + (S.msg && S.msg.err ? " err" : "");
@@ -356,7 +355,7 @@ async function decide(decision) {
   setMsg(null);
   let msg = null;
   try {
-    const r = await fetch("/api/answer", {
+    const r = await fetchT("/api/answer", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Studio-Key": S.key },
       body: JSON.stringify({ run: str(st.run), id: str(req.id), decision, text }),
@@ -439,6 +438,19 @@ function toggleChime() {
 }
 
 // ---------- polling ----------
+// fetch that gives up after FETCH_TIMEOUT_MS so a hung server can't stall polling
+async function fetchT(url, opts = {}) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctl.signal });
+    const body = await r.text(); // read inside the timeout too
+    return { ok: r.ok, status: r.status, json: async () => JSON.parse(body) };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 function pickRun(runs) {
   const waiting = (r) => r.state === "waiting_owner" || r.state === "failed";
   const cur = runs.find((r) => r.run === S.run);
@@ -452,14 +464,14 @@ async function tick() {
   if (document.hidden || S.busy) return;
   S.busy = true;
   try {
-    const rr = await fetch("/api/runs");
+    const rr = await fetchT("/api/runs");
     const data = rr.ok ? await rr.json() : [];
     S.runs = (Array.isArray(data) ? data : []).filter((r) => r && r.run !== null && r.run !== undefined)
       .map((r) => ({ run: str(r.run), topic: str(r.topic), step: str(r.step), state: str(r.state) }));
     pickRun(S.runs);
     let st = null;
     if (S.run) {
-      const r = await fetch("/api/state?run=" + encodeURIComponent(S.run));
+      const r = await fetchT("/api/state?run=" + encodeURIComponent(S.run));
       st = r.ok ? await r.json() : null;
       if (st && typeof st !== "object") st = null;
     }
@@ -482,6 +494,10 @@ export function startBoard(el) {
   S.el = el;
   const url = new URL(location.href);
   S.key = url.searchParams.get("key") || "";
+  try {
+    if (S.key) sessionStorage.setItem(KEY_STORE, S.key);
+    else S.key = sessionStorage.getItem(KEY_STORE) || "";
+  } catch { /* storage blocked: memory only */ }
   if (url.searchParams.has("key")) {
     url.searchParams.delete("key");
     history.replaceState(null, "", url.pathname + url.search + url.hash);
