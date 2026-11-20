@@ -1,11 +1,152 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Studio</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body><h1>Studio</h1><pre id="out">loading...</pre>
-<script>
-fetch("/api/runs").then(r => r.json()).then(async runs => {
-  const first = runs[0];
-  const st = first ? await (await fetch("/api/state?run=" + encodeURIComponent(first.run))).json() : null;
-  document.getElementById("out").textContent = JSON.stringify({runs, state: st}, null, 2);
-});
-</script></body></html>
+<html lang="en"><head><meta charset="utf-8"><title>Video Agent Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --font: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", Menlo, "Liberation Mono", monospace;
+    --board-w: clamp(440px, 34vw, 680px);
+    /* fallbacks; palette.js overwrites these on load */
+    --c-ink: #0b1410; --c-board: #1c3426; --c-text: #f2ecd8;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--board-w);
+    background: var(--c-ink); color: var(--c-text); font: 18px/1.45 var(--font);
+    overflow: hidden;
+  }
+  #studio { width: 100%; height: 100vh; display: block; image-rendering: pixelated; }
+
+  /* ---------- board ---------- */
+  #board {
+    height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 16px 22px 24px;
+    background: var(--c-board); border-left: 6px solid var(--c-ink);
+    box-shadow: inset 4px 0 0 var(--c-board-lift);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #board > section:empty, [hidden] { display: none !important; }
+  section[data-part="controls"] { display: flex; flex-direction: column; gap: 14px; }
+  .brand { color: var(--c-label); font-weight: 700; letter-spacing: .04em; display: flex;
+           justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .topic { font-size: 24px; font-weight: 700; margin-top: 4px; line-height: 1.25; overflow-wrap: anywhere; }
+  .meta { color: var(--c-dim); overflow-wrap: anywhere; }
+  select#run-picker {
+    font: inherit; font-size: 18px; width: 100%; margin-top: 8px; padding: 8px 10px;
+    background: var(--c-board-deep); color: var(--c-text); border: 3px solid var(--c-ink);
+    box-shadow: 3px 3px 0 var(--c-ink); border-radius: 0;
+  }
+  .chime { font: inherit; font-size: 18px; padding: 4px 10px; background: var(--c-board-deep);
+           color: var(--c-dim); border: 3px solid var(--c-ink); cursor: pointer; border-radius: 0; }
+  .chime[aria-pressed="true"] { color: var(--c-text); }
+
+  .track { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0; padding: 0; }
+  .track li {
+    padding: 1px 5px; line-height: 1.4; white-space: nowrap; border: 3px solid var(--c-ink); background: var(--c-board-lift);
+    color: var(--c-dim); font-weight: 700; display: flex; align-items: center; gap: 4px;
+  }
+  .track li.done { background: var(--c-approve-lo); color: #e6ffe6; }
+  .track li.active { background: var(--c-waiting); color: var(--c-ink); box-shadow: 3px 3px 0 var(--c-ink); }
+  .icon { width: 22px; height: 22px; shape-rendering: crispEdges; vertical-align: -4px; flex: none; }
+
+  h2.waiting { margin: 0; font-size: 30px; line-height: 1.15; color: var(--c-waiting); letter-spacing: .03em; }
+  h2.status { margin: 0; font-size: 26px; line-height: 1.2; color: var(--c-text); }
+  h2.status.ok { color: var(--c-pass); }
+  .req-title { font-size: 22px; font-weight: 700; margin: 6px 0 2px; overflow-wrap: anywhere; }
+  .body { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+  .label { color: var(--c-label); font-weight: 700; letter-spacing: .05em; margin: 10px 0 4px; }
+  .facts { color: var(--c-dim); margin-top: 2px; }
+  .pass { color: var(--c-pass); font-weight: 700; } .fix { color: var(--c-fix); font-weight: 700; }
+  .box {
+    border: 3px dashed var(--c-line); background: var(--c-board-deep); padding: 8px 12px;
+    overflow-wrap: anywhere;
+  }
+  .box p { margin: 0 0 4px; } .box p:last-child { margin-bottom: 0; }
+  ul.mustfix { margin: 0; padding-left: 1.2em; } ul.mustfix li { margin-bottom: 6px; }
+  .links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 8px; }
+  a { color: var(--c-label); text-underline-offset: 3px; }
+  a:hover { color: var(--c-text); }
+  .plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+
+  /* chunky pixel buttons: hard border, light/dark bevel, offset shadow */
+  .btn {
+    --face: var(--c-neutral); --hi: var(--c-neutral-hi); --lo: var(--c-neutral-lo);
+    font: inherit; font-size: 20px; font-weight: 700; color: #fff; cursor: pointer;
+    background: var(--face); border: 3px solid var(--c-ink); border-radius: 0;
+    box-shadow: inset 3px 3px 0 var(--hi), inset -3px -3px 0 var(--lo), 4px 4px 0 var(--c-ink);
+    padding: 10px 16px; min-height: 60px; text-shadow: 2px 2px 0 var(--lo); white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn:active:not(:disabled) { transform: translate(3px, 3px);
+    box-shadow: inset 3px 3px 0 var(--lo), inset -3px -3px 0 var(--hi), 1px 1px 0 var(--c-ink); }
+  .btn:focus-visible { outline: 4px solid var(--c-waiting); outline-offset: 3px; }
+  .btn:disabled { filter: grayscale(.8) brightness(.7); cursor: not-allowed; }
+  .btn.approve, .btn.accept { --face: var(--c-approve); --hi: var(--c-approve-hi); --lo: var(--c-approve-lo); }
+  .btn.changes, .btn.directions { --face: var(--c-changes); --hi: var(--c-changes-hi); --lo: var(--c-changes-lo); }
+  .btn.cancel { --face: var(--c-danger); --hi: var(--c-danger-hi); --lo: var(--c-danger-lo); }
+  .btn.play { min-height: 50px; font-size: 18px; padding: 8px 10px; }
+  .btn.play.playing { --face: var(--c-waiting); --hi: #fff1a8; --lo: #9a7414; color: var(--c-ink); text-shadow: none; }
+  .decisions { display: flex; flex-wrap: wrap; gap: 18px 20px; }
+  .decisions .btn { flex: 1 1 auto; }
+  .decisions .btn.cancel { flex: 0 0 auto; }
+  .box code { color: var(--c-waiting); }
+  .decisions .btn.armed { outline: 4px dashed var(--c-waiting); outline-offset: 3px; }
+  #reply-wrap label { display: block; color: var(--c-label); font-weight: 700; margin-bottom: 6px; }
+  #reply {
+    width: 100%; min-height: 92px; height: 92px; resize: vertical; font: inherit; font-size: 18px;
+    background: var(--c-paper); color: var(--c-paper-ink); border: 3px solid var(--c-ink);
+    box-shadow: 4px 4px 0 var(--c-ink); padding: 10px 12px; border-radius: 0;
+  }
+  #reply:focus { outline: 4px solid var(--c-waiting); outline-offset: 2px; }
+  #reply.need { outline: 4px solid var(--c-fix); }
+  .copy-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .msg { min-height: 0; font-weight: 700; color: var(--c-waiting); overflow-wrap: anywhere; }
+  .msg.err { color: var(--c-fix); }
+  .msg:empty { display: none; }
+  .msg code { background: var(--c-board-deep); padding: 0 4px; }
+
+  .activity { list-style: none; margin: 0; padding: 0; }
+  .activity li { display: grid; grid-template-columns: 6ch 1fr; gap: 10px; padding: 3px 0;
+                 border-bottom: 2px dashed var(--c-board-lift); overflow-wrap: anywhere; }
+  .activity time { color: var(--c-dim); }
+  .activity .k-pass { color: var(--c-pass); } .activity .k-fix { color: var(--c-fix); }
+  .activity .k-owner { color: var(--c-waiting); } .activity .k-done { color: var(--c-pass); }
+  .footer { display: flex; justify-content: flex-end; margin-top: auto; }
+  .idle { font-size: 22px; line-height: 1.5; }
+  .idle code { color: var(--c-waiting); }
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; overflow: auto; }
+    #studio { height: 40vh; } #board { height: auto; border-left: 0; border-top: 6px solid var(--c-ink); }
+  }
+</style></head>
+<body>
+<!-- Left: the studio map. Task 5 draws the pixel-art rooms here. -->
+<canvas id="studio" aria-label="Studio map"></canvas>
+<!-- Right: the answer board (board.js). -->
+<aside id="board" aria-live="polite"></aside>
+<script type="module">
+  import { PALETTE, applyCssVars } from "/static/palette.js";
+  import { startBoard } from "/static/board.js";
+  applyCssVars();
+  // Placeholder until Task 5 replaces it with the map renderer.
+  const cv = document.getElementById("studio");
+  function placeholder() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = PALETTE.mapVoid; g.fillRect(0, 0, w, h);
+    g.fillStyle = PALETTE.mapFloor;
+    for (let y = 12; y < h; y += 24) for (let x = 12; x < w; x += 24) g.fillRect(x, y, 3, 3);
+    g.strokeStyle = PALETTE.mapFloor; g.lineWidth = 6;
+    g.strokeRect(40, 40, w - 80, h - 80);
+    g.fillStyle = PALETTE.mapText; g.textAlign = "center"; g.textBaseline = "middle";
+    g.font = `700 ${Math.max(18, Math.round(w / 40))}px ui-monospace, Consolas, "DejaVu Sans Mono", monospace`;
+    g.fillText("Studio map — coming in Task 5", w / 2, h / 2);
+  }
+  placeholder();
+  addEventListener("resize", placeholder);
+  startBoard(document.getElementById("board"));
+</script>
+</body></html>
