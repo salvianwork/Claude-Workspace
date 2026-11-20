@@ -1,0 +1,34 @@
+{
+  "topic": "How volcanoes work",
+  "slug": "how-volcanoes-work",
+  "created": "2026-11-20T10:00:00",
+  "step": "voice",
+  "state": "waiting_owner",
+  "round": 1,
+  "history": [
+    {
+      "time": "2026-11-20T10:00:00",
+      "agent": "story",
+      "event": "started",
+      "detail": ""
+    },
+    {
+      "time": "2026-11-20T10:08:00",
+      "agent": "story",
+      "event": "owner approved script",
+      "detail": ""
+    },
+    {
+      "time": "2026-11-20T10:09:00",
+      "agent": "voice",
+      "event": "started",
+      "detail": ""
+    },
+    {
+      "time": "2026-11-20T10:12:00",
+      "agent": "orchestrator",
+      "event": "waiting for owner",
+      "detail": "voice"
+    }
+  ]
+}

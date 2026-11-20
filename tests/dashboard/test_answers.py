@@ -77,3 +77,20 @@ def test_cli_write_then_show(tmp_path):
     assert out["request"]["id"] == "gate-1-1" and out["answer"]["decision"] == "approve"
     p = run_cli("write", tmp_path, "--id", "gate-1-1", "--decision", "approve")
     assert p.returncode == 1 and p.stderr.startswith("error:")
+
+
+def test_corrupt_or_unreadable_json_reads_as_none(tmp_path, monkeypatch):
+    board = tmp_path / "board"
+    board.mkdir()
+    (board / "request.json").write_text("{half-writ", encoding="utf-8")
+    (board / "answer-gate-1-1.json").write_bytes(b"\xff\xfe\x00")
+    assert answers.read_request(tmp_path) is None
+    assert answers.read_answer(tmp_path, "gate-1-1") is None
+
+    (board / "request.json").write_text("{}", encoding="utf-8")
+
+    def boom(self, *a, **k):
+        raise PermissionError("replace race")
+
+    monkeypatch.setattr(Path, "read_text", boom)
+    assert answers.read_request(tmp_path) is None

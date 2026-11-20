@@ -83,7 +83,8 @@ def write_request(run_dir, checkpoint, title, body, options, links=None) -> dict
 def _read_json(path: Path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
+    except (FileNotFoundError, ValueError, PermissionError):
+        # missing, half-written/corrupt (JSON or UTF-8), or a Windows replace race
         return None
 
 

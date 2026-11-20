@@ -1,0 +1,28 @@
+{
+  "topic": "How volcanoes work",
+  "slug": "how-volcanoes-work",
+  "created": "2026-11-20T10:00:00",
+  "step": "story",
+  "state": "reviewing",
+  "round": 1,
+  "history": [
+    {
+      "time": "2026-11-20T10:00:00",
+      "agent": "story",
+      "event": "started",
+      "detail": ""
+    },
+    {
+      "time": "2026-11-20T10:05:00",
+      "agent": "story",
+      "event": "draft ready",
+      "detail": ""
+    },
+    {
+      "time": "2026-11-20T10:05:30",
+      "agent": "reviewer",
+      "event": "review started",
+      "detail": ""
+    }
+  ]
+}

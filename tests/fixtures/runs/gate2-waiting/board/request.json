@@ -1,0 +1,12 @@
+{
+  "id": "gate-2-1",
+  "checkpoint": "gate-2",
+  "title": "Voice ready",
+  "body": "Please look.",
+  "options": [
+    "approve",
+    "changes"
+  ],
+  "links": [],
+  "created": "2026-11-20T10:07:00"
+}
