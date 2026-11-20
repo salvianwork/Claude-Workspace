@@ -213,3 +213,56 @@ def test_serves_wav_with_range(srv):
     assert r.status == 200 and data == full
     r, _ = req(srv, "GET", path, {"Range": f"bytes={len(full) + 5}-"})
     assert r.status == 416
+
+
+def test_stalled_post_times_out_and_server_stays_up(srv, monkeypatch):
+    import socket
+    import time
+    from tools.dashboard import server as S
+    monkeypatch.setattr(S.Handler, "timeout", 1)
+    port = srv.server_address[1]
+    s = socket.create_connection(("127.0.0.1", port), timeout=12)
+    s.sendall(f"POST /api/answer HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nX-Studio-Key: {TOKEN}\r\n"
+              "Content-Length: 100\r\n\r\n1234567".encode())
+    assert req(srv, "GET", "/api/runs")[0].status == 200  # others still served
+    t0 = time.time()
+    try:
+        data = s.recv(100)  # b"" (closed) or an error answer; must not hang
+    except OSError:
+        data = b""
+    assert time.time() - t0 < 12
+    s.close()
+
+
+def test_exclusive_bind_when_reuse_off(srv, monkeypatch):
+    from tools.dashboard import server as S
+    monkeypatch.setattr(S.StudioServer, "allow_reuse_address", False)
+    with pytest.raises(OSError):
+        S.make_server(srv.root, port=srv.server_address[1])
+
+
+def test_deeply_nested_json_is_400(srv):
+    body = "[" * 100000 + "]" * 100000
+    r, _ = req(srv, "POST", "/api/answer", {"X-Studio-Key": TOKEN}, body)
+    assert r.status == 400
+
+
+def test_stale_answer_refused(srv):
+    for name in ("done", "stale-request"):
+        shutil.copytree(FIX / name, srv.root / "videos" / name, dirs_exist_ok=True)
+    rid = json.loads((FIX / "stale-request/board/request.json").read_text(encoding="utf-8"))["id"]
+    for name in ("done", "stale-request"):
+        p = {"run": name, "id": rid, "decision": "approve", "text": ""}
+        r, data = post_answer(srv, p)
+        assert r.status == 409 and json.loads(data) == {"error": "stale"}, name
+
+
+def test_head_options_and_errors_are_json(srv):
+    r, data = req(srv, "HEAD", "/api/runs")
+    assert r.status == 200 and data == b""
+    r, _ = req(srv, "HEAD", "/api/runs", host="evil.example")
+    assert r.status == 403
+    r, data = req(srv, "OPTIONS", "/api/runs", host="evil.example")
+    assert r.status == 403
+    r, data = req(srv, "PUT", "/api/runs")
+    assert r.status == 501 and json.loads(data)["error"] and r.getheader("Cache-Control") == "no-store"

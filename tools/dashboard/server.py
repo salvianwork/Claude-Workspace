@@ -16,14 +16,16 @@ import hmac
 import json
 import re
 import secrets
+import socket
 import sys
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from tools.dashboard.answers import AnswerError, write_answer
-from tools.dashboard.state import list_runs, load_team, run_state
+from tools.dashboard.answers import AlreadyAnswered, AnswerError, write_answer
+from tools.dashboard.state import REQUEST_STATES, list_runs, load_team, run_state
+from tools.pipeline.status import RunStateError, load_status
 
 STATIC = Path(__file__).resolve().parent / "static"
 MAX_BODY = 64 * 1024
@@ -61,6 +63,18 @@ def parse_range(header: str | None, size: int):
 class Handler(BaseHTTPRequestHandler):
     server_version = "Studio"
     protocol_version = "HTTP/1.0"
+    timeout = 10  # a stalled client must not hold a thread forever
+
+    def send_error(self, code, message=None, explain=None):
+        """Every error (including stdlib 400/501/...) is JSON with no-store."""
+        body = json.dumps({"error": message or "error"}).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def log_message(self, fmt, *args):  # keep the console quiet
         pass
@@ -102,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
             self._fail(404, "not found")
         except _Stop:
             pass
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, TimeoutError, socket.timeout):
             pass
         except Exception:
             traceback.print_exc(file=sys.stderr)
@@ -114,6 +128,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self._dispatch([("/", self._index), ("/static/", self._static), ("/api/runs", self._runs),
                         ("/api/state", self._state), ("/files/", self._files)])
+
+    do_HEAD = do_GET
+
+    def do_OPTIONS(self):
+        self._dispatch([])  # Host check, then JSON 404
 
     def do_POST(self):
         self._dispatch([("/api/answer", self._answer)])
@@ -179,6 +198,14 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         start, end = rng if rng else (0, size - 1)
+        try:
+            fh = open(f, "rb")
+        except OSError:
+            self._fail(404, "not found")
+        with fh:
+            self._send_body(fh, ctype, size, start, end, rng, ranged)
+
+    def _send_body(self, fh, ctype, size, start, end, rng, ranged) -> None:
         self.send_response(206 if rng else 200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(max(end - start + 1, 0)))
@@ -190,15 +217,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if self.command == "HEAD" or size == 0:
             return
-        with open(f, "rb") as fh:
-            fh.seek(start)
-            left = end - start + 1
-            while left > 0:
-                chunk = fh.read(min(CHUNK, left))
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
-                left -= len(chunk)
+        fh.seek(start)
+        left = end - start + 1
+        while left > 0:
+            chunk = fh.read(min(CHUNK, left))
+            if not chunk:
+                break
+            self.wfile.write(chunk)
+            left -= len(chunk)
 
     def _answer(self, path):
         key = (self.headers.get("X-Studio-Key") or "").encode("utf-8")
@@ -212,7 +238,7 @@ class Handler(BaseHTTPRequestHandler):
             self._fail(400, "bad body")
         try:
             data = json.loads(self.rfile.read(length).decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             self._fail(400, "bad json")
         if not isinstance(data, dict):
             self._fail(400, "bad json")
@@ -222,19 +248,36 @@ class Handler(BaseHTTPRequestHandler):
             self._fail(400, "run, id, decision and text must be strings")
         run_dir = self._run_dir(run)
         try:
+            live = load_status(run_dir).get("state") in REQUEST_STATES
+        except (RunStateError, OSError):
+            live = False
+        if not live:
+            self._fail(409, "stale")
+        try:
             ans = write_answer(run_dir, rid, decision, text, source="board")
+        except AlreadyAnswered:
+            self._fail(409, "already answered")
         except AnswerError as e:
-            if "already answered" in str(e):
-                self._fail(409, "already answered")
             self._fail(400, str(e))
         except (KeyError, TypeError):
             self._fail(400, "bad request file")
         self._json(200, {"ok": True, "answer": ans})
 
 
+class StudioServer(ThreadingHTTPServer):
+    daemon_threads = True
+    # SO_REUSEADDR on Windows lets a second process bind a busy port, which
+    # would defeat the next-port fallback; use exclusive binding there.
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self):
+        if sys.platform == "win32" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def make_server(root: Path, port: int = 8765, token: str | None = None) -> ThreadingHTTPServer:
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    server.daemon_threads = True
+    server = StudioServer(("127.0.0.1", port), Handler)
     server.root = Path(root)
     server.token = token or secrets.token_urlsafe(24)
     server.url = f"http://127.0.0.1:{server.server_address[1]}/?key={server.token}"

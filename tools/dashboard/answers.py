@@ -26,6 +26,10 @@ class AnswerError(Exception):
     pass
 
 
+class AlreadyAnswered(AnswerError):
+    pass
+
+
 def _board(run_dir: Path) -> Path:
     return Path(run_dir) / "board"
 
@@ -111,7 +115,7 @@ def write_answer(run_dir, request_id, decision, text="", source="board") -> dict
     try:
         fh = open(path, "x", encoding="utf-8")
     except FileExistsError:
-        raise AnswerError(f"request {request_id} already answered") from None
+        raise AlreadyAnswered(f"request {request_id} already answered") from None
     with fh:
         fh.write(json.dumps(ans, ensure_ascii=False, indent=2))
     return ans
