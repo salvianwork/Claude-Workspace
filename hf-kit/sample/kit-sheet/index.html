@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <!-- hf-kit kit sheet: every kit scene and the volcano prop, one after another, with presenter
+       and captions, for visual QA. `npm run kit-sheet` snapshots each scene at the moments in
+       #sheet-plan into docs/hf/kit-sheet-*.png. kit/ is copied in by the script (or install_kit). -->
+  <link rel="stylesheet" href="kit/vendor/fonts/fonts.css">
+  <style>
+    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0F172A; }
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .scene { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+  </style>
+  <script src="kit/vendor/gsap.min.js"></script>
+  <script src="kit/src/kit.js"></script>
+  <script src="kit/src/timing.js"></script>
+  <script src="kit/src/presenter/look.js"></script>
+  <script src="kit/src/presenter/motion.js"></script>
+  <script src="kit/src/presenter/poses.js"></script>
+  <script src="kit/src/presenter/parts.js"></script>
+  <script src="kit/src/presenter/figure.js"></script>
+  <script src="kit/src/draw.js"></script>
+  <script src="kit/src/icons.js"></script>
+  <script src="kit/src/shell.js"></script>
+  <script src="kit/src/stage.js"></script>
+  <script src="kit/src/blocks/kinetic-center-build.js"></script>
+  <script src="kit/src/blocks/transitions.js"></script>
+  <script src="kit/src/scenes/common.js"></script>
+  <script src="kit/src/scenes/title.js"></script>
+  <script src="kit/src/scenes/steps.js"></script>
+  <script src="kit/src/scenes/compare.js"></script>
+  <script src="kit/src/scenes/chart.js"></script>
+  <script src="kit/src/scenes/kinetic.js"></script>
+  <script src="kit/src/scenes/recap.js"></script>
+  <script src="kit/src/scenes/diagram.js"></script>
+  <script src="kit/props/volcano/prop.js"></script>
+  <script id="sheet-plan" type="application/json">
+  {"scenes": [
+    {"name": "title",       "start": 0,   "duration": 6,    "moments": [0.7, 2.2, 5.6]},
+    {"name": "steps",       "start": 6,   "duration": 9,    "moments": [1.6, 4.2, 8.6]},
+    {"name": "compare",     "start": 15,  "duration": 9,    "moments": [1.4, 4.4, 8.6]},
+    {"name": "chart",       "start": 24,  "duration": 8,    "moments": [1.6, 3.4, 7.6]},
+    {"name": "chart-line",  "start": 32,  "duration": 7,    "moments": [1.5, 3.2, 6.6]},
+    {"name": "kinetic",     "start": 39,  "duration": 6,    "moments": [1.0, 2.0, 5.6]},
+    {"name": "recap",       "start": 45,  "duration": 8,    "moments": [1.2, 3.5, 7.6]},
+    {"name": "diagram",     "start": 53,  "duration": 8,    "moments": [1.4, 3.6, 7.6]},
+    {"name": "diagram-hub", "start": 61,  "duration": 7,    "moments": [1.2, 3.0, 6.6]},
+    {"name": "diagram-flow","start": 68,  "duration": 7,    "moments": [1.2, 3.0, 6.6]},
+    {"name": "volcano",     "start": 75,  "duration": 14.2, "moments": [2.4, 8.6, 10.4, 13.6]}
+  ]}
+  </script>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-start="0" data-duration="89.2" data-width="1920" data-height="1080">
+    <div id="s-title" class="scene clip" data-start="0" data-duration="6" data-track-index="0"></div>
+    <div id="s-steps" class="scene clip" data-start="6" data-duration="9" data-track-index="0"></div>
+    <div id="s-compare" class="scene clip" data-start="15" data-duration="9" data-track-index="0"></div>
+    <div id="s-chart" class="scene clip" data-start="24" data-duration="8" data-track-index="0"></div>
+    <div id="s-chart-line" class="scene clip" data-start="32" data-duration="7" data-track-index="0"></div>
+    <div id="s-kinetic" class="scene clip" data-start="39" data-duration="6" data-track-index="0"></div>
+    <div id="s-recap" class="scene clip" data-start="45" data-duration="8" data-track-index="0"></div>
+    <div id="s-diagram" class="scene clip" data-start="53" data-duration="8" data-track-index="0"></div>
+    <div id="s-diagram-hub" class="scene clip" data-start="61" data-duration="7" data-track-index="0"></div>
+    <div id="s-diagram-flow" class="scene clip" data-start="68" data-duration="7" data-track-index="0"></div>
+    <div id="s-volcano" class="scene clip" data-start="75" data-duration="14.2" data-track-index="0"></div>
+  </div>
+  <script>
+    (function () {
+      var K = window.HFKit;
+      var plan = JSON.parse(document.getElementById("sheet-plan").textContent).scenes;
+
+      /* Narration words at an even pace (a stand-in for words.json). */
+      function say(text, t0, pace) {
+        return text.split(/\s+/).map(function (w, i) {
+          var s = Math.round((t0 + i * pace) * 1000) / 1000;
+          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), start: s, end: Math.round((s + pace * 0.8) * 1000) / 1000 };
+        });
+      }
+      /* Spike narration with its Kokoro key times (chamber 2.08, pressure 5.23, pushes 6.75,
+         vent 8.21, bursts 9.58, lava 11.12, grows 12.28 s); the other words in between. */
+      function volcanoWords() {
+        var text = "Deep under a volcano sits a magma chamber, a pool of molten rock. As pressure builds, the magma pushes upward through a narrow vent. When it finally bursts out at the top, we call it lava, and the mountain grows.";
+        var keys = [[0, 0.12], [7, 2.08], [14, 5.23], [18, 6.75], [23, 8.21], [27, 9.58], [35, 11.12], [39, 12.28]];
+        return text.split(/\s+/).map(function (w, i) {
+          var k = 0;
+          while (k + 1 < keys.length && keys[k + 1][0] <= i) k++;
+          var a = keys[k], b = keys[Math.min(k + 1, keys.length - 1)];
+          var s = b[0] === a[0] ? a[1] + (i - a[0]) * 0.3 : a[1] + (b[1] - a[1]) * (i - a[0]) / (b[0] - a[0]);
+          s = Math.round(s * 1000) / 1000;
+          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), start: s, end: Math.round((s + 0.26) * 1000) / 1000 };
+        });
+      }
+      /* Mouth loudness per frame from the words (talk shapes while a word is spoken). */
+      function mouthFrom(words, duration) {
+        var out = [];
+        for (var f = 0; f < Math.ceil(duration * 30); f++) {
+          var t = f / 30, m = 0;
+          words.forEach(function (w) { if (t >= w.start && t < w.end) m = 0.35 + 0.45 * Math.abs(Math.sin(f * 0.9)); });
+          out.push(Math.round(m * 100) / 100);
+        }
+        return out;
+      }
+
+      var SCENES = {
+        "title": { scene: "title", presenter: { position: "none", size: "small" },
+          props: { title: "How volcanoes work", subtitle: "From a hidden chamber to a growing mountain", kicker: "Earth science", icon: "mountain" },
+          words: say("Today we look inside a volcano, from a hidden chamber to a growing mountain.", 0.4, 0.3), cues: [{ at: { word: 7 }, show: "subtitle" }] },
+        "steps": { scene: "steps", presenter: { position: "right", size: "small", pose: "talk", expression: "happy" },
+          props: { title: "How an eruption builds", steps: [{ text: "Pressure", icon: "gauge" }, { text: "Magma rises", icon: "arrow-up" }, { text: "Burst", icon: "bolt" }, { text: "Lava flows", icon: "drop" }] },
+          words: say("First pressure builds deep down. Then the magma rises up the vent. It bursts out of the crater and lava flows down the sides.", 0.4, 0.3),
+          cues: [{ at: { word: 1 }, show: "step", index: 0 }, { at: { word: 7 }, show: "step", index: 1 }, { at: { word: 13 }, show: "step", index: 2 }, { at: { word: 18 }, show: "step", index: 3 }] },
+        "compare": { scene: "compare", presenter: { position: "left", size: "small", pose: "point-right", expression: "curious" },
+          props: { title: "Two kinds of eruption", left: { label: "Effusive", icon: "drop", points: ["Runny lava", "Gentle flows"] },
+            right: { label: "Explosive", icon: "bolt", points: ["Sticky magma", "Ash clouds"] }, verdict: "Gas makes the difference" },
+          words: say("Some eruptions are effusive with runny lava and gentle flows. Others are explosive: sticky magma and huge ash clouds. The gas makes the difference.", 0.4, 0.3),
+          cues: [{ at: { word: 3 }, show: "left" }, { at: { word: 6 }, show: "point", side: "left", index: 0 }, { at: { word: 9 }, show: "point", side: "left", index: 1 },
+            { at: { word: 13 }, show: "right" }, { at: { word: 14 }, show: "point", side: "right", index: 0 }, { at: { word: 18 }, show: "point", side: "right", index: 1 }, { at: { word: 21 }, show: "verdict" }] },
+        "chart": { scene: "chart", presenter: { position: "right", size: "large", pose: "point-left", expression: "happy" },
+          props: { title: "How hot is lava?", unit: "°C", highlight: 0, data: [{ label: "Basalt", value: 1200 }, { label: "Andesite", value: 1000 }, { label: "Rhyolite", value: 800 }] },
+          words: say("Basalt lava is the hottest. Andesite is cooler, and rhyolite is cooler still. So basalt wins.", 0.4, 0.3),
+          cues: [{ at: { word: 0 }, show: "bar", index: 0 }, { at: { word: 5 }, show: "bar", index: 1 }, { at: { word: 9 }, show: "bar", index: 2 }, { at: { word: 15 }, show: "highlight" }] },
+        "chart-line": { scene: "chart", presenter: { position: "none", size: "small" },
+          props: { title: "Eruptions recorded each year", kind: "line", highlight: 3, data: [{ label: "2019", value: 4 }, { label: "2020", value: 7 }, { label: "2021", value: 5 }, { label: "2022", value: 9 }] },
+          words: say("The count goes up and down, but it peaks in twenty twenty two.", 0.4, 0.3), cues: [] },
+        "kinetic": { scene: "kinetic", presenter: { position: "right", size: "small", pose: "talk", expression: "surprised" },
+          props: { text: "Magma that reaches the surface is called lava", emphasis: ["lava"] },
+          words: say("Magma that reaches the surface is called lava.", 0.5, 0.36), cues: [] },
+        "recap": { scene: "recap", presenter: { position: "left", size: "large", pose: "celebrate", expression: "happy" },
+          props: { title: "Remember", points: ["Magma waits in a chamber", "Pressure pushes it up the vent", "Lava builds the cone"] },
+          words: say("Remember: magma waits in a chamber, pressure pushes it up the vent, and lava builds the cone.", 0.4, 0.3),
+          cues: [{ at: { word: 1 }, show: "point", index: 0 }, { at: { word: 6 }, show: "point", index: 1 }, { at: { word: 13 }, show: "point", index: 2 }] },
+        "diagram": { scene: "diagram", presenter: { position: "none", size: "small" },
+          props: { title: "The rock cycle", layout: "cycle", nodes: [{ label: "Magma", icon: "flame" }, { label: "Igneous rock", icon: "mountain" }, { label: "Sediment", icon: "layers" }, { label: "Heat & pressure", icon: "gauge" }] },
+          words: say("Magma cools into igneous rock, which wears down into sediment, and heat and pressure melt it back into magma.", 0.4, 0.3),
+          cues: [{ at: { word: 0 }, show: "node", index: 0 }, { at: { word: 3 }, show: "node", index: 1 }, { at: { word: 9 }, show: "node", index: 2 }, { at: { word: 11 }, show: "node", index: 3 }] },
+        "diagram-hub": { scene: "diagram", presenter: { position: "right", size: "small", pose: "think", expression: "thinking" },
+          props: { title: "What a volcano needs", layout: "hub", nodes: [{ label: "Volcano", icon: "mountain" }, { label: "Heat", icon: "flame" }, { label: "Gas", icon: "cloud" }, { label: "Magma", icon: "drop" }] },
+          words: say("A volcano needs heat, gas and magma.", 0.4, 0.34), cues: [] },
+        "diagram-flow": { scene: "diagram", presenter: { position: "left", size: "small", pose: "point-right", expression: "happy" },
+          props: { layout: "flow", nodes: [{ label: "Rain", icon: "cloud" }, { label: "River", icon: "water" }, { label: "Sea", icon: "wave" }] },
+          words: say("Rain feeds the river, and the river runs to the sea.", 0.4, 0.32), cues: [] },
+      };
+
+      var tl = HFKit.timeline("main");
+      var mounted = plan.map(function (p) {
+        var el = document.getElementById("s-" + p.name);
+        var cfg = SCENES[p.name], api, words;
+        if (p.name === "volcano") {
+          words = volcanoWords();
+          api = K.mountHero(el, { prop: "volcano", params: { sky: "dusk" }, words: words, duration: p.duration, sceneId: 11,
+            presenter: { position: "right", size: "small" },
+            cues: [{ at: { word: 7 }, show: "label", target: "chamber", text: "Magma chamber", until: { word: 16 } },
+              { at: { word: 14 }, show: "phase", target: "pressure" }, { at: { word: 18 }, show: "phase", target: "rise" },
+              { at: { word: 23 }, show: "label", target: "vent", text: "Vent", until: { word: 30 } }, { at: { word: 27 }, show: "phase", target: "burst" },
+              { at: { word: 35 }, show: "label", target: "lava", text: "Lava" }, { at: { word: 39 }, show: "phase", target: "grow" }],
+            camera: [{ at: { word: 0 }, frame: "wide" }, { at: { word: 7 }, frame: { focus: "chamber", zoom: 1.6 } },
+              { at: { word: 21 }, frame: { follow: "magma-tip", zoom: 1.35 } }, { at: { word: 29 }, frame: "wide" }] });
+          cfg = { presenter: { position: "right", size: "small", pose: "point-left", expression: "curious", outfit: "labcoat" } };
+        } else {
+          words = cfg.words;
+          api = K.scenes[cfg.scene].mount(el, { props: cfg.props, words: words, cues: cfg.cues, camera: [], duration: p.duration, presenter: cfg.presenter, sceneId: 1 });
+        }
+        var pr = cfg.presenter, pres = null;
+        if (pr.position !== "none") {
+          pres = K.mountPresenter(api.shell.layers.presenter, { pose: pr.pose || "talk", expression: pr.expression || "happy", outfit: pr.outfit || "blazer",
+            size: pr.size, side: pr.position, mouth: mouthFrom(words, p.duration), fps: 30, seed: 3 });
+        }
+        var caps = K.mountCaptions(api.shell.layers.captions, { words: words });
+        return { p: p, update: function (t) { api.update(t); if (pres) pres.update(t); caps.update(t); } };
+      });
+      function render(t) {
+        mounted.forEach(function (m) {
+          if (t >= m.p.start && t < m.p.start + m.p.duration) m.update(t - m.p.start);
+        });
+      }
+      tl.eventCallback("onUpdate", function () { render(tl.time()); });
+      tl.set({}, {}, 89.2);
+      render(0);
+      window.__timelines["main"] = tl;
+    })();
+  </script>
+</body>
+</html>

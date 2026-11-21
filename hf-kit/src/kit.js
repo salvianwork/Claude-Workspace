@@ -51,8 +51,20 @@
     return tl;
   }
 
+  /* Every kit script, in load order (paths relative to the kit folder). Props load after these:
+   * kit/props/<name>/prop.js. */
+  var SCRIPTS = [
+    "src/kit.js", "src/timing.js",
+    "src/presenter/look.js", "src/presenter/motion.js", "src/presenter/poses.js", "src/presenter/parts.js", "src/presenter/figure.js",
+    "src/draw.js", "src/icons.js", "src/shell.js", "src/stage.js",
+    "src/blocks/kinetic-center-build.js", "src/blocks/transitions.js",
+    "src/scenes/common.js", "src/scenes/title.js", "src/scenes/steps.js", "src/scenes/compare.js", "src/scenes/chart.js",
+    "src/scenes/kinetic.js", "src/scenes/recap.js", "src/scenes/diagram.js",
+  ];
+
   root.HFKit = {
     version: "0.1.0",
+    SCRIPTS: SCRIPTS,
     CANVAS: CANVAS,
     tokens: tokens,
     captionReserve: captionReserve,

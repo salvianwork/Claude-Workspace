@@ -131,10 +131,10 @@ def assert_offline(composition_dir: Path) -> list[str]:
 
 
 def install_kit(composition_dir: Path) -> Path:
-    """Copy hf-kit's vendor/ and src/ into <composition_dir>/kit/ (HyperFrames only serves
-    files inside the composition folder). Returns the kit folder."""
+    """Copy hf-kit's vendor/, src/ and props/ into <composition_dir>/kit/ (HyperFrames only
+    serves files inside the composition folder). Returns the kit folder."""
     kit = Path(composition_dir) / "kit"
-    for part in ("vendor", "src"):
+    for part in ("vendor", "src", "props"):
         shutil.copytree(KIT_DIR / part, kit / part, dirs_exist_ok=True)
     return kit
 

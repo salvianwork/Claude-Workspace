@@ -5,11 +5,14 @@
   "description": "Shared HyperFrames studio kit for the video agent team (offline: vendored GSAP and fonts).",
   "license": "UNLICENSED",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "sample": "node scripts/sample.mjs",
     "sheet": "node scripts/sheet.mjs",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "kit-sheet": "node scripts/kit-sheet.mjs"
   },
   "dependencies": {
     "hyperframes": "0.9.72"

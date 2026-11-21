@@ -135,13 +135,14 @@ def test_assert_offline_finds_remote_urls(tmp_path):
     assert not any(s in f for f in found for s in ("w3.org", "example.com", "gsap.com", "x.org", "ignored"))
 
 
-def test_install_kit_copies_vendor_and_src(tmp_path):
+def test_install_kit_copies_vendor_src_and_props(tmp_path):
     install_kit(tmp_path)
     assert (tmp_path / "kit" / "vendor" / "gsap.min.js").is_file()
     assert (tmp_path / "kit" / "vendor" / "fonts" / "fonts.css").is_file()
     assert (tmp_path / "kit" / "vendor" / "fonts" / "inter-latin-400-normal.woff2").is_file()
     assert (tmp_path / "kit" / "vendor" / "fonts" / "poppins-latin-700-normal.woff2").is_file()
     assert (tmp_path / "kit" / "src" / "kit.js").is_file()
+    assert (tmp_path / "kit" / "props" / "volcano" / "prop.js").is_file()
     install_kit(tmp_path)  # idempotent
 
 
