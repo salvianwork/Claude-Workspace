@@ -15,7 +15,8 @@ about taste.
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below are
   relative to it unless they start with `tools/`, `hf-kit/` or `templates/`.
-- `gate` — 1 (Story), 2 (Voice), 3 (Design) or 4 (Final video).
+- `gate` — 1 (Story), 2 (Voice), 3 (Design), 4 (Final video) or `props` (the prop library
+  check after the owner approved the final video; review file `review/gate-props-round-<m>.md`).
 - `round` — 1, 2 or 3.
 - `feedback_file` (optional) — owner feedback the agent was asked to address in this round.
   If given, check that every point in it was addressed; an unaddressed point is a must-fix.
@@ -311,14 +312,18 @@ python -m tools.audio.measure "<run_dir>"
 
 Prints `{"gap_db":…,"lufs":…,"sfx_count":…,"scenes":…,"problems":[...]}`.
 
-**6. The shared kit is untouched:**
+**6. The shared kit is untouched** (this run's new props are saved only after the owner's
+final approval, so at gate 4 the run has changed nothing in `hf-kit/`):
 
 ```bash
-git status --short hf-kit/ templates/
+git status --short hf-kit/src templates/
+git diff --name-only -- hf-kit/props/
 ```
 
-Before the new props are saved it should print nothing (nothing under `hf-kit/src`, no prop
-folder changed).
+The first must print nothing. The second lists changed **tracked** prop files: none may be
+inside a prop folder that existed before this run (`hf-kit/props/<other>/…`). Lines added to
+`hf-kit/props/README.md` and new untracked prop folders saved by earlier videos are not this
+run's work and are fine. A folder named after one of this run's new props must not exist yet.
 
 **Must-fix if:**
 - [ ] **`hyperframes check` is not clean**: `04-video/render.log` is missing, has an `error:`
@@ -352,31 +357,39 @@ folder changed).
   with a visible presenter has no `mouth` data (`mouth frames: 0`).
 - [ ] The video does not match the shot list (a different scene, prop, text, camera or
   presenter position than planned) without a reason in `04-video/notes.md`.
-- [ ] **The shared kit was changed**: `git status --short hf-kit/ templates/` shows any change
-  under `hf-kit/src`, an existing prop or `templates/` (the Animator draws new heroes only in
-  `04-video/hf/scenes/` and adds props only after PASS).
+- [ ] **The shared kit was changed**: `git status --short hf-kit/src templates/` prints
+  anything, `git diff --name-only -- hf-kit/props/` shows a file in an existing prop folder, or
+  one of this run's new props already has a `hf-kit/props/<name>/` folder (the Animator draws new
+  heroes only in `04-video/hf/scenes/` and saves props only after the owner's final approval).
+  Props saved by earlier videos do not count.
 
 **Suggestions only:** motion taste, pacing ideas, drawing details beyond the brief.
 
-### Prop library check (after gate 4 PASS)
+### Prop library check (after the owner's final approval)
 
-When the `note` says the Animator saved the new props after gate 4 passed, review only this
-(write the review file you are told to write, same format). For each `new_prop` hero in
-`03-design/shots.json` (prop `<name>`):
+When `gate` is `props`, the owner has approved the final video and the Animator has saved this
+run's new hero drawings to the prop library. Review only this and write
+`review/gate-props-round-<m>.md` (first line `# Gate props, round <m>: PASS|FIX`, same format,
+same round rules). This run's new props are the `new_prop: true` heroes in
+`03-design/shots.json` (prop `<name>`). Run:
 
 ```bash
 git status --short hf-kit/
-cd hf-kit && npm test
+(cd hf-kit && npm test)
 ```
 
 **Must-fix if:**
 - [ ] `hf-kit/props/<name>/` is missing or incomplete: it needs `prop.js` (registers
   `HFKit.props["<name>"]` with `meta.name` = `<name>`, `anchorsFor`, no run-specific paths or
-  text), `preview.png` (a real snapshot of the drawing) and `README.md` (exactly one line).
+  text), `preview.png` (a real snapshot of the drawing, with few labels and no presenter over
+  it) and `README.md` (exactly one line).
 - [ ] `hf-kit/props/README.md` has no ``- `<name>` — …`` line for it.
 - [ ] `npm test` (the props contract test) fails.
-- [ ] Anything else in `hf-kit/` changed: `git status --short hf-kit/` may show only the new
-  `hf-kit/props/<name>/` folders and `hf-kit/props/README.md` — never `hf-kit/src` or another prop.
+- [ ] This round changed something else in `hf-kit/`: the new or changed entries from this run
+  may only be this run's own `hf-kit/props/<name>/` folders and their lines in
+  `hf-kit/props/README.md`. Any change under `hf-kit/src`, or to a tracked file of another prop
+  (`git diff --name-only -- hf-kit/props/`), is a must-fix. Untracked prop folders and README
+  lines of other names were saved by earlier videos: ignore them.
 
 ---
 

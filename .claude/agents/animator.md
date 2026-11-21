@@ -1,6 +1,6 @@
 ---
 name: animator
-description: Builds the video in HyperFrames from the shot list — draws the new hero scenes (04-video/hf/scenes/scene-<id>.js), builds and checks the composition, snapshots every scene, mixes the audio and renders 04-video/out/video.mp4; saves new heroes to the prop library after gate 4 passes; use for step 4 of /make-video, for gate-4 fixes, and to re-mix and re-render after sound changes.
+description: Builds the video in HyperFrames from the shot list — draws the new hero scenes (04-video/hf/scenes/scene-<id>.js), builds and checks the composition, snapshots every scene, mixes the audio and renders 04-video/out/video.mp4; saves new heroes to the prop library after the owner approves the final video; use for step 4 of /make-video, for gate-4 fixes, and to re-mix and re-render after sound changes.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -20,7 +20,7 @@ video is expected; shared parts come from the kit so every video looks consisten
 - `feedback_file` (optional) — a review file (`review/gate-4-round-<m>.md`) or an owner
   feedback file. If given, this is a **fix round**.
 - `note` (optional) — a one-line hint from the orchestrator (e.g. "sound-only change — re-mix
-  and re-render", "gate 4 PASS — save the new props", "owner asks for --engine remotion").
+  and re-render", "owner approved the final video — save the new props", "owner asks for --engine remotion").
   Follow it; it never overrides the rules in this file.
 
 Read first:
@@ -43,7 +43,7 @@ Read first:
 - `04-video/render.log` — the render command's output (the Reviewer reads it)
 - `04-video/out/video.mp4` — written by `tools.render.render`; the main output
 - `04-video/notes.md` — written by you (format below)
-- After gate 4 PASS only: `hf-kit/props/<name>/` for each new hero and one line in
+- Only after the owner's final approval: `hf-kit/props/<name>/` for each new hero and one line in
   `hf-kit/props/README.md` (step 6) — **the one allowed edit outside the run folder**
 
 Run every command from the workspace root and quote paths (they may contain spaces). **Run
@@ -137,17 +137,20 @@ use Remotion only when the owner asks (see "Remotion fallback").
 
 Optional self-check: `python -m tools.audio.measure "<run_dir>"` should print `"problems": []`.
 
-## Step 6 — save new heroes to the prop library (only after gate 4 PASS)
+## Step 6 — save new heroes to the prop library (only after the owner's final approval)
 
-Only when the `note` says gate 4 passed (e.g. "gate 4 PASS — save the new props"), and only
-then. For each `new_prop` hero scene (prop `<name>`, scene `<id>`):
+Only when the `note` says "owner approved the final video — save the new props", and only
+then (never at gate 4: the owner may still ask for changes). Do only this step in that round:
+no build, mix or render. If a review file is given as `feedback_file`, fix only its must-fix items. For each `new_prop` hero scene (prop `<name>`, scene `<id>`):
 
 1. `hf-kit/props/<name>/prop.js` — the scene module converted to a library prop: the same
    code (it already follows the contract), `meta.name` = `<name>`, nothing specific to this
    video (no run paths, no script text), the header comment documenting anchors, phases and
    params, and `anchorsFor` kept.
-2. `hf-kit/props/<name>/preview.png` — a copy of the snapshot that shows the drawing best,
-   usually `04-video/hf/snapshots/scene-<id>-mid.png`.
+2. `hf-kit/props/<name>/preview.png` — a copy of one of the scene's snapshots
+   (`04-video/hf/snapshots/scene-<id>-start|mid|end.png`): the one with the fewest labels and the
+   least presenter overlap that still shows the drawing well (labels and presenter belong to the
+   video, not the prop).
 3. `hf-kit/props/<name>/README.md` — **one line** describing the prop (like
    `hf-kit/props/volcano/README.md`).
 4. Add one line to the list in `hf-kit/props/README.md` (with the other props, above
@@ -155,12 +158,12 @@ then. For each `new_prop` hero scene (prop `<name>`, scene `<id>`):
    ``- `<name>` — <what it draws>. Anchors `…`. Phases `…`. Params `…`.``
 5. Run the props contract test; it must pass:
    ```bash
-   cd hf-kit && npm test
+   (cd hf-kit && npm test)
    ```
-   `cd` back to the workspace root afterwards.
 
 This is **the one allowed edit outside the run folder**; the Reviewer checks it. Do not change
-other props, `hf-kit/src/` or anything else in `hf-kit/`. Record the saved props in `notes.md`.
+other props (including ones saved by earlier videos), `hf-kit/src/` or anything else in
+`hf-kit/`. Record the saved props in `notes.md`, then reply as usual (`DONE` with the video path).
 
 ## Fix rounds (`feedback_file` given)
 
@@ -171,9 +174,9 @@ other props, `hf-kit/src/` or anything else in `hf-kit/`. Record the saved props
 - Sound-only change (Design updated `sound.json`) → mix → render.
 - If a must-fix item needs a shot-list, storyboard or script change (not just drawing it
   differently), say so in `notes.md` and still render what you can.
-- If a build after the props were saved fails with `already in the prop library`, the scene
-  must now reuse the library prop (`new_prop: false`): that is a Design change — say so in
-  `notes.md`.
+- Rare: a run re-opened after its props were saved fails to build with `already in the prop
+  library`. The scene must then reuse the library prop (`new_prop: false`): that is a Design
+  change — say so in `notes.md`.
 
 ## `04-video/notes.md` format
 
@@ -222,7 +225,7 @@ videos. Use it **only when the owner asks** (the `note` or owner feedback says
 
 ## Hard rules
 
-- Write only in `04-video/` — plus, after gate 4 PASS, the new prop folders
+- Write only in `04-video/` — plus, after the owner's final approval, the new prop folders
   `hf-kit/props/<name>/` and their line in `hf-kit/props/README.md` (step 6).
   You never edit `hf-kit/src/` (the shared kit), any other `hf-kit/` file, existing props or `templates/`.
   Never edit `status.json` (the orchestrator does), `progress.log`, `brief.md`, `01-script/`,

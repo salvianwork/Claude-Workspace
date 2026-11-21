@@ -357,8 +357,41 @@ waiter and end your turn.
    change in the sound (e.g. "different music", "fewer effects").`, then
    `…or answer on the studio board.` Start the waiter and end your turn (4.0). The
    `Notification` hook tells the owner the video is ready.
-   **approve** (or "nothing more is needed") → record both, then print `🎬 Finished: <full path
-   to the video>` and stop:
+   **approve** (or "nothing more is needed") → save the new props (below, 6.1), then record
+   both, then print `🎬 Finished: <full path to the video>` and stop.
+
+   **6.1 Save the new props (after approval, before done).** List the run's new hero drawings:
+   ```bash
+   python -c "import json, sys; d = json.load(open(sys.argv[1], encoding='utf-8')); print(' '.join(s['prop'] for s in d['scenes'] if s.get('kind') == 'hero' and s.get('new_prop')) or 'none')" "<run_dir>/03-design/shots.json"
+   ```
+   `none` → go straight to "record". Otherwise run this loop, round `r` = 1, 2, 3:
+   1. Record and print `▶ [4/4] <Name> (Animator) is working…`, then start `animator` with
+      `note: owner approved the final video — save the new props` (and, from round 2,
+      `feedback_file: <run_dir>/review/gate-props-round-<r-1>.md`). Check the reply (section 2).
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent animator --step animator --state working --round <r> --event "saving props" --detail "<feedback_file or empty>"
+      ```
+      (Use `--state fixing` instead of `--state working` when a `feedback_file` is given.)
+   2. Record and print `🔍 <Reviewer name> is checking the prop library (round r/3)…`, then
+      start `reviewer` with `gate: props`, `round: <r>`. It writes
+      `review/gate-props-round-<r>.md` (first line `# Gate props, round <r>: PASS|FIX`); check
+      the reply (section 2, with `n` = `props`).
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent reviewer --step animator --state reviewing --round <r> --event "review started" --detail "gate props"
+      ```
+   3. **FIX** and `r < 3` → step 1 with `r + 1` and
+      `feedback_file: <run_dir>/review/gate-props-round-<r>.md`. **FIX** at round 3 → stuck:
+      section 5 with `n` = 4 and `s` = `animator`, using `review/gate-props-round-3.md` in place
+      of `review/gate-<n>-round-3.md` (in `--detail` and `--link`). There, **accept** → go on to
+      "record"; **directions** → save `review/owner-gate-4-<k>.md` and run this loop again from
+      round 1 with that file as `feedback_file` (first move the old `gate-props-round-*.md`
+      files away as in "Starting a new cycle", with `props` as the gate); **cancel** as in section 5.
+   4. **PASS** → record, then go on to "record":
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent reviewer --event "gate props PASS" --detail "review/gate-props-round-<r>.md"
+      ```
+
+   **Record** (only now is the run done):
    ```bash
    python -m tools.pipeline.status update "<run_dir>" --agent animator --event "owner approved final video"
    python -m tools.pipeline.status update "<run_dir>" --agent animator --step done --state done --event "video done" --detail "04-video/out/video.mp4"
@@ -400,6 +433,13 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
    the current cycle's owner file is the latest `review/owner-gate-*` file named there or in
    the latest history entries.
 3. Continue from there:
+   - The last events belong to the prop step (6.1): a `saving props` event, a `review started`
+     event with detail `gate props`, or `gate props PASS` → continue 6.1 at the recorded round
+     (`saving props` → its step 1; `review started` → use `review/gate-props-round-<r>.md` if it
+     has a verdict, else its step 2; `gate props PASS` → "record"). The owner has already
+     approved the final video: do not ask again.
+     A `gate 4 stuck` event whose detail is `review/gate-props-round-3.md` is the stuck prop
+     step: board check (4), then section 5 step 2, with the choices as in 6.1 step 3.
    - `working` or `fixing` → section 3, step 1, at the recorded round, with that feedback file.
    - `reviewing` → if `review/gate-<n>-round-<r>.md` exists and its first line has a verdict,
      use it (section 3, step 3 or 4); otherwise section 3, step 2 at round `r`.

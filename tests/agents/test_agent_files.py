@@ -158,8 +158,11 @@ def test_animator_builds_hyperframes_heroes():
 def test_animator_saves_new_props_after_pass():
     _, body = parse("animator")
     for s in ["hf-kit/props/<name>/", "prop.js", "preview.png", "README.md", "one line",
-              "gate 4 PASS", "npm test", "the one allowed edit outside the run folder"]:
+              "owner approved the final video — save the new props", "(cd hf-kit && npm test)",
+              "the one allowed edit outside the run folder", "fewest labels"]:
         assert s in body, f"animator.md must mention {s!r}"
+    # props are saved only after the owner's final approval, never at gate 4 PASS
+    assert "gate 4 PASS" not in body and "after gate 4 passes" not in body
 
 
 def test_animator_keeps_remotion_fallback():
@@ -207,8 +210,13 @@ def test_reviewer_gate4_checks_hyperframes():
     for s in ["hyperframes check", "camera timing NOT checked", "04-video/render.log", "04-video/hf/data.json",
               "±0.3", "02-voice/words.json", "brief", "dizzying", "04-video/hf/snapshots/",
               "hf-kit/props/<name>/", "prop.js", "preview.png", "README.md", "hf-kit/props/README.md",
-              "npm test", "git status --short hf-kit/", "hf-kit/src"]:
+              "(cd hf-kit && npm test)", "git status --short hf-kit/src templates/", "hf-kit/src",
+              "Prop library check (after the owner's final approval)", "review/gate-props-round-<m>.md",
+              "earlier videos"]:
         assert s in gate4, f"reviewer.md gate 4 must mention {s!r}"
+    assert "after gate 4 PASS" not in gate4
+    # the gate-4 kit check must not flag props saved by earlier videos
+    assert "git status --short hf-kit/ templates/" not in gate4
     # the v1 "no custom components" must-fix is gone for the HyperFrames path
     assert "allowed in v1" not in gate4
     assert "created a custom component" not in gate4

@@ -311,3 +311,19 @@ def test_already_answered_rereads_a_null_answer_once():
     assert part.count("python -m tools.dashboard.answers show") == 2
     assert "is `null`" in part and "wait 1 second" in part
     assert 'python -c "import time; time.sleep(1)"' in part
+
+
+def test_final_approval_saves_new_props_before_done():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    order = ["new_prop", "note: owner approved the final video — save the new props",
+             "gate: props", "review/gate-props-round-<r>.md", '"gate props PASS"',
+             '--event "owner approved final video"', '--step done --state done']
+    idx = [final.index(n) for n in order]
+    assert idx == sorted(idx), list(zip(order, idx))
+    for needle in ["round 3", "section 5", "feedback_file: <run_dir>/review/gate-props-round-<r>.md",
+                   "review/gate-props-round-3.md", "none"]:
+        assert needle in final, needle
+    # the prop step is resumable
+    resume = text.split("## 8. Resume", 1)[1]
+    assert "saving props" in resume and "gate props" in resume
