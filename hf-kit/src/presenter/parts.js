@@ -465,6 +465,8 @@
   P.h = h;
   P.capsule = capsule;
   P.armShapes = armShapes;
+  P.TORSO_OUTLINE = TORSO_OUTLINE; // the body silhouette, reused by the full-body actor's outfits
+  P.TORSO_PATH = TORSO_PATH;
   P.parts = {
     arm: armNode, face: faceNode, hairBack: hairBackNode, hairFront: hairFrontNode,
     head: headNode, torso: torsoNode, collarBack: collarBackNode, neck: neckNode,

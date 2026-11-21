@@ -57,6 +57,7 @@
   var SCRIPTS = [
     "src/kit.js", "src/timing.js",
     "src/presenter/look.js", "src/presenter/motion.js", "src/presenter/poses.js", "src/presenter/parts.js", "src/presenter/figure.js",
+    "src/actor/rig.js", "src/actor/host.js", "src/actor/actor.js",
     "src/draw.js", "src/icons.js", "src/shell.js", "src/stage.js",
     "src/blocks/kinetic-center-build.js", "src/blocks/transitions.js",
     "src/scenes/common.js", "src/scenes/title.js", "src/scenes/steps.js", "src/scenes/compare.js", "src/scenes/chart.js",
@@ -81,5 +82,11 @@
   if (root.HFKitPresenter) {
     root.HFKit.presenter = root.HFKitPresenter;
     root.HFKit.mountPresenter = root.HFKitPresenter.mountPresenter;
+  }
+  /* And the full-body actor (src/actor/*.js: rig, host, actor): rig, cast and mountActor. */
+  if (root.HFKitActor) {
+    if (root.HFKitActor.rig) root.HFKit.rig = root.HFKitActor.rig;
+    if (root.HFKitActor.cast) root.HFKit.cast = root.HFKitActor.cast;
+    if (root.HFKitActor.mountActor) root.HFKit.mountActor = root.HFKitActor.mountActor;
   }
 })(typeof globalThis !== "undefined" ? globalThis : window);
