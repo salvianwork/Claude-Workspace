@@ -142,6 +142,21 @@ What success looks like: every line shows a green tick (✅) and the last line s
 A yellow warning is fine to ignore. A red cross shows a
 "fix:" line underneath: do that, then run the check again.
 
+## 8. Open the studio (optional)
+
+The studio is a small page that shows the team at work and lets you approve with a button.
+In a **second** terminal (with `(.venv)`), run:
+
+```
+cd "C:\Users\PC\Documents\Claude Workspace"
+.venv\Scripts\activate
+python -m tools.dashboard
+```
+
+Keep it open while you make videos. What success looks like: the terminal prints
+`Studio running at http://127.0.0.1:8765/?key=...` and your browser opens the studio.
+More in [`docs/dashboard/README.md`](dashboard/README.md).
+
 ## Things you can change
 
 **The narrator's voice.** The default is `am_adam` (male, chosen to match the presenter). Other choices

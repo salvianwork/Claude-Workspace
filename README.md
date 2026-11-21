@@ -13,6 +13,10 @@ each checked by the reviewer before you see it. You approve the script and the v
 
 A Windows notification appears whenever the team is waiting for you.
 
+**Studio dashboard (optional).** In a second terminal (venv active) run `python -m tools.dashboard`;
+keep it open while making videos. It shows the team at work and lets you approve on a board.
+See [`docs/dashboard/README.md`](docs/dashboard/README.md).
+
 ## Folder map
 
 - `.claude/agents/` — the five subagents (story, voice, design, animator, reviewer).
@@ -23,6 +27,7 @@ A Windows notification appears whenever the team is waiting for you.
 - `tools/audio/` — the audio library, mixing and loudness checks.
 - `tools/render/` — renders and muxes the final MP4.
 - `tools/review/` — transcripts and keyframes for the reviewer.
+- `tools/dashboard/` — the studio dashboard (`python -m tools.dashboard`); `team.json` holds the agents' names.
 - `tools/notify/` — the Windows desktop notification script.
 - `templates/` — the Remotion project with the scene templates and the presenter.
 - `assets/audio/` — the CC0 / no-attribution music and sound library.

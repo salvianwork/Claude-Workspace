@@ -61,12 +61,32 @@ It works in four steps. At each checkpoint, check these things:
 - [ ] `videos\<run>\04-video\credits.md` lists the music and sound effects used (the video
       itself is `videos\<run>\04-video\out\video.mp4`).
 
-## 4. If a run stops
+## 4. The studio dashboard
+
+Open a second terminal in the project folder, run `.venv\Scripts\activate`, then
+`python -m tools.dashboard`. Keep it open for the checks below (you can do them during the
+video from section 3, or with a short topic such as `/make-video "Why the sky is blue"`).
+
+1. [ ] **Start the studio.** The browser opens a studio with five characters.
+   You should see: the board says "No video running" and everyone is in the kitchen.
+2. [ ] **Answer gate 1 on the board.** Start `/make-video`; when the script is ready, click
+   **Approve** on the board (do not type in the chat).
+   You should see: the board says "Sent", and within a few seconds Claude Code continues by
+   itself with the voice step, without you typing anything. (This is the Windows proof of the
+   background wake-up. If Claude Code stays still for more than about 30 seconds, tell Claude.)
+3. [ ] **Answer gate 2 in the chat.** When the voice is ready, type your answer in Claude Code
+   instead of using the board.
+   You should see: the board changes to "Answered in chat".
+4. [ ] **Rename an agent.** Open `team.json` in Notepad, change one `name` (for example
+   `"Quill"` to `"Maya"`), save, and refresh the browser page.
+   You should see: the new name on the map and on the board.
+
+## 5. If a run stops
 
 - Type `/video-status` to see where it is.
 - Type `/make-video --resume videos\<run folder>` to continue.
 - After 3 failed fix rounds on one step, the team stops and asks you what to do. That is by design.
 
-## 5. Tell Claude what you saw
+## 6. Tell Claude what you saw
 
 Report: what was good, what was wrong, which step, and the run folder name.
