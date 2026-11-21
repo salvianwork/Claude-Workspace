@@ -5,6 +5,7 @@ import soundfile as sf
 
 from tools.voice.synth import synth_scenes
 from tools.voice.words import align_to_script
+import numpy as np
 from tests.voice.test_synth import FakeEngine, SCRIPT
 
 
@@ -24,7 +25,7 @@ def test_words_json_shape(tmp_path):
     out = tmp_path / "02-voice"
     synth_scenes(_script(tmp_path, SCRIPT), out, FakeEngine())
     data = json.loads((out / "words.json").read_text())
-    assert data["source"] in ("kokoro", "fake", "whisper")
+    assert data["source"] in ("kokoro", "engine", "whisper")
     assert [s["id"] for s in data["scenes"]] == [1, 2, 3]
     w = data["scenes"][0]["words"]
     assert [x["i"] for x in w] == list(range(12))
@@ -84,3 +85,51 @@ def test_kokoro_word_times_real(tmp_path):
     assert all(x["start"] < x["end"] for x in w)
     assert all(a["start"] <= b["start"] for a, b in zip(w, w[1:]))
     assert w[-1]["end"] <= info.frames / info.samplerate + 0.05
+
+
+class KokoroNamed(FakeEngine):
+    name = "kokoro"
+
+
+class NoTimings(FakeEngine):
+    name = "plain"
+    synth_words = None
+
+    def __getattribute__(self, a):
+        if a == "synth_words":
+            raise AttributeError(a)
+        return super().__getattribute__(a)
+
+
+def test_mixed_sources_and_kept_scene_source(tmp_path, monkeypatch):
+    import tools.voice.synth as sy
+    script, out = _script(tmp_path, SCRIPT), tmp_path / "02-voice"
+    synth_scenes(script, out, KokoroNamed())
+    assert json.loads((out / "words.json").read_text())["source"] == "kokoro"
+    monkeypatch.setattr(sy, "whisper_available", lambda: True)
+    monkeypatch.setattr(sy, "whisper_words", lambda wav: [
+        {"text": w, "start": i * .2, "end": i * .2 + .1}
+        for i, w in enumerate("alpha beta gamma delta epsilon zeta eta theta iota kappa".split())])
+    synth_scenes(script, out, NoTimings(), only=[2])
+    d = json.loads((out / "words.json").read_text())
+    assert d["source"] == "mixed"
+    assert [s["source"] for s in d["scenes"]] == ["kokoro", "whisper", "kokoro"]
+
+
+def test_full_run_drops_stale_scenes(tmp_path):
+    out = tmp_path / "02-voice"
+    synth_scenes(_script(tmp_path, SCRIPT), out, FakeEngine())
+    synth_scenes(_script(tmp_path, _one_scene("only one now.")), out, FakeEngine())
+    assert [s["id"] for s in json.loads((out / "words.json").read_text())["scenes"]] == [1]
+
+
+def test_no_timings_without_whisper_raises(tmp_path, monkeypatch):
+    import sys
+    monkeypatch.setitem(sys.modules, "faster_whisper", None)
+    with pytest.raises(RuntimeError, match="faster-whisper is not installed"):
+        synth_scenes(_script(tmp_path, SCRIPT), tmp_path / "v", NoTimings())
+
+
+def test_empty_timed_raises():
+    with pytest.raises(ValueError, match="no word timings"):
+        align_to_script("hello there", [])

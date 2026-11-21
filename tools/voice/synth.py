@@ -10,7 +10,7 @@ import soundfile as sf
 
 from tools.pipeline.script import parse_script
 from tools.voice.engine import TTSEngine, get_engine
-from tools.voice.words import align_to_script, whisper_words, write_words
+from tools.voice.words import align_to_script, whisper_available, whisper_words, write_words
 
 PAD_S = 0.4
 DEFAULT_VOICE = "am_adam"  # male, chosen by the owner to match the presenter
@@ -47,7 +47,7 @@ def synth_scenes(
 
     entries = []
     words_by_scene: dict[int, list[dict]] = {}
-    source = "kokoro" if engine.name == "kokoro" else engine.name
+    sources: dict[int, str] = {}
     for scene in script.scenes:
         path = out_dir / _wav_name(scene.id)
         if only is not None and scene.id not in only:
@@ -63,9 +63,16 @@ def synth_scenes(
             audio = np.concatenate([audio, pad])
             sf.write(str(path), audio, engine.sample_rate)
             duration = len(audio) / engine.sample_rate
-            if not timed:  # engine gave no timestamps: listen to the wav instead
+            if timed:
+                sources[scene.id] = "kokoro" if engine.name == "kokoro" else "engine"
+            else:  # engine gave no timestamps: listen to the wav instead
+                if not whisper_available():
+                    raise RuntimeError(
+                        f"engine {engine.name} gives no word timings and faster-whisper is not installed")
                 timed = whisper_words(path)
-                source = "whisper"
+                sources[scene.id] = "whisper"
+            if not timed:
+                raise ValueError(f"no word timings for scene {scene.id}")
             words_by_scene[scene.id] = align_to_script(scene.narration, timed)
         entries.append({"id": scene.id, "file": path.name, "duration_s": round(duration, 3)})
 
@@ -78,8 +85,10 @@ def synth_scenes(
         "scenes": entries,
         "total_s": round(sum(e["duration_s"] for e in entries), 3),
     }
-    write_words(out_dir, words_by_scene, source)
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    # words.json last: it is only written once every scene recorded and timed successfully
+    keep = {sc.id for sc in script.scenes} if only is None else None
+    write_words(out_dir, words_by_scene, sources, keep_ids=keep)
     return manifest
 
 

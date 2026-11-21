@@ -12,6 +12,10 @@ Algorithm (align_to_script):
   5. Script tokens with no match are interpolated evenly in the gap between the nearest timed
      neighbours. Finally times are forced monotonic with start < end.
 Times are seconds from the start of the scene wav.
+
+Sources (per scene, and top-level in words.json): "kokoro" = Kokoro token timestamps,
+"whisper" = faster-whisper fallback, "engine" = timestamps from any other engine (test /
+extension value). Top-level is the common value, or "mixed" when scenes disagree.
 """
 from __future__ import annotations
 
@@ -34,6 +38,8 @@ def align_to_script(script_text: str, timed: list[dict]) -> list[dict]:
     toks = script_tokens(script_text)
     if not toks:
         return []
+    if not timed:
+        raise ValueError("no word timings for this scene")
     s_words, s_owner = [], []
     for i, t in enumerate(toks):
         for w in normalize_words(t):
@@ -85,22 +91,42 @@ def align_to_script(script_text: str, timed: list[dict]) -> list[dict]:
     return out
 
 
-def write_words(run_dir: Path, scenes: dict[int, list[dict]], source: str) -> Path:
-    """Write run_dir/words.json, replacing the given scenes and keeping any others."""
+def write_words(run_dir: Path, scenes: dict[int, list[dict]], source: str | dict[int, str],
+                keep_ids: set[int] | None = None) -> Path:
+    """Write run_dir/words.json: replace the given scenes, keep other existing ones.
+
+    ``source`` is one label for all given scenes or {scene id: label}. ``keep_ids`` limits the
+    file to those scene ids (drops stale ones). Top-level source is the shared label or "mixed".
+    """
     run_dir = Path(run_dir)
     path = run_dir / "words.json"
-    merged: dict[int, list[dict]] = {}
+    merged: dict[int, tuple[str, list[dict]]] = {}
     if path.exists():
         try:
-            for s in json.loads(path.read_text(encoding="utf-8")).get("scenes", []):
-                merged[int(s["id"])] = s["words"]
+            old = json.loads(path.read_text(encoding="utf-8"))
+            for s in old.get("scenes", []):
+                merged[int(s["id"])] = (s.get("source", old.get("source", "kokoro")), s["words"])
         except (ValueError, KeyError):
             pass
-    merged.update(scenes)
-    data = {"source": source,
-            "scenes": [{"id": i, "words": merged[i]} for i in sorted(merged)]}
+    for i, words in scenes.items():
+        merged[i] = (source if isinstance(source, str) else source[i], words)
+    if keep_ids is not None:
+        merged = {i: v for i, v in merged.items() if i in keep_ids}
+    labels = {v[0] for v in merged.values()}
+    top = labels.pop() if len(labels) == 1 else ("mixed" if labels else "kokoro")
+    data = {"source": top,
+            "scenes": [{"id": i, "source": merged[i][0], "words": merged[i][1]}
+                       for i in sorted(merged)]}
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     return path
+
+
+def whisper_available() -> bool:
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
 def whisper_words(wav: Path) -> list[dict]:
