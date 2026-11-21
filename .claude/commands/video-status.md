@@ -19,5 +19,8 @@ reads; it never changes `status.json`.
   python -m tools.pipeline.status list
   ```
 
+The output names each agent by its studio name from `team.json` (or the defaults), e.g.
+`Step:  [1/4] Story — Quill` and `Sage (reviewer): gate 1 PASS`.
+
 Print the command's output exactly as it is, in a code block. If it prints an `Error: …`
 line, show it and suggest `/video-status` with no argument to see the run folders.

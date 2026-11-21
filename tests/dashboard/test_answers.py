@@ -94,3 +94,17 @@ def test_corrupt_or_unreadable_json_reads_as_none(tmp_path, monkeypatch):
 
     monkeypatch.setattr(Path, "read_text", boom)
     assert answers.read_request(tmp_path) is None
+
+
+def test_cli_team_prints_the_team(tmp_path):
+    p = run_cli("team")
+    assert p.returncode == 0
+    team = json.loads(p.stdout)
+    assert set(team) == {"story", "voice", "design", "animator", "reviewer"}
+    assert all(isinstance(v["name"], str) and v["name"] for v in team.values())
+    (tmp_path / "team.json").write_text('{"story": {"name": "Nib"}}', encoding="utf-8")
+    p = run_cli("team", "--root", tmp_path)
+    team = json.loads(p.stdout)
+    assert team["story"]["name"] == "Nib" and team["reviewer"]["name"] == "Sage"
+    p = run_cli("team", "--root", tmp_path / "nowhere")
+    assert p.returncode == 0 and json.loads(p.stdout)["story"]["name"] == "Quill"

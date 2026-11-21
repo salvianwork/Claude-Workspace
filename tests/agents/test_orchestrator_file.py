@@ -57,10 +57,15 @@ def test_make_video_uses_all_agents_and_tools():
 
 def test_make_video_progress_lines():
     text = MAKE_VIDEO.read_text(encoding="utf-8")
-    for needle in ["▶ [n/4] <Agent> agent is working…",
-                   "🔍 Reviewer checking <step> (round r/3)…",
-                   "✅ Gate", "⏸ Waiting for you:", "🎬 Done:"]:
+    for needle in ["▶ [n/4] <Name> (<Agent>) is working…",
+                   "🔍 <Reviewer name> is checking the <thing> (round r/3)…",
+                   "▶ [1/4] Quill (Story) is working…",
+                   "🔍 Sage is checking the script (round r/3)…",
+                   "✅ Gate", "⏸ Waiting for you:", "🎬 Done:",
+                   "…or answer on the studio board"]:
         assert needle in text, needle
+    # names come from team.json, read once per run
+    assert "python -m tools.dashboard.answers team" in text
 
 
 def test_make_video_status_states_are_valid():
@@ -75,6 +80,7 @@ def test_video_status_calls_status_tool():
     assert "tools.pipeline.status" in text
     assert "python -m tools.pipeline.status show" in text
     assert "python -m tools.pipeline.status list" in text
+    assert "team.json" in text and "Quill" in text  # names shown, from format_status
 
 
 def test_settings_has_notification_hook():
@@ -157,3 +163,122 @@ def test_long_commands_get_long_timeouts(agent, needles):
         assert n in text, n
     if agent == "reviewer":
         assert text.count("timeout: 600000") >= 3  # gate-2 transcript, keyframes, final transcript
+
+
+
+# ---- the studio board (answers from a browser) ----
+
+CHECKPOINT_OPTIONS = {
+    "gate-1": "approve,changes",
+    "gate-1-changed-lines": "approve,changes",
+    "gate-2": "approve,changes",
+    "stuck-gate-<n>": "accept,directions,cancel",
+    "final": "approve,changes",
+    "question": "answer",
+}
+CHECKPOINT_LINKS = {
+    "gate-1": ["01-script/script.md", "review/gate-1-round-<r>.md"],
+    "gate-2": ["02-voice/manifest.json"],
+    "stuck-gate-<n>": ["review/gate-<n>-round-3.md"],
+    "final": ["04-video/out/video.mp4", "04-video/credits.md"],
+}
+BOARD_PLACEHOLDERS = {"<id>": "gate-1-1", "<decision>": "approve", "<n>": "1", "<r>": "1",
+                      "<k>": "1"}
+
+
+def answers_commands() -> list[str]:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    return re.findall(r"python -m tools\.dashboard\.answers [^`\n]*", text)
+
+
+def wait_commands() -> list[str]:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    return re.findall(r"python -m tools\.dashboard\.wait [^`\n]*", text)
+
+
+def _fill(cmd: str, run: Path) -> list[str]:
+    filled = cmd.replace('"<run_dir>"', shlex.quote(str(run)))
+    for key, value in BOARD_PLACEHOLDERS.items():
+        filled = filled.replace(key, value)
+    return shlex.split(filled)[3:]  # drop "python -m tools.dashboard.<x>"
+
+
+def test_make_video_uses_the_studio_board():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    for needle in ["tools.dashboard.answers request", "tools.dashboard.answers write",
+                   "tools.dashboard.answers show", "tools.dashboard.wait",
+                   "run_in_background: true", "--source chat", "already answered",
+                   "timeout", "owner approved final video", "board/request.json"]:
+        assert needle in text, needle
+    for checkpoint in CHECKPOINT_OPTIONS:
+        assert f"--checkpoint {checkpoint} " in text, checkpoint
+    assert "final" in text
+
+
+def test_every_checkpoint_request_is_complete():
+    reqs = [c for c in answers_commands() if c.startswith("python -m tools.dashboard.answers request")]
+    seen = set()
+    for cmd in reqs:
+        argv = shlex.split(cmd.replace('"<run_dir>"', "RUN"))
+        assert argv[4] == "RUN", cmd  # the run folder, quoted
+        cp = argv[argv.index("--checkpoint") + 1]
+        assert cp in CHECKPOINT_OPTIONS, cmd
+        assert argv[argv.index("--options") + 1] == CHECKPOINT_OPTIONS[cp], cmd
+        assert "--title" in argv and "--body" in argv, cmd
+        body = argv[argv.index("--body") + 1]
+        assert body and not any(ch in body for ch in "*#`"), cmd  # short plain text
+        links = [argv[i + 1] for i, a in enumerate(argv) if a == "--link"]
+        for path in CHECKPOINT_LINKS.get(cp, []):
+            assert any(link.endswith("=" + path) for link in links), (cp, path)
+        seen.add(cp)
+    assert seen == set(CHECKPOINT_OPTIONS)
+
+
+def test_every_answers_command_runs_against_the_real_cli(tmp_path):
+    from tools.dashboard import answers
+    cmds = answers_commands()
+    assert len(cmds) >= 9
+    for i, cmd in enumerate(cmds):
+        run = tmp_path / f"run {i}"  # a space, like the owner's path
+        run.mkdir()
+        assert '"<run_dir>"' in cmd or " team" in cmd, cmd
+        argv = _fill(cmd, run)
+        if argv[0] in ("write", "show"):
+            answers.write_request(run, "gate-1", "T", "B", sorted(answers.DECISIONS))
+        try:
+            code = answers.main(argv)
+        except SystemExit as e:  # argparse error
+            code = e.code
+        assert code == 0, cmd
+
+
+def test_every_wait_command_runs_against_the_real_cli(tmp_path):
+    from tools.dashboard import wait
+    cmds = wait_commands()
+    assert cmds
+    for cmd in cmds:
+        assert '"<run_dir>"' in cmd and "--id <id>" in cmd, cmd
+        try:
+            code = wait.main(_fill(cmd, tmp_path) + ["--timeout", "0"])
+        except SystemExit as e:
+            code = e.code
+        assert code == 3, cmd  # parsed fine, nothing answered → timeout
+
+
+def test_checkpoints_record_waiting_before_the_request():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    for start, end in [("### 4.1", "### 4.2"), ("### 4.2", "## 5."), ("## 5.", "## 6."),
+                       ("## 6.", "## 7.")]:
+        part = text.split(start, 1)[1].split(end, 1)[0]
+        waits = [m.start() for m in re.finditer(r"--state (waiting_owner|failed)", part)]
+        reqs = [m.start() for m in re.finditer(r"tools\.dashboard\.answers request", part)]
+        assert waits and reqs, start
+        assert min(waits) < min(reqs), start
+
+
+def test_resume_re_arms_the_waiter():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    resume = text.split("## 8. Resume", 1)[1]
+    for needle in ["board/request.json", "tools.dashboard.answers show", "same id",
+                   "final video"]:
+        assert needle in resume, needle

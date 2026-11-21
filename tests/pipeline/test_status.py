@@ -112,3 +112,29 @@ def test_cli_init_show_list(tmp_path, capsys):
     assert "reviewing" in capsys.readouterr().out
     assert main(["list", "--videos-root", str(tmp_path)]) == 0
     assert "hello-world" in capsys.readouterr().out
+
+
+def test_format_status_shows_team_names(tmp_path):
+    run = init_run("Volcanoes", tmp_path / "videos")
+    update(run, agent="reviewer", event="review started")
+    out = format_status(run)
+    assert "[1/4] Story" in out and "Quill" in out  # default team (no team.json above the run)
+    assert "Quill (story): started" in out and "Sage (reviewer): review started" in out
+
+
+def test_format_status_reads_team_json_above_the_run(tmp_path):
+    (tmp_path / "team.json").write_text(
+        json.dumps({"story": {"name": "Nib"}, "reviewer": {"name": "Owl"}}), encoding="utf-8")
+    run = init_run("Volcanoes", tmp_path / "videos")
+    update(run, step="voice", agent="reviewer", event="gate 1 PASS")
+    update(run, agent="someone", event="odd")
+    out = format_status(run)
+    assert "[2/4] Voice — Echo" in out
+    assert "Owl (reviewer): gate 1 PASS" in out and "Nib (story): started" in out
+    assert "someone: odd" in out
+
+
+def test_format_status_done_step_has_no_name(tmp_path):
+    run = init_run("X", tmp_path)
+    update(run, step="done", state="done", agent="animator", event="video done")
+    assert "Step:  [4/4] Done\n" in format_status(run)

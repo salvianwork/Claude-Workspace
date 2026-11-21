@@ -5,6 +5,8 @@ Files live in <run>/board/ (created on demand):
   requests.log          JSON lines, one per write_request (id source: k = 1 + the
                         number of earlier lines with the same checkpoint)
   answer-<id>.json      the owner's answer, written once (open "x")
+
+CLI: request | write | show | team (prints the team names from team.json, or the defaults)
 """
 from __future__ import annotations
 
@@ -148,6 +150,8 @@ def main(argv=None) -> int:
     w.add_argument("--source", default="board")
     s = sub.add_parser("show")
     s.add_argument("run")
+    tm = sub.add_parser("team")
+    tm.add_argument("--root", default=str(Path(__file__).resolve().parents[2]))
     a = ap.parse_args(argv)
     try:
         if a.cmd == "request":
@@ -161,6 +165,9 @@ def main(argv=None) -> int:
             print(write_request(Path(a.run), a.checkpoint, a.title, a.body, opts, links)["id"])
         elif a.cmd == "write":
             _out(write_answer(Path(a.run), a.id, a.decision, a.text, a.source))
+        elif a.cmd == "team":
+            from tools.dashboard.state import load_team  # state imports this module
+            _out(load_team(Path(a.root)))
         else:
             req = read_request(Path(a.run))
             _out({"request": req, "answer": read_answer(Path(a.run), req["id"]) if req else None})

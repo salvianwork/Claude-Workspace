@@ -136,18 +136,35 @@ def update(
     return status
 
 
+def _team_for(run_dir: Path) -> dict:
+    """Display names: team.json in the nearest folder above the run, else the defaults."""
+    from tools.dashboard.state import DEFAULT_TEAM, load_team  # state imports this module
+
+    for parent in Path(run_dir).resolve().parents:
+        if (parent / "team.json").is_file():
+            return load_team(parent)
+    return DEFAULT_TEAM
+
+
 def format_status(run_dir: Path) -> str:
     s = load_status(run_dir)
+    team = _team_for(run_dir)
+
+    def who(agent: str) -> str:
+        entry = team.get(agent)
+        return f"{entry['name']} ({agent})" if isinstance(entry, dict) and entry.get("name") else agent
+
+    step_name = team.get(s["step"], {}).get("name")
     lines = [
         f"Topic: {s['topic']}",
-        f"Step:  {STEP_DISPLAY[s['step']]}",
+        f"Step:  {STEP_DISPLAY[s['step']]}" + (f" — {step_name}" if step_name else ""),
         f"State: {s['state']}",
         f"Round: {s['round']}",
         "Last events:",
     ]
     for h in s.get("history", [])[-5:]:
         detail = f" ({h['detail']})" if h.get("detail") else ""
-        lines.append(f"  {h['time']} {h['agent']}: {h['event']}{detail}")
+        lines.append(f"  {h['time']} {who(h['agent'])}: {h['event']}{detail}")
     return "\n".join(lines)
 
 
