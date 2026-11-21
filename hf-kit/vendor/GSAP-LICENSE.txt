@@ -1,0 +1,18 @@
+GSAP 3.15.1 (npm package "gsap", file dist/gsap.min.js), vendored unmodified.
+
+Licence notice as shipped in the package (gsap.min.js header):
+
+  GSAP 3.15.1
+  https://gsap.com
+  @license Copyright 2026, GreenSock. All rights reserved.
+  Subject to the terms at https://gsap.com/standard-license.
+  @author: Jack Doyle, jack@greensock.com
+
+package.json "license": Standard 'no charge' license: https://gsap.com/standard-license.
+
+README.md (License): GreenSock's standard "no charge" license can be viewed at
+https://gsap.com/standard-license. Since Webflow's acquisition (2024) GSAP and all
+its plugins are free to use, including commercially, under that licence.
+
+The full licence text is published at https://gsap.com/standard-license; the npm
+package does not ship a copy of it.

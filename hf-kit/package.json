@@ -1,0 +1,16 @@
+{
+  "name": "hf-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared HyperFrames studio kit for the video agent team (offline: vendored GSAP and fonts).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "sample": "node scripts/sample.mjs",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "hyperframes": "0.9.72"
+  }
+}

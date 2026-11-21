@@ -15,4 +15,6 @@ assets/audio/sfx/*
 .venv-voice/
 hf-kit/node_modules/
 hf-kit/sample/out.mp4
+hf-kit/sample/kit/
+.hyperframes/
 docs/hf/*.mp4

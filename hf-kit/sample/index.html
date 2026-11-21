@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <!-- hf-kit sample: 3 s, shell + text + one GSAP tween, vendored files only.
+       kit/ is copied in by tools.hf.render.install_kit (or npm run sample). -->
+  <link rel="stylesheet" href="kit/vendor/fonts/fonts.css">
+  <style>
+    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0F172A; }
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    #shell { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 35%, #1E293B 0%, #0F172A 70%); }
+    #title { position: absolute; left: 96px; top: 330px; width: 1728px; margin: 0;
+             font-family: "Poppins", "Inter", sans-serif; font-weight: 700; font-size: 104px;
+             line-height: 1.1; color: #F1F5F9; }
+    #subtitle { position: absolute; left: 96px; top: 470px; width: 1728px; margin: 0;
+                font-family: "Inter", "Poppins", sans-serif; font-weight: 500; font-size: 40px; color: #CBD5E1; }
+    #bar { position: absolute; left: 96px; top: 560px; width: 320px; height: 12px; border-radius: 6px;
+           background: #F59E0B; transform-origin: 0 50%; }
+    #caption { position: absolute; left: 96px; top: 812px; width: 1728px; margin: 0; text-align: center;
+               font-family: "Inter", sans-serif; font-weight: 600; font-size: 40px; color: #F1F5F9; }
+  </style>
+  <script src="kit/vendor/gsap.min.js"></script>
+  <script src="kit/src/kit.js"></script>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-start="0" data-duration="3" data-width="1920" data-height="1080">
+    <div id="shell" class="clip" data-start="0" data-duration="3" data-track-index="0"></div>
+    <h1 id="title" class="clip" data-start="0" data-duration="3" data-track-index="1">How volcanoes work</h1>
+    <p id="subtitle" class="clip" data-start="0" data-duration="3" data-track-index="2">An hf-kit sample, rendered offline</p>
+    <div id="bar" class="clip" data-start="0" data-duration="3" data-track-index="3"></div>
+    <p id="caption" class="clip" data-start="0" data-duration="3" data-track-index="4">Deep under a volcano sits a magma chamber.</p>
+  </div>
+  <script>
+    const tl = HFKit.timeline("main");
+    tl.from("#title", { y: 60, opacity: 0, duration: 0.8, ease: "power3.out" }, 0.1);
+    tl.from("#subtitle", { y: 30, opacity: 0, duration: 0.6, ease: "power2.out" }, 0.45);
+    tl.from("#bar", { scaleX: 0, duration: 0.7, ease: "power2.inOut" }, 0.7);
+    tl.from("#caption", { opacity: 0, duration: 0.4, ease: "none" }, 1.2);
+    tl.to("#title", { scale: 1.03, transformOrigin: "0% 50%", duration: 1.5, ease: "sine.inOut" }, 1.4);
+    window.__timelines["main"] = tl; // HFKit.timeline registered it; HyperFrames' lint wants it spelled out
+  </script>
+</body>
+</html>
