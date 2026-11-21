@@ -63,4 +63,9 @@
   /* timing.js (wordTime, cameraAt, cueState, captionPage) merges itself in; cover the
    * case where it was loaded first. */
   if (root.HFKitTiming) Object.assign(root.HFKit, root.HFKitTiming);
+  /* Same for the presenter (src/presenter/*.js: look, motion, poses, parts, figure). */
+  if (root.HFKitPresenter) {
+    root.HFKit.presenter = root.HFKitPresenter;
+    root.HFKit.mountPresenter = root.HFKitPresenter.mountPresenter;
+  }
 })(typeof globalThis !== "undefined" ? globalThis : window);

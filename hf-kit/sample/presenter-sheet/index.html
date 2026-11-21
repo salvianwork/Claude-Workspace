@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1680">
+  <!-- Presenter character sheet for the HyperFrames kit: every pose in both outfits, the four
+       talk mouth shapes and every expression. Same layout as the Remotion CharacterSheet
+       (templates/src/CharacterSheet.tsx). kit/ is copied in by npm run sheet (or install_kit). -->
+  <link rel="stylesheet" href="kit/vendor/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #0F172A; --text: #F1F5F9; --accent: #F59E0B;
+      --heading: "Poppins", Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      --body: "Inter", Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    html, body { margin: 0; width: 1920px; height: 1680px; overflow: hidden; background: var(--bg); }
+    #root { position: relative; width: 1920px; height: 1680px; overflow: hidden; }
+    #sheet { position: absolute; inset: 0; box-sizing: border-box; background: var(--bg); padding: 26px 40px;
+             display: flex; flex-direction: column; gap: 14px; }
+    .head { display: flex; align-items: flex-end; justify-content: space-between; height: 56px; }
+    .title { font-family: var(--heading); font-weight: 800; font-size: 38px; color: var(--text); letter-spacing: -0.01em; }
+    .title span { color: var(--accent); }
+    .subtitle { font-family: var(--body); font-size: 19px; color: rgba(241, 245, 249, 0.6); }
+    .swatches { display: flex; gap: 18px; font-family: var(--body); font-size: 17px; color: rgba(241, 245, 249, 0.7); }
+    .swatch { display: flex; align-items: center; gap: 8px; }
+    .swatch i { width: 26px; height: 26px; border-radius: 8px; border: 2px solid rgba(241, 245, 249, 0.25); box-sizing: border-box; }
+    .outfit { display: flex; flex-direction: column; gap: 8px; }
+    .outfit-title { display: flex; align-items: baseline; gap: 14px; height: 34px; }
+    .outfit-title b { font-family: var(--heading); font-weight: 700; font-size: 28px; color: var(--text); }
+    .outfit-title span { font-family: var(--body); font-size: 18px; color: rgba(241, 245, 249, 0.55); }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 292px); gap: 12px; }
+    .card { background: rgba(30, 41, 59, 0.75); border: 1.5px solid rgba(56, 189, 248, 0.18); border-radius: 22px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end; overflow: hidden;
+            padding-bottom: 10px; }
+    .pose { position: relative; padding-bottom: 0; }
+    .pose .label { position: absolute; bottom: 12px; left: 18px; }
+    .pose .label.right { left: auto; right: 18px; text-align: right; }
+    .label { text-align: center; line-height: 1.15; }
+    .label b { display: block; font-family: var(--heading); font-weight: 700; font-size: 24px; color: var(--text); }
+    .label span { display: block; font-family: var(--body); font-size: 17px; color: rgba(241, 245, 249, 0.55); }
+    .pose .label { text-align: left; }
+    .pose .label.right { text-align: right; }
+    .bottom { display: flex; gap: 14px; flex: 1; }
+    .group { justify-content: flex-start; padding-top: 10px; }
+    .group-title { font-family: var(--body); font-size: 18px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+    .items { display: flex; justify-content: space-around; width: 100%; flex: 1; align-items: flex-end; margin-top: 4px; }
+    .item { display: flex; flex-direction: column; align-items: center; }
+  </style>
+  <script src="kit/vendor/gsap.min.js"></script>
+  <script src="kit/src/kit.js"></script>
+  <script src="kit/src/presenter/look.js"></script>
+  <script src="kit/src/presenter/motion.js"></script>
+  <script src="kit/src/presenter/poses.js"></script>
+  <script src="kit/src/presenter/parts.js"></script>
+  <script src="kit/src/presenter/figure.js"></script>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-start="0" data-duration="1" data-width="1920" data-height="1680">
+    <div id="sheet" class="clip" data-start="0" data-duration="1" data-track-index="0"></div>
+  </div>
+  <script>
+    (function () {
+      var P = HFKit.presenter;
+      /* Expression and mouth used for each pose on the sheet (same as the Remotion sheet). */
+      var POSE_LOOK = {
+        idle: ["neutral", 0], talk: ["happy", 0.55], "point-left": ["curious", 0], "point-right": ["happy", 0.3],
+        think: ["thinking", 0], surprised: ["surprised", 0.5], celebrate: ["happy", 0.85], wave: ["happy", 0.3],
+      };
+      var MOUTHS = [["closed", "< 0.15", 0], ["slight", "0.15–0.4", 0.3], ["open", "0.4–0.7", 0.55], ["wide", "≥ 0.7", 0.85]];
+      var OUTFIT_TITLE = { blazer: ["Navy blazer", "default · any topic"], labcoat: ["Lab coat", "science · health · technology"] };
+      var blazer = P.palette(P.LOOK, "blazer");
+      var lab = P.palette(P.LOOK, "labcoat");
+
+      function label(text, sub, cls) {
+        return '<div class="label ' + (cls || "") + '"><b>' + text + "</b>" + (sub ? "<span>" + sub + "</span>" : "") + "</div>";
+      }
+      function head(expression, mouth) {
+        return P.figureSVG({ pose: P.POSES.idle, face: P.faceAt(expression, expression, 1), mouth: mouth, blink: 0, t: 0,
+          side: "center", crop: "head", width: 150, height: 164, still: true });
+      }
+
+      var html = '<div class="head"><div><div class="title">Presenter <span>character sheet</span></div>' +
+        '<div class="subtitle">' + P.PRESENTER_POSES.length + " poses × " + P.PRESENTER_OUTFITS.length + " outfits · 4 talk mouth shapes · " +
+        P.PRESENTER_EXPRESSIONS.length + " expressions · look settings in hf-kit/src/presenter/look.js</div></div>" +
+        '<div class="swatches">' + [["skin", blazer.skin], ["hair", blazer.hair], ["blazer", blazer.jacket], ["shirt", blazer.shirt],
+          ["lab coat", lab.jacket], ["shirt", lab.shirt]].map(function (s) {
+          return '<div class="swatch"><i style="background:' + s[1] + '"></i>' + s[0] + "</div>";
+        }).join("") + "</div></div>";
+
+      P.PRESENTER_OUTFITS.forEach(function (outfit) {
+        html += '<div class="outfit"><div class="outfit-title"><b>' + OUTFIT_TITLE[outfit][0] + "</b><span>presenterOutfit: \"" +
+          outfit + "\" · " + OUTFIT_TITLE[outfit][1] + '</span></div><div class="grid">';
+        P.PRESENTER_POSES.forEach(function (p) {
+          var look = POSE_LOOK[p];
+          html += '<div class="card pose" data-pose="' + p + '">' +
+            P.figureSVG({ pose: P.POSES[p], face: P.faceAt(look[0], look[0], 1), mouth: look[1], blink: 0, t: 0,
+              side: "center", outfit: outfit, width: 434, height: 288, still: true }) +
+            label(p, look[0], p === "point-right" ? "right" : "") + "</div>";
+        });
+        html += "</div></div>";
+      });
+
+      html += '<div class="bottom">' + [
+        { title: "talk: mouth shapes (from voice loudness)", items: MOUTHS.map(function (m) { return { n: m[0], sub: m[1], el: head("neutral", m[2]) }; }) },
+        { title: "expressions", items: P.PRESENTER_EXPRESSIONS.map(function (e) { return { n: e, sub: "", el: head(e, 0) }; }) },
+      ].map(function (g) {
+        return '<div class="card group" style="flex:' + g.items.length + '"><div class="group-title">' + g.title + '</div><div class="items">' +
+          g.items.map(function (it) { return '<div class="item">' + it.el + label(it.n, it.sub) + "</div>"; }).join("") + "</div></div>";
+      }).join("") + "</div>";
+
+      document.getElementById("sheet").innerHTML = html;
+    })();
+    window.__timelines = window.__timelines || {};
+    window.__timelines["main"] = HFKit.timeline("main"); // a still: the timeline only fixes the duration
+    window.__timelines["main"].set({}, {}, 1);
+  </script>
+</body>
+</html>

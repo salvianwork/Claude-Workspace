@@ -8,6 +8,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "sample": "node scripts/sample.mjs",
+    "sheet": "node scripts/sheet.mjs",
     "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {
