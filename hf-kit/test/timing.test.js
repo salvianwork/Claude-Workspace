@@ -4,7 +4,7 @@ import "../src/kit.js";
 import "../src/timing.js";
 
 const T = globalThis.HFKitTiming;
-const { wordTime, cameraAt, cueState, captionPage, resolveCamera } = T;
+const { wordTime, cameraAt, cueState, captionPage, resolveCamera, cameraSchedule, cameraOverrun } = T;
 
 const words = [
   { i: 0, text: "Deep", start: 0.12, end: 0.38 },
@@ -140,4 +140,127 @@ test("captionPage: fixed pages and current word", () => {
   assert.equal(p.current, 4);
   assert.equal(captionPage(w, 12, 4).words[0].i, 12);
   assert.deepEqual(captionPage([], 3), { words: [], current: -1 });
+});
+
+function sweep(keys, anchors, to, dt = 0.001) {
+  let prev = cameraAt(keys, 0, anchors, LIM);
+  let maxPan = 0, maxDz = 0, last = prev;
+  for (let t = dt; t < to; t += dt) {
+    const c = cameraAt(keys, t, anchors, LIM);
+    maxPan = Math.max(maxPan, (Math.hypot(c.x - prev.x, c.y - prev.y) * Math.max(c.zoom, prev.zoom)) / dt);
+    maxDz = Math.max(maxDz, Math.abs(c.zoom - prev.zoom) / dt);
+    prev = last = c;
+  }
+  return { maxPan, maxDz, last };
+}
+
+test("follow: fast anchor (1 unit/s) never exceeds the pan limit or jumps, in transition and hold", () => {
+  const anchors = { run: (t) => ({ x: 0.5 + t, y: 0.5 }) };
+  const keys = [{ t: 0, frame: "wide" }, { t: 1, frame: { follow: "run", zoom: 1.5 } }];
+  const r = sweep(keys, anchors, 30);
+  assert.ok(r.maxPan <= LIM.maxPanPerSec * 1.01, `pan ${r.maxPan}`);
+  assert.ok(r.maxDz <= LIM.maxZoomPerSec * 1.01);
+  assert.ok(r.maxPan > LIM.maxPanPerSec * 0.9, "holds full speed while lagging");
+  assert.ok(Math.abs(r.last.zoom - 1.5) < 1e-9);
+});
+
+test("follow: fast anchor on the very first key is slew-limited too", () => {
+  const anchors = { run: (t) => ({ x: 0.2 + 0.5 * t, y: 0.5 }) };
+  const r = sweep([{ t: 0, frame: { follow: "run" } }], anchors, 10);
+  assert.ok(r.maxPan <= LIM.maxPanPerSec * 1.01);
+});
+
+test("follow: a slow anchor is tracked closely", () => {
+  const anchors = { tip: (t) => ({ x: 0.3 + 0.02 * t, y: 0.4 + 0.01 * t }) };
+  const keys = [{ t: 0, frame: "wide" }, { t: 3, frame: { follow: "tip", zoom: 1.4 } }];
+  for (const t of [20, 25, 30]) {
+    const c = cameraAt(keys, t, anchors, LIM);
+    const a = anchors.tip(t);
+    assert.ok(Math.hypot(c.x - a.x, c.y - a.y) < 1e-3, `at ${t}`);
+  }
+  const r = sweep(keys, anchors, 30);
+  assert.ok(r.maxPan <= LIM.maxPanPerSec * 1.01);
+});
+
+test("follow: leaving a follow key to a static focus obeys the limit", () => {
+  const anchors = { run: (t) => ({ x: 0.5 + 0.3 * t, y: 0.5 }), home: { x: 0.1, y: 0.9 } };
+  const keys = [{ t: 0, frame: "wide" }, { t: 2, frame: { follow: "run", zoom: 2 } }, { t: 6, frame: { focus: "home", zoom: 1.2 } }];
+  const r = sweep(keys, anchors, 60);
+  assert.ok(r.maxPan <= LIM.maxPanPerSec * 1.01);
+  assert.ok(r.maxDz <= LIM.maxZoomPerSec * 1.01);
+  assert.ok(Math.abs(r.last.x - 0.1) < 1e-6 && Math.abs(r.last.y - 0.9) < 1e-6);
+});
+
+test("cameraAt: stretch driven by pan (small zoom change) obeys the limit", () => {
+  const anchors = { far: { x: 0.95, y: 0.05 } };
+  const keys = [{ t: 0, frame: "wide" }, { t: 0.1, frame: { focus: "far", zoom: 1.2 } }];
+  const sched = cameraSchedule(keys, anchors, LIM);
+  assert.ok(sched[0].end > 6, `pan-stretched end ${sched[0].end}`);
+  const r = sweep(keys, anchors, 10);
+  assert.ok(r.maxPan <= LIM.maxPanPerSec * 1.01);
+  assert.ok(r.maxPan > LIM.maxPanPerSec * 0.8, "pan is the binding limit");
+});
+
+test("cameraSchedule: effective, chained move times", () => {
+  const anchors = { a: { x: 0.9, y: 0.1 }, b: { x: 0.2, y: 0.2 } };
+  const keys = [
+    { t: 0, frame: "wide" },
+    { t: 0.1, frame: { focus: "a", zoom: 2.5 } },
+    { t: 0.2, frame: { focus: "b", zoom: 1.5 } },
+  ];
+  const s = cameraSchedule(keys, anchors, LIM);
+  assert.equal(s.length, 2);
+  assert.equal(s[0].start, 0);
+  assert.ok(s[0].end >= 7.5 - 1e-9);
+  assert.equal(s[1].start, s[0].end);
+  assert.ok(s[1].end > s[1].start);
+  assert.deepEqual(cameraSchedule([], {}, LIM), []);
+  assert.deepEqual(cameraSchedule([keys[0]], {}, LIM), []);
+});
+
+test("cameraSchedule: a calm move keeps its nominal times", () => {
+  const anchors = { c: { x: 0.4, y: 0.5 } };
+  const s = cameraSchedule([{ t: 1, frame: "wide" }, { t: 9, frame: { focus: "c", zoom: 1.5 } }], anchors, LIM);
+  assert.deepEqual(s, [{ start: 1, end: 9 }]);
+});
+
+test("cameraOverrun: seconds past the scene end, 0 if none", () => {
+  const anchors = { a: { x: 0.9, y: 0.1 } };
+  const keys = [{ t: 0, frame: "wide" }, { t: 0.1, frame: { focus: "a", zoom: 2.5 } }];
+  const end = cameraSchedule(keys, anchors, LIM)[0].end;
+  assert.ok(Math.abs(cameraOverrun(keys, anchors, LIM, 5) - (end - 5)) < 1e-9);
+  assert.equal(cameraOverrun(keys, anchors, LIM, end + 1), 0);
+  assert.equal(cameraOverrun([], anchors, LIM, 5), 0);
+});
+
+test("resolveCamera: sorts stably and validates", () => {
+  const r = resolveCamera([
+    { at: { t: 3 }, frame: "wide" },
+    { at: { word: 0 }, frame: { focus: "a", zoom: 2 } },
+    { at: { t: 3 }, frame: { follow: "b" } },
+  ], words, 1);
+  assert.deepEqual(r.map((k) => k.t), [0.12, 3, 3]);
+  assert.equal(r[1].frame, "wide"); // stable among equal times
+  assert.throws(() => resolveCamera([{ at: { t: 0 }, frame: "wide" }, { at: { t: 1 }, frame: { zoom: 2 } }], words, 5),
+    { message: /^scene 5: camera key 1 / });
+  assert.throws(() => resolveCamera([{ at: { t: 0 }, frame: "close" }], words, 5), { message: /^scene 5: camera key 0 / });
+  assert.throws(() => resolveCamera([{ at: { t: 0 }, frame: { focus: "nope", zoom: 2 } }], words, 5, { a: { x: 0, y: 0 } }),
+    { message: /^scene 5: camera key 0 .*nope/ });
+});
+
+test("HFKit re-exports timing in both load orders", async () => {
+  const saved = [globalThis.HFKit, globalThis.HFKitTiming];
+  try {
+    for (const order of [["kit", "timing"], ["timing", "kit"]]) {
+      delete globalThis.HFKit;
+      delete globalThis.HFKitTiming;
+      for (const m of order) await import(`../src/${m}.js?order=${order.join("-")}`);
+      for (const name of ["wordTime", "cameraAt", "cueState", "captionPage", "cameraSchedule", "cameraOverrun"]) {
+        assert.equal(typeof globalThis.HFKit[name], "function", `${order} ${name}`);
+        assert.equal(globalThis.HFKit[name], globalThis.HFKitTiming[name]);
+      }
+    }
+  } finally {
+    [globalThis.HFKit, globalThis.HFKitTiming] = saved;
+  }
 });
