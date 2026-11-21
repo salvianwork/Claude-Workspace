@@ -47,7 +47,8 @@ def check_node(version: str | None) -> Check:
     if not version:
         return Check("Node.js", False, "not found", fix)
     major = int(version.lstrip("v").split(".")[0])
-    return Check("Node.js", major >= 20, version if major >= 20 else f"{version} (need 20 or newer)", fix)
+    # HyperFrames (hf-kit) needs Node 22 or newer.
+    return Check("Node.js", major >= 22, version if major >= 22 else f"{version} (need 22 or newer)", fix)
 
 
 def check_music(root: Path = lib.DEFAULT_ROOT) -> Check:
@@ -138,6 +139,13 @@ def _node_modules() -> Check:
                  "cd templates, then npm install")
 
 
+def check_hf_kit(kit_dir: Path = ROOT / "hf-kit") -> Check:
+    """The HyperFrames video kit's packages (hf-kit/node_modules/hyperframes)."""
+    ok = (Path(kit_dir) / "node_modules" / "hyperframes").is_dir()
+    return Check("HyperFrames kit (hf-kit)", ok, "installed" if ok else "missing",
+                 "cd hf-kit, then npm ci")
+
+
 def run_checks() -> list[Check]:
     return [
         check_python(),
@@ -150,6 +158,7 @@ def run_checks() -> list[Check]:
         _import_check("faster-whisper (review)", "faster_whisper", 'pip install -e ".[voice,review,dev]"'),
         _spacy(),
         _av(),
+        check_hf_kit(),
         _node_modules(),
         check_library(),
         check_music(),

@@ -33,6 +33,8 @@ def test_av_version():
 def test_node_version():
     assert cs.check_node("v22.1.0").ok is True
     assert cs.check_node("v18.0.0").ok is False
+    c = cs.check_node("v20.11.1")
+    assert c.ok is False and "22" in c.detail
     assert cs.check_node(None).ok is False
 
 
@@ -96,3 +98,14 @@ def test_run_checks_needs_espeakng_loader_not_the_program(monkeypatch):
     assert checks["espeak-ng program"].ok is None
     assert "espeak-ng (voice helper)" in checks
     assert "espeak-ng" not in checks
+
+
+def test_hf_kit_installed_and_missing(tmp_path):
+    c = cs.check_hf_kit(tmp_path)
+    assert c.ok is False and "npm ci" in c.fix and "hf-kit" in c.fix
+    (tmp_path / "node_modules" / "hyperframes").mkdir(parents=True)
+    assert cs.check_hf_kit(tmp_path).ok is True
+
+
+def test_run_checks_includes_hf_kit():
+    assert "HyperFrames kit (hf-kit)" in {c.name for c in cs.run_checks()}
