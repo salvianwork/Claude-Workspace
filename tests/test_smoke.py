@@ -61,7 +61,7 @@ def test_smoke_full_pipeline(tmp_path):
     build_mix(run, root)
     assert check_mix(run)["problems"] == []
 
-    out = render_video(run, REPO / "templates")
+    out = render_video(run, REPO / "templates", engine="remotion")
     assert out.exists() and out.stat().st_size > 0
 
     # transcript check needs faster-whisper (and its model download)

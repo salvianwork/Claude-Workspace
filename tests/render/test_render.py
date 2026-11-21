@@ -42,7 +42,7 @@ def test_render_refuses_on_timing_problem(tmp_path):
     (run / "04-video" / "scenes.json").write_text(json.dumps(
         {"fps": 30, "scenes": [{"id": 1, "durationInFrames": 999}]}))
     with pytest.raises(RenderError, match="scene 1"):
-        render_video(run, REPO / "templates")
+        render_video(run, REPO / "templates", engine="remotion")
 
 
 def _tone(path, seconds):
@@ -78,7 +78,7 @@ def test_render_fixture_end_to_end(tmp_path):
     (run / "04-video" / "scenes.json").write_text(json.dumps(fixture))
     build_mix(run, root)
 
-    out = render_video(run, REPO / "templates")
+    out = render_video(run, REPO / "templates", engine="remotion")
     assert out == run / "04-video" / "out" / "video.mp4" and out.exists()
     assert not (run / "04-video" / "out" / "silent.mp4").exists()
     info = json.loads(subprocess.run(

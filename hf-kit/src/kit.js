@@ -51,8 +51,9 @@
     return tl;
   }
 
-  /* Every kit script, in load order (paths relative to the kit folder). Props load after these:
-   * kit/props/<name>/prop.js. */
+  /* Every kit script, in load order (paths relative to the kit folder). Props and hero modules
+   * load after these (kit/props/<name>/prop.js, scenes/scene-<id>.js); composition.js only
+   * needs them when mountComposition runs. */
   var SCRIPTS = [
     "src/kit.js", "src/timing.js",
     "src/presenter/look.js", "src/presenter/motion.js", "src/presenter/poses.js", "src/presenter/parts.js", "src/presenter/figure.js",
@@ -60,6 +61,7 @@
     "src/blocks/kinetic-center-build.js", "src/blocks/transitions.js",
     "src/scenes/common.js", "src/scenes/title.js", "src/scenes/steps.js", "src/scenes/compare.js", "src/scenes/chart.js",
     "src/scenes/kinetic.js", "src/scenes/recap.js", "src/scenes/diagram.js",
+    "src/composition.js",
   ];
 
   root.HFKit = {

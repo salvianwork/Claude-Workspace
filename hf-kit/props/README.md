@@ -39,5 +39,12 @@ or adapt a prop when it fits. One line per prop:
     scene) so any frame can be rendered in any order. `cueState` is `HFKit.cueState(...)` for the
     scene's cues. `anchors[name]` is `{x, y}` in world px, or a function `t -> {x, y}` for a
     moving part. `params.phases` holds the phase times in seconds.
+  - Optional `anchorsFor(params) -> anchors` (same anchors without a DOM): lets
+    `python -m tools.hf.shots validate` / `tools.hf.build` check the camera timing in node
+    (a camera that ends more than 0.25 s after the scene fails the build). Without it only the
+    anchor names are checked.
+- While a video is being made, a new hero (`new_prop: true`) lives in the run as
+  `04-video/hf/scenes/scene-<id>.js` with the same contract (`HFKit.props["<name>"] = ...`);
+  `tools.hf.build` loads it instead of the library.
 - `preview.png` — a snapshot of the prop mid-story (from `python -m tools.hf.snapshot`).
 - `README.md` — one line describing it (and add the line above).
