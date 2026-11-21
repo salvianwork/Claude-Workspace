@@ -195,3 +195,42 @@ def test_cli_validate(run, capsys):
     (run / "02-voice" / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     assert shots_mod.main(["validate", str(run)]) == 0
     assert "shots.json OK" in capsys.readouterr().out
+
+
+GEYSER = ('(function(){HFKit.props["geyser"]={meta:{name:"geyser",world:{width:1920,height:1080},'
+          'frame:{x:0,y:0,width:1920,height:1080},anchors:["spout"]},'
+          'mount:function(){return {update:function(){},anchors:{spout:{x:1,y:1}}};}};})();')
+
+
+def test_paths_with_spaces_reach_the_node_helper(tmp_path):
+    """Run, props, hero module and kit folders all have spaces (Windows-style paths)."""
+    run = make_run(tmp_path / "a folder")
+    kit = tmp_path / "my kit copy"
+    for part in ("src", "vendor"):
+        shutil.copytree(REPO / "hf-kit" / part, kit / part)
+    shutil.copytree(PROPS / "volcano", kit / "props" / "volcano")
+    shots, words, manifest = load(run)
+    _two_heroes(shots, words, manifest)
+    shots["scenes"][3].update({"prop": "geyser", "new_prop": True, "cues": [], "camera": []})
+    scenes_dir = run / "04-video" / "hf" / "scenes"
+    scenes_dir.mkdir(parents=True)
+    (scenes_dir / "scene-4.js").write_text(GEYSER, encoding="utf-8")
+    assert " " in str(run) and " " in str(kit)
+    errs, warns = review_shots(shots, words, manifest, kit / "props", scenes_dir=scenes_dir, kit_dir=kit)
+    assert errs == [] and warns == []
+    report = kit_check(shots, words, manifest, kit / "props", scenes_dir=scenes_dir, kit_dir=kit)
+    assert [r["id"] for r in report] == [1, 2, 3, 4]
+
+
+def test_hero_without_anchorsFor_warns_camera_not_checked(run):
+    shots, words, manifest = load(run)
+    _two_heroes(shots, words, manifest)
+    shots["scenes"][3].update({"prop": "geyser", "new_prop": True, "cues": [],
+                               "camera": [{"at": {"word": 0}, "frame": "wide"},
+                                          {"at": {"word": 5}, "frame": {"focus": "spout", "zoom": 1.2}}]})
+    scenes_dir = run / "04-video" / "hf" / "scenes"
+    scenes_dir.mkdir(parents=True)
+    (scenes_dir / "scene-4.js").write_text(GEYSER, encoding="utf-8")
+    errs, warns = review_shots(shots, words, manifest, PROPS, scenes_dir=scenes_dir)
+    assert errs == []
+    assert warns == ["scene 4: camera timing NOT checked (add anchorsFor): prop geyser has no anchorsFor(params)"]

@@ -93,7 +93,7 @@ function checkHero(s, out) {
     const fake = {};
     names.forEach((n) => { fake[n] = { x: 0.5, y: 0.5 }; });
     K.resolveCamera(s.camera, s.words, s.id, fake);
-    if (s.camera.length > 1) out.warnings.push(`camera timing not checked: prop ${s.prop} has no anchorsFor(params)`);
+    if (s.camera.length) out.warnings.push(`camera timing NOT checked (add anchorsFor): prop ${s.prop} has no anchorsFor(params)`);
     return;
   }
   const params = Object.assign({}, s.params || {});

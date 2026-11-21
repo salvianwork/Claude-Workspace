@@ -1,5 +1,6 @@
 """HyperFrames composition builder, snapshots and the render engine switch."""
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -57,7 +58,7 @@ def _new_prop(run, module_text, sid=1):
 
 @needs_node
 def test_build_writes_one_composition(run):
-    comp = build(run, KIT, run_check=False)
+    comp = build(run, KIT, run_check=False, hero_count=False)
     assert comp == run / "04-video" / "hf"
     page = (comp / "index.html").read_text(encoding="utf-8")
     data = json.loads((comp / "data.json").read_text(encoding="utf-8"))
@@ -96,7 +97,7 @@ def test_build_refuses_invalid_shots_naming_scene_and_cue(run):
     shots["scenes"][2]["cues"][1]["at"] = {"word": 77}
     _write_shots(run, shots)
     with pytest.raises(HFError) as e:
-        build(run, KIT, run_check=False)
+        build(run, KIT, run_check=False, hero_count=False)
     assert "scene 3: cue 1 at word 77" in str(e.value)
     assert not (run / "04-video" / "hf" / "index.html").exists()
 
@@ -109,14 +110,14 @@ def test_build_fails_a_scene_whose_camera_overruns(run):
                                     {"at": {"word": 33}, "frame": {"focus": "chamber", "zoom": 2.5}}]
     _write_shots(run, shots)
     with pytest.raises(HFError, match=r"scene 1: camera finishes [0-9.]+ s after the scene ends"):
-        build(run, KIT, run_check=False)
+        build(run, KIT, run_check=False, hero_count=False)
 
 
 @needs_node
 def test_build_loads_new_prop_heroes_from_the_run(run):
     _new_prop(run, THROWING_MOUNT.replace('throw new Error("geyser drawing is broken");',
                                           'return {update: function () {}, anchors: {spout: {x: 1, y: 1}}};'))
-    comp = build(run, KIT, run_check=False)
+    comp = build(run, KIT, run_check=False, hero_count=False)
     page = (comp / "index.html").read_text(encoding="utf-8")
     assert '<script src="scenes/scene-1.js"></script>' in page
     assert "kit/props/volcano" not in page and not (comp / "kit" / "props" / "volcano").exists()
@@ -127,7 +128,7 @@ def test_build_loads_new_prop_heroes_from_the_run(run):
 def test_build_reports_a_hero_module_that_throws_on_load(run):
     _new_prop(run, 'throw new Error("half-drawn geyser");')
     with pytest.raises(HFError) as e:
-        build(run, KIT, run_check=False)
+        build(run, KIT, run_check=False, hero_count=False)
     assert "scene 1" in str(e.value) and "scenes/scene-1.js" in str(e.value) and "half-drawn geyser" in str(e.value)
 
 
@@ -141,13 +142,47 @@ def test_cli_build_reports_errors(run, monkeypatch, capsys):
 
 def test_render_cli_engine_choice(run, monkeypatch, tmp_path):
     calls = []
-    monkeypatch.setattr(render_mod, "render_video",
-                        lambda run_dir, templates_dir, engine="hyperframes": calls.append(engine) or tmp_path / "v.mp4")
+
+    def fake(run_dir, templates_dir, engine="hyperframes", *, workers=None, hero_count=True):
+        calls.append((engine, workers, hero_count))
+        return tmp_path / "v.mp4"
+    monkeypatch.setattr(render_mod, "render_video", fake)
     assert render_mod.main([str(run)]) == 0
     assert render_mod.main([str(run), "--engine", "remotion"]) == 0
-    assert calls == ["hyperframes", "remotion"]
+    assert render_mod.main([str(run), "--workers", "3", "--allow-hero-count"]) == 0
+    assert calls == [("hyperframes", None, True), ("remotion", None, True), ("hyperframes", 3, False)]
     with pytest.raises(SystemExit):
         render_mod.main([str(run), "--engine", "flash"])
+
+
+def test_render_video_passes_workers_and_hero_rule_to_hyperframes(run, monkeypatch):
+    from tools.hf import build as hb
+    from tools.hf import render as hr
+    seen = {}
+    (run / "04-video" / "audio").mkdir(parents=True)
+    (run / "04-video" / "audio" / "mix.wav").write_bytes(b"x")
+    monkeypatch.setattr(hb, "build", lambda run_dir, **kw: seen.update(build=kw) or run_dir / "04-video" / "hf")
+
+    def fake_render(comp, out, *, workers=None):
+        seen["workers"] = workers
+        out.write_bytes(b"mp4")
+        return {"check": {}, "seconds": 1.0}
+    monkeypatch.setattr(hr, "render", fake_render)
+    monkeypatch.setattr(render_mod, "_mux", lambda ffmpeg, silent, mix, final, run_dir: final)
+    monkeypatch.setattr(render_mod, "_tools", lambda *names: {n: n for n in names})
+    render_mod.render_video(run, engine="hyperframes", workers=5)
+    assert seen == {"build": {"hero_count": True}, "workers": 5}
+    render_mod.render_video(run, engine="hyperframes", hero_count=False)
+    assert seen == {"build": {"hero_count": False}, "workers": None}
+
+
+@needs_node
+def test_build_enforces_two_to_four_heroes_by_default(run):
+    with pytest.raises(HFError) as e:
+        build(run, KIT, run_check=False)
+    assert "1 hero scene(s); a video needs 2-4 hero scenes" in str(e.value)
+    assert build_mod.main([str(run), "--no-check"]) == 1
+    assert build_mod.main([str(run), "--no-check", "--allow-hero-count"]) == 0
 
 
 def test_render_hyperframes_needs_the_mix(run):
@@ -162,7 +197,7 @@ def test_render_hyperframes_needs_the_mix(run):
 def test_hero_module_that_throws_in_mount_fails_check_naming_the_scene(run):
     _new_prop(run, THROWING_MOUNT, sid=1)
     with pytest.raises(HFError) as e:
-        build(run, KIT)
+        build(run, KIT, hero_count=False)
     assert "scene-1: mount failed: geyser drawing is broken" in str(e.value)
 
 
@@ -179,7 +214,7 @@ def _music_library(tmp_path) -> Path:
 @needs_hf
 def test_render_hyperframes_end_to_end(run, tmp_path, capsys):
     build_mix(run, _music_library(tmp_path))
-    assert render_mod.main([str(run), "--engine", "hyperframes"]) == 0
+    assert render_mod.main([str(run), "--engine", "hyperframes", "--allow-hero-count"]) == 0
     printed = capsys.readouterr().out
     print(printed)
     out = run / "04-video" / "out" / "video.mp4"
@@ -197,8 +232,8 @@ def test_render_hyperframes_end_to_end(run, tmp_path, capsys):
     shots = snapshot(run)
     assert [p.name for p in shots] == [f"scene-{i}-{w}.png" for i in (1, 2, 3) for w in ("start", "mid", "end")]
     assert all(p.stat().st_size > 10_000 for p in shots)
-    keep = REPO / ".superpowers" / "sdd" / "2026-11-21-hyperframes-switch" / "task-6-snapshots"
-    if keep.parent.is_dir():  # for the task report (gitignored)
-        keep.mkdir(exist_ok=True)
+    keep = os.environ.get("HF_KEEP_SNAPSHOTS")
+    if keep:  # optional: keep the snapshots somewhere to look at them
+        Path(keep).mkdir(parents=True, exist_ok=True)
         for p in shots:
-            shutil.copyfile(p, keep / p.name)
+            shutil.copyfile(p, Path(keep) / p.name)

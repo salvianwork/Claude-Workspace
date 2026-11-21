@@ -16,7 +16,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from tools.hf.render import HFError, _hyperframes, _run, _tail
+from tools.hf.render import HFError, _hyperframes, _run, _tail, timeout_for
 
 WHEN = ("start", "mid", "end")
 _AT = re.compile(r"at-([0-9]+(?:\.[0-9]+)?)s", re.I)
@@ -51,7 +51,7 @@ def snapshot(run_dir: Path, times_per_scene: tuple[str, ...] = WHEN) -> list[Pat
         shots = Path(tmp) / "shots"
         at = ",".join(f"{t:g}" for _, _, t in plan)
         r = _run([*_hyperframes(), "snapshot", "--at", at, "--no-end", "--output", str(shots), str(comp)],
-                 comp, "hyperframes snapshot")
+                 comp, "hyperframes snapshot", timeout_for(comp))
         found = {}
         for f in shots.glob("*.png") if shots.is_dir() else []:
             m = _AT.search(f.name)

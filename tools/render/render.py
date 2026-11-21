@@ -1,6 +1,7 @@
 """Render the video silently, then mux the mixed audio into the final mp4.
 
-    python -m tools.render.render <run_dir> [--engine hyperframes|remotion] [--templates-dir DIR]
+    python -m tools.render.render <run_dir> [--engine hyperframes|remotion] [--workers N]
+                                  [--allow-hero-count] [--templates-dir DIR]
 
 hyperframes (default): tools.hf.build (04-video/hf/, hyperframes check) -> tools.hf.render ->
 04-video/out/silent.mp4. remotion: 04-video/scenes.json -> templates/ (npm run render). Both
@@ -100,7 +101,7 @@ def _render_remotion(run_dir: Path, templates_dir: Path) -> Path:
     return _mux(tools["ffmpeg"], silent, mix, final, run_dir)
 
 
-def _render_hyperframes(run_dir: Path) -> Path:
+def _render_hyperframes(run_dir: Path, workers: int | None, hero_count: bool) -> Path:
     from tools.hf.build import build
     from tools.hf.render import HFError, render
 
@@ -110,8 +111,8 @@ def _render_hyperframes(run_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     silent, final = out_dir / "silent.mp4", out_dir / "video.mp4"
     try:
-        comp = build(run_dir)
-        result = render(comp, silent)
+        comp = build(run_dir, hero_count=hero_count)
+        result = render(comp, silent, workers=workers)
     except HFError as e:
         raise RenderError(f"hyperframes: {e}") from e
     print(f"hyperframes render took {result['seconds']:.1f} s")
@@ -119,13 +120,15 @@ def _render_hyperframes(run_dir: Path) -> Path:
 
 
 def render_video(run_dir: Path, templates_dir: Path = DEFAULT_TEMPLATES,
-                 engine: str = "hyperframes") -> Path:
-    """Render 04-video/out/video.mp4 with `engine` (hyperframes | remotion)."""
+                 engine: str = "hyperframes", *, workers: int | None = None,
+                 hero_count: bool = True) -> Path:
+    """Render 04-video/out/video.mp4 with `engine` (hyperframes | remotion). HyperFrames only:
+    `workers` (default half the CPUs), `hero_count=False` skips the 2-4 hero rule (drafts)."""
     run_dir, templates_dir = Path(run_dir), Path(templates_dir)
     if engine == "remotion":
         return _render_remotion(run_dir, templates_dir)
     if engine == "hyperframes":
-        return _render_hyperframes(run_dir)
+        return _render_hyperframes(run_dir, workers, hero_count)
     raise RenderError(f"unknown engine {engine} (have: {', '.join(ENGINES)})")
 
 
@@ -134,11 +137,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("run_dir", type=Path)
     ap.add_argument("--engine", choices=ENGINES, default="hyperframes",
                     help="hyperframes (default) or remotion (kept until HyperFrames is approved)")
+    ap.add_argument("--workers", type=int, default=None,
+                    help="HyperFrames render workers (default: half the CPUs, at least 1)")
+    ap.add_argument("--allow-hero-count", action="store_true",
+                    help="HyperFrames draft only: do not require 2-4 hero scenes")
     ap.add_argument("--templates-dir", type=Path, default=DEFAULT_TEMPLATES,
                     help="Remotion templates folder (remotion engine only)")
     args = ap.parse_args(argv)
     try:
-        out = render_video(args.run_dir, args.templates_dir, engine=args.engine)
+        out = render_video(args.run_dir, args.templates_dir, engine=args.engine,
+                           workers=args.workers, hero_count=not args.allow_hero_count)
     except RenderError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

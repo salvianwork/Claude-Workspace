@@ -1,15 +1,15 @@
 """Build the run's HyperFrames composition: 04-video/hf/ = one video from shots.json + the voice.
 
-    python -m tools.hf.build <run_dir> [--no-check]
+    python -m tools.hf.build <run_dir> [--no-check] [--allow-hero-count]
 
 Writes 04-video/hf/index.html (one composition: scenes back to back, each ceil(duration_s x 30)
 frames from the voice manifest; transitions inside scene time; captions from words.json;
 presenter with mouth data from the scene's wav), data.json (everything the page plays, also
 inlined in index.html), kit/ (hf-kit vendor + src + the props the video uses). Hero scenes with
 `new_prop: true` load the animator's 04-video/hf/scenes/scene-<id>.js; other heroes load
-kit/props/<prop>/prop.js. The build validates shots.json first (not the 2-4 hero count: that is
-`python -m tools.hf.shots validate`), then runs `hyperframes check`; a scene that fails to load,
-mount or update is reported as `scene-<id>` and the build fails.
+kit/props/<prop>/prop.js. The build validates shots.json first (2-4 heroes included;
+`--allow-hero-count` skips that rule for drafts and tests), then runs `hyperframes check`; a
+scene that fails to load, mount or update is reported as `scene-<id>` and the build fails.
 """
 from __future__ import annotations
 
@@ -110,7 +110,7 @@ def compose_data(run_dir: Path, d: dict, warnings: list[str]) -> dict:
         if s["kind"] == "hero":
             scene.update(prop=s["prop"], new_prop=bool(s.get("new_prop", False)), params=s.get("params", {}))
         else:
-            scene.update(scene=s["scene"], props=s["props"])
+            scene.update(scene=s["scene"], props=s.get("props", {}))
         scenes.append(scene)
         start += frames
     return {"fps": FPS, "width": 1920, "height": 1080, "frames": start, "total": start / FPS,
@@ -160,19 +160,21 @@ def _write(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def build(run_dir: Path, kit_dir: Path = KIT_DIR, *, run_check: bool = True) -> Path:
+def build(run_dir: Path, kit_dir: Path = KIT_DIR, *, run_check: bool = True,
+          hero_count: bool = True) -> Path:
     """Build 04-video/hf/ and return that folder (the composition dir for tools.hf.render).
 
     Raises HFError when shots.json is invalid (every problem listed), the composition would
     load anything from the network, or `hyperframes check` finds errors (a failing scene is
-    named `scene-<id>`). Camera warnings are printed and kept in data.json `warnings`."""
+    named `scene-<id>`). Camera warnings are printed and kept in data.json `warnings`.
+    `hero_count=False` skips the 2-4 hero rule (drafts and test fixtures only)."""
     run_dir = Path(run_dir)
     kit_dir = Path(kit_dir)
     comp = run_dir / "04-video" / "hf"
     try:
         d = load_run(run_dir)
         errs, warns = review_shots(d["shots"], d["words"], d["manifest"], kit_dir / "props",
-                                   scenes_dir=comp / "scenes", style=d["style"], hero_count=False,
+                                   scenes_dir=comp / "scenes", style=d["style"], hero_count=hero_count,
                                    kit_dir=kit_dir)
     except ShotsError as e:
         raise HFError(str(e)) from e
@@ -201,9 +203,11 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m tools.hf.build", description=__doc__.splitlines()[0])
     p.add_argument("run_dir", type=Path)
     p.add_argument("--no-check", action="store_true", help="skip `hyperframes check` (faster, for drafts)")
+    p.add_argument("--allow-hero-count", action="store_true",
+                   help="draft only: do not require 2-4 hero scenes")
     a = p.parse_args(argv)
     try:
-        comp = build(a.run_dir, run_check=not a.no_check)
+        comp = build(a.run_dir, run_check=not a.no_check, hero_count=not a.allow_hero_count)
     except HFError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

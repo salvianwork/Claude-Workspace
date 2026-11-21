@@ -15,7 +15,10 @@ import time
 from pathlib import Path
 
 KIT_DIR = Path(__file__).resolve().parents[2] / "hf-kit"
-TIMEOUT_S = 3600  # a 2-minute video can take 10-15 min on a slow PC
+TIMEOUT_S = 3600  # minimum; a 2-minute video can take 10-30 min on a slow PC
+TIMEOUT_PER_VIDEO_S = 40  # render timeout: max(TIMEOUT_S, 40 x video seconds)
+_ROOT_DURATION = re.compile(r'data-composition-id="main"[^>]*?data-duration="([0-9.]+)"'
+                            r'|data-duration="([0-9.]+)"[^>]*?data-composition-id="main"')
 _TAIL = 30
 
 # Files a browser would load as code or styles; everything else (licences, notes) is ignored.
@@ -48,12 +51,31 @@ def _hyperframes() -> list[str]:
     return [npx, "--prefix", str(KIT_DIR), "--no", "--", "hyperframes"]
 
 
-def _run(cmd: list[str], cwd: Path, what: str) -> subprocess.CompletedProcess:
+def default_workers() -> int:
+    """Render workers when none are given: half the CPUs, at least 1."""
+    return max(1, (os.cpu_count() or 2) // 2)
+
+
+def video_seconds(composition_dir: Path) -> float:
+    """Length of the composition from the root element's data-duration (0 if unknown)."""
+    try:
+        text = (Path(composition_dir) / "index.html").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0.0
+    m = _ROOT_DURATION.search(text)
+    return float(m.group(1) or m.group(2)) if m else 0.0
+
+
+def timeout_for(composition_dir: Path) -> float:
+    return max(TIMEOUT_S, TIMEOUT_PER_VIDEO_S * video_seconds(composition_dir))
+
+
+def _run(cmd: list[str], cwd: Path, what: str, timeout: float = TIMEOUT_S) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(cmd, cwd=str(cwd), env=_env(), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=TIMEOUT_S)
+                              encoding="utf-8", errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired as e:
-        raise HFError(f"{what} timed out after {TIMEOUT_S} s") from e
+        raise HFError(f"{what} timed out after {timeout:.0f} s") from e
     except OSError as e:
         raise HFError(f"{what} could not start: {e}") from e
 
@@ -83,7 +105,8 @@ def check_errors(report: dict) -> list[str]:
 def check(composition_dir: Path) -> dict:
     """Run `hyperframes check --json`; raise HFError listing the errors if there are any."""
     composition_dir = Path(composition_dir).resolve()
-    r = _run([*_hyperframes(), "check", "--json"], composition_dir, "hyperframes check")
+    r = _run([*_hyperframes(), "check", "--json"], composition_dir, "hyperframes check",
+             timeout_for(composition_dir))
     try:
         report = json.loads(r.stdout)
     except json.JSONDecodeError:
@@ -95,7 +118,7 @@ def check(composition_dir: Path) -> dict:
     return report
 
 
-def render(composition_dir: Path, out_mp4: Path, *, workers: int = 1) -> dict:
+def render(composition_dir: Path, out_mp4: Path, *, workers: int | None = None) -> dict:
     """Check, then render the composition to an MP4. `seconds` is the wall time of both steps."""
     started = time.monotonic()
     composition_dir = Path(composition_dir).resolve()
@@ -104,8 +127,10 @@ def render(composition_dir: Path, out_mp4: Path, *, workers: int = 1) -> dict:
         raise HFError(f"no index.html in {composition_dir}")
     report = check(composition_dir)
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
+    workers = workers or default_workers()
     r = _run([*_hyperframes(), "render", "--output", str(out_mp4), "--fps", "30",
-              "--workers", str(workers)], composition_dir, "hyperframes render")
+              "--workers", str(workers)], composition_dir, "hyperframes render",
+             timeout_for(composition_dir))
     if r.returncode != 0 or not out_mp4.is_file():
         raise HFError(f"hyperframes render failed (exit {r.returncode}):\n{_tail(r)}")
     return {"check": report, "seconds": time.monotonic() - started}
@@ -158,7 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m tools.hf.render", description=__doc__.splitlines()[0])
     p.add_argument("composition_dir", type=Path)
     p.add_argument("out_mp4", type=Path)
-    p.add_argument("--workers", type=int, default=1)
+    p.add_argument("--workers", type=int, default=None,
+                   help="parallel render workers (default: half the CPUs, at least 1)")
     a = p.parse_args(argv)
     try:
         result = render(a.composition_dir, a.out_mp4, workers=a.workers)

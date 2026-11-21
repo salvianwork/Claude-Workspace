@@ -205,3 +205,42 @@ def test_install_kit_clears_stale_files_and_can_limit_props(tmp_path):
     assert not (tmp_path / "kit" / "props" / "volcano").exists()
     install_kit(tmp_path, props=["volcano"])
     assert (tmp_path / "kit" / "props" / "volcano" / "prop.js").is_file()
+
+
+def test_render_workers_default_to_half_the_cpus(tmp_path, monkeypatch):
+    fake = FakeRun()
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    monkeypatch.setattr(hf.os, "cpu_count", lambda: 8)
+    render(_fake_comp(tmp_path), tmp_path / "v.mp4")
+    cmd = fake.calls[1][0]
+    assert cmd[cmd.index("--workers") + 1] == "4"
+    monkeypatch.setattr(hf.os, "cpu_count", lambda: 1)
+    assert hf.default_workers() == 1
+    monkeypatch.setattr(hf.os, "cpu_count", lambda: None)
+    assert hf.default_workers() == 1
+
+
+def test_timeout_scales_with_video_length(tmp_path, monkeypatch):
+    fake = FakeRun()
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    comp = _fake_comp(tmp_path)
+    render(comp, tmp_path / "short.mp4")
+    assert [kw["timeout"] for _, kw in fake.calls] == [3600, 3600]  # no duration known: minimum
+    (comp / "index.html").write_text(
+        '<div id="root" data-composition-id="main" data-start="0" data-duration="300.5" '
+        'data-width="1920"><div class="clip" data-duration="2"></div></div>', encoding="utf-8")
+    fake.calls.clear()
+    render(comp, tmp_path / "long.mp4")
+    assert [kw["timeout"] for _, kw in fake.calls] == [40 * 300.5, 40 * 300.5]
+    assert hf.timeout_for(comp) == 12020
+
+
+def test_cli_workers_option(tmp_path, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(hf, "render", lambda c, o, workers=None: seen.update(w=workers) or {"check": {}, "seconds": 1.0})
+    assert hf.main([str(tmp_path), str(tmp_path / "o.mp4"), "--workers", "6"]) == 0
+    assert seen == {"w": 6}
+    assert hf.main([str(tmp_path), str(tmp_path / "o.mp4")]) == 0
+    assert seen == {"w": None}
