@@ -36,6 +36,22 @@ test("the places library folder matches the registered places", () => {
 });
 
 for (const [name, want] of Object.entries(EXPECT)) {
+  test(`${name}: meta.actorLight lights an actor in every variant`, () => {
+    const p = K.places[name];
+    for (const variant of p.meta.variants) {
+      const l = p.meta.actorLight && p.meta.actorLight[variant];
+      assert.ok(l, variant + " has no actorLight");
+      assert.match(l.tint, /^#[0-9A-Fa-f]{6}$/, variant);
+      assert.ok(l.amount >= 0 && l.amount <= 1, variant);
+      if (l.rim !== undefined) assert.match(l.rim, /^#[0-9A-Fa-f]{6}$/, variant);
+      if (variant === "night" || variant === "dim") {
+        // clearly darker and cooler, with a soft rim from the moon / the lamp
+        const [r, , b] = [1, 3, 5].map((i) => parseInt(l.tint.slice(i, i + 2), 16));
+        assert.ok(l.amount >= 0.5 && b > r && l.rim, variant + " is not dark, cool and rim-lit");
+      }
+    }
+  });
+
   test(`${name}: meta lists its variants, anchors and paths`, () => {
     const p = K.places[name];
     assert.ok(p, "registered");

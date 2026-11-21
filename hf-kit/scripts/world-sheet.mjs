@@ -1,7 +1,8 @@
 // npm run world-sheet: render the world-kit review sheets with the preinstalled Node Playwright
 // (offline: every http(s) request is aborted and reported).
 //
-//   sample/world-sheet/host.png            the host through the rig: 4 outfits x 6 poses, walk and run strips
+//   sample/world-sheet/host.png            the host through the rig: 4 outfits x 6 poses, walk / run / jump strips
+//                                          and a stop (turn back to front); places light the actor (meta.actorLight)
 //   sample/world-sheet/place-<name>.png    every variant of each place: the whole world with its anchors
 //                                          and paths marked, plus two in-camera shots with the host
 //
@@ -40,7 +41,7 @@ const SHOTS = {
   ],
   lab: [
     ["bench, zoom 1", { anchor: "bench", dy: 0, zoom: 1 }, { anchor: "bench", dx: -420, dy: 330, outfit: "lab-coat", pose: "point-right", expression: "happy" }],
-    ["door, zoom 1.3", { anchor: "door", dx: -500, dy: -420, zoom: 1.3 }, { anchor: "door", dx: -40, dy: 0, outfit: "lab-coat", pose: "wave", expression: "happy" }],
+    ["door, zoom 1.3", { anchor: "door", dx: -500, dy: -360, zoom: 1.3 }, { anchor: "door", dx: -40, dy: 0, outfit: "lab-coat", pose: "wave", expression: "happy" }],
   ],
 };
 
@@ -84,7 +85,9 @@ function pageBuild(spec) {
       box.style.transform = K.place.layerTransform(cam, 1);
       const p = anchor(o.actor.anchor, o.t);
       const holder = el(box, "div");
-      const a = K.mountActor(holder, { id: "host", character: "host", outfit: o.actor.outfit, start: { x: p.x + (o.actor.dx || 0), y: p.y + (o.actor.dy || 0) }, scale: K.places[o.place].meta.actorScale || 1 }, { sceneId: n });
+      const meta = K.places[o.place].meta;
+      const light = (meta.actorLight || {})[o.variant] || null; // the actor takes on the place's light
+      const a = K.mountActor(holder, { id: "host", character: "host", outfit: o.actor.outfit, start: { x: p.x + (o.actor.dx || 0), y: p.y + (o.actor.dy || 0) }, scale: meta.actorScale || 1, light }, { sceneId: n });
       a.update(o.t, { pose: o.actor.pose, expression: o.actor.expression });
     }
     place.update(o.t, cam);
@@ -153,10 +156,21 @@ function pageBuild(spec) {
       el(row, "div", "rowlab", outfit);
       for (const [pose, expression] of spec.poses) cell(row, pose, outfit, { pose, expression, facing: 0 });
     }
-    for (const [cycle, outfit] of spec.cycles) {
-      el(sheet, "h2", "", cycle + " cycle (" + outfit + ")");
+    const ph = (v) => v.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+    for (const [cycle, outfit, facing] of spec.cycles) {
+      el(sheet, "h2", "", cycle + " cycle (" + outfit + (facing ? ", facing " + (facing > 0 ? "right" : "left") : ", in place") + ")");
       const strip = el(sheet, "div", "strip");
-      for (let i = 0; i < 8; i++) cell(strip, "phase " + (i / 8).toFixed(3).replace(/0+$/, "").replace(/\.$/, ""), outfit, { pose: "idle", cycle, phase: i / 8, facing: 1, expression: cycle === "run" ? "happy" : "neutral" });
+      for (let i = 0; i < 8; i++) {
+        const phase = cycle === "jump" ? [0, 0.1, 0.18, 0.3, 0.54, 0.76, 0.86, 1][i] : i / 8;
+        cell(strip, "phase " + ph(phase), outfit, { pose: "idle", cycle, phase, facing, expression: cycle === "jump" ? "happy" : cycle === "run" ? "happy" : "neutral" });
+      }
+    }
+    // stopping: the stride eases out (cycleAmount) and the body turns back to front (turn)
+    el(sheet, "h2", "", "stop: walk eases out and turns to front over 0.25 s (blazer)");
+    const strip = el(sheet, "div", "strip");
+    for (let i = 0; i < 8; i++) {
+      const k = 1 - i / 7, e = k * k * (3 - 2 * k);
+      cell(strip, "turn " + ph(e), "blazer", { pose: "idle", cycle: "walk", phase: 0.25 + (i / 7) * 0.12, facing: 1, turn: e, cycleAmount: e });
     }
   }
 }
@@ -218,7 +232,7 @@ try {
   await render({
     kind: "host", outfits: ["blazer", "lab-coat", "casual", "explorer"],
     poses: [["idle", "neutral"], ["talk", "happy"], ["point-right", "curious"], ["wave", "happy"], ["think", "thinking"], ["celebrate", "happy"]],
-    cycles: [["walk", "blazer"], ["run", "casual"]],
+    cycles: [["walk", "blazer", 1], ["run", "casual", 1], ["walk", "lab-coat", -1], ["jump", "explorer", 1], ["jump", "blazer", 0]],
   }, join(outDir, "host.png"));
   for (const name of PLACES) {
     await render({ kind: "place", place: name, shots: SHOTS[name] || [] }, join(outDir, `place-${name}.png`));

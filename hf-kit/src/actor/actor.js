@@ -6,6 +6,8 @@
  *   a.anchors.head(t) / .hand(t) / .feet(t)  -> {x, y} screen px
  *   a.box(t)                                  -> the face box {x, y, width, height} in screen px
  *
+ * Light: s.light, else spec.light, else ctx.light = {tint, amount, rim?} (a place's
+ *   meta.actorLight[variant]); see rig.js.
  * spec.start: {slot: "left" | "right"} (narrator slot, feet below the frame edge) or {x, y}
  *   (feet at that screen point, for an actor in the world). spec.scale multiplies the slot / world
  *   size. ctx: {sceneId, mouth (the scene's mouth array, 30 fps), seed?, offset? (frames)}.
@@ -73,6 +75,8 @@
       if (s.mouth === undefined) st.mouth = mouth[f] || 0;
       if (s.blink === undefined) st.blink = P.blinkAmount(f, seed);
       if (s.breath === undefined) st.breath = Math.sin((2 * Math.PI * st.frame) / BREATH_FRAMES);
+      // the place's light (meta.actorLight[variant]) via the state, the spec or the scene
+      if (s.light === undefined) st.light = spec.light || ctx.light || null;
       if (slot && s.gazeBias === undefined && !s.facing) st.gazeBias = slot === "right" ? -0.25 : 0.25;
       var mult = s.scale !== undefined ? s.scale : spec.scale !== undefined ? spec.scale : 1;
       var k = (slot ? rig.SLOT.k : WORLD_K) * mult;

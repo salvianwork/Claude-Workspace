@@ -18,8 +18,11 @@ comment is the full contract.
 - `place.js` — classic script (no imports, no network, no `Math.random`/`Date.now`/timers),
   loaded after the kit scripts: `HFKit.places["<name>"] = {meta, anchorsFor, mount}`, drawn with
   the `HFKit.draw` and `HFKit.place.svg` helpers so places look consistent.
-  - `meta = {name, description, variants: [...], anchors: [...], paths: [...], actorScale}`. The
-    first variant is the default. `actorScale` is the `mountActor` scale that fits the place.
+  - `meta = {name, description, variants: [...], anchors: [...], paths: [...], actorScale, actorLight}`.
+    The first variant is the default. `actorScale` is the `mountActor` scale that fits the place.
+    `actorLight[variant] = {tint, amount 0..1, rim?, rimSide?}` is how an actor there is lit
+    (pass it as `mountActor` `spec.light` / `ctx.light`): night and dim variants darken and cool
+    the actor and add a soft rim from the moon or the lamp.
   - World: 3840 × 2160 world px (twice the frame), so a 0.6× pull-out still fills the frame.
   - Layers, back to front: `sky`, `far`, `mid`, `ground`, `front`, parallax factors
     `0.2 / 0.45 / 0.75 / 1 / 1.15`. `HFKit.placeLayers(el, idPrefix)` builds them as five

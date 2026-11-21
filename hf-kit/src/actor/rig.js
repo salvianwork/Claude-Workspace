@@ -22,7 +22,11 @@
  *     character   {face: {hair, glasses, skin, hairColor?}, colors?} (default: the host's face)
  *     frame       frame number: adds the pose's living motion, hair sway and head tilt
  *     track       the scene's mouth array (talk gestures follow the voice)
- *     blend       {pose, expression, k}: blend from that pose/expression to this one (k 0..1) */
+ *     blend       {pose, expression, k}: blend from that pose/expression to this one (k 0..1)
+ *     turn        -1..1 three-quarter turn (default: facing; +-1 while walking / running)
+ *     cycleAmount 0..1 blend of the cycle toward standing (smooth starts and stops)
+ *     light       {tint, amount 0..1, rim?, rimSide?}: take on the place's light
+ *                 (places give it as meta.actorLight[variant]) */
 (function (root) {
   "use strict";
   var P = root.HFKitPresenter;
@@ -69,7 +73,7 @@
    * `torso` picks the drawing, `coat` the hem below the waist (y), `shoe` the footwear. */
   var OUTFITS = {
     blazer: {
-      palette: "blazer", torso: "presenter", coat: 948, shoe: "dress",
+      palette: "blazer", torso: "presenter", coat: 892, shoe: "dress", // hip length
       trousers: "#2B3245", trousersShade: "#20263A", trousersLine: "#0C101C",
       shoeColor: "#3A2A22", shoeLight: "#6B4E3D", shoeLine: "#160C07", sole: "#1C130E",
     },
@@ -137,68 +141,113 @@
   }
 
   // ---------- cycles: pure functions of the phase, drawn facing screen-right ----------
+  //
+  // Arms use the presenter's convention (screen-left arm; the right arm is drawn mirrored), so
+  // for a figure travelling right: left arm forward = shoulder < 0, right arm forward = > 0.
+  // Every value is a smooth function of the phase (no case splits that jump), so consecutive
+  // frames never pop; walk and run loop (phase 0 = phase 1).
 
   function legPose(swing, knee, foot) { return { swing: swing, knee: knee, foot: foot || 0 }; }
+  function smooth01(t) { var c = clamp(t, 0, 1); return c * c * (3 - 2 * c); }
+  function pos(v, k) { return Math.pow(Math.max(0, v), k); }
+  function mixArm(a, b, t) {
+    return arm(lerp(a.shoulder, b.shoulder, t), lerp(a.elbow, b.elbow, t), t < 0.5 ? a.hand : b.hand,
+      lerp(a.wrist, b.wrist, t), lerp(a.upper, b.upper, t), lerp(a.fore, b.fore, t));
+  }
 
-  /* One stride (two steps) per phase 0..1. */
+  /* One stride (two steps) per phase 0..1. Contact at phase 0.25 / 0.75 (legs apart, hips
+   * low), passing at 0 / 0.5 (swing knee bent, hips high): the bob comes from the legs. */
   function walk(phase) {
     var th = 2 * Math.PI * phase;
     var s = Math.sin(th), c = Math.cos(th);
-    var kneeL = 5 + 34 * Math.pow(Math.max(0, c), 1.4);
-    var kneeR = 5 + 34 * Math.pow(Math.max(0, -c), 1.4);
-    var sh = 2 + 13 * s;
+    // swing leg: knee bends while it travels forward (c > 0 for the left leg)
+    // knee flexion peaks just after passing, so the knee leads the swing
+    var cl = Math.cos(th - 0.35);
+    var kneeL = 4 + 40 * pos(cl, 1.5) + 6 * pos(-c, 2) * pos(s, 1);
+    var kneeR = 4 + 40 * pos(-cl, 1.5) + 6 * pos(c, 2) * pos(-s, 1);
+    // toes point down as the foot lifts, up a little for the heel strike
+    var footL = -0.45 * (kneeL - 4) + 9 * pos(s, 3) * pos(c, 0.5);
+    var footR = -0.45 * (kneeR - 4) + 9 * pos(-s, 3) * pos(-c, 0.5);
+    var sl = Math.sin(th + 0.45); // the thigh leads the knee: at passing the swing knee is already forward
+    var sw = 18 * sl; // arms opposite to the legs: left arm back while the left leg is forward
     return {
-      legs: { left: legPose(19 * s, kneeL, -kneeL * 0.35), right: legPose(-19 * s, kneeR, -kneeR * 0.35), spread: 1.2 },
-      arms: { left: arm(sh, sh - 16, "relaxed", -10, 0.95, 0.92), right: arm(-sh + 4, -sh + 4 + 16, "relaxed", -10, 0.95, 0.92) },
-      lean: 2, lift: 0, sway: -8 - 5 * Math.abs(s),
+      legs: { left: legPose(20 * sl, kneeL, footL), right: legPose(-20 * sl, kneeR, footR), spread: 1.2 },
+      arms: {
+        left: arm(3 + sw, 3 + sw - 14 - 12 * pos(-sl, 1), "relaxed", -8, 0.96, 0.93),
+        right: arm(3 + sw, 3 + sw + 14 + 12 * pos(sl, 1), "relaxed", -8, 0.96, 0.93),
+      },
+      lean: 3, lift: 0,
+      nod: 1.4 * Math.sin(2 * th - 2.2), // a small head nod, lagging the bob
+      sway: -10 - 5 * Math.sin(2 * th - 1.3), // coat tails trail and lag the hips
     };
   }
 
   function run(phase) {
     var th = 2 * Math.PI * phase;
     var s = Math.sin(th), c = Math.cos(th);
-    var kneeL = 22 + 78 * Math.pow(Math.max(0, c), 1.2);
-    var kneeR = 22 + 78 * Math.pow(Math.max(0, -c), 1.2);
-    var sh = 26 * s;
+    // the knee folds early in the swing and opens out before contact; the thigh leads
+    var kc = Math.cos(th + 0.45), sl = Math.sin(th + 0.6);
+    var kneeL = 16 + 108 * pos(kc, 1.6) + 8 * pos(-c, 2);
+    var kneeR = 16 + 108 * pos(-kc, 1.6) + 8 * pos(c, 2);
+    var footL = -0.4 * (kneeL - 16) + 8 * pos(sl, 3);
+    var footR = -0.4 * (kneeR - 16) + 8 * pos(-sl, 3);
+    var sw = 30 * sl;
     return {
-      legs: { left: legPose(34 * s, kneeL, -kneeL * 0.3), right: legPose(-34 * s, kneeR, -kneeR * 0.3), spread: 0.8 },
-      arms: { left: arm(6 + sh, sh - 92, "fist", 0, 0.92, 0.82), right: arm(6 - sh, -sh + 92, "fist", 0, 0.92, 0.82) },
-      lean: 9, lift: 18 * Math.max(0, -Math.cos(2 * th)), sway: -20,
+      legs: { left: legPose(34 * sl, kneeL, footL), right: legPose(-34 * sl, kneeR, footR), spread: 0.8 },
+      arms: { left: arm(4 + sw, 4 + sw - 96, "fist", 0, 0.93, 0.82), right: arm(4 + sw, 4 + sw + 96, "fist", 0, 0.93, 0.82) },
+      lean: 10,
+      lift: 30 * pos(-Math.cos(2 * th + 1.94), 1.5), // flight just before each contact
+      nod: 2 * Math.sin(2 * th - 2),
+      sway: -22 - 8 * Math.sin(2 * th - 1.2),
     };
   }
 
-  function smooth01(t) { var c = clamp(t, 0, 1); return c * c * (3 - 2 * c); }
-
-  /* Crouch (0-0.25), take-off, flight (0.25-0.85, peak 260 units), landing crouch, stand. */
+  /* Anticipation crouch with the arms swung back (0-0.2), push off with the arms thrown up,
+   * flight with a tuck (0.26-0.82, peak about 280 units at 0.54), landing squash with the
+   * arms forward, recover to standing at 1. Starts and ends exactly at the standing pose. */
   function jump(phase) {
     var p = clamp(phase, 0, 1);
-    var crouch = p < 0.18 ? smooth01(p / 0.18) : p < 0.28 ? 1 - smooth01((p - 0.18) / 0.1)
-      : p < 0.82 ? 0 : p < 0.9 ? smooth01((p - 0.82) / 0.08) : 1 - smooth01((p - 0.9) / 0.1);
-    var u = p > 0.25 && p < 0.85 ? (p - 0.25) / 0.6 : -1;
-    var air = u >= 0 ? 4 * u * (1 - u) : 0;
-    var tuck = u >= 0 ? Math.sin(Math.PI * u) : 0;
-    var up = u >= 0 ? Math.sin(Math.PI * Math.min(1, u * 1.4)) : 0;
-    var sw = 28 * crouch + 30 * tuck;
-    var kn = 62 * crouch + 62 * tuck;
-    var back = arm(lerp(4, -22, crouch), lerp(-50, -40, crouch), "relaxed", -14, 0.95, 0.9);
-    var high = arm(150, 168, "open", 4);
-    function mixArm(a, b, t) {
-      return arm(lerp(a.shoulder, b.shoulder, t), lerp(a.elbow, b.elbow, t), t < 0.5 ? a.hand : b.hand,
-        lerp(a.wrist, b.wrist, t), lerp(a.upper, b.upper, t), lerp(a.fore, b.fore, t));
-    }
-    var armL = mixArm(back, high, up);
-    var armR = mixArm(back, high, up);
+    var bell = function (a, m, b) { return p <= a || p >= b ? 0 : p < m ? smooth01((p - a) / (m - a)) : 1 - smooth01((p - m) / (b - m)); };
+    var crouch = bell(0, 0.17, 0.3);
+    var land = bell(0.72, 0.86, 1);
+    var u = clamp((p - 0.26) / 0.56, 0, 1);
+    var air = p > 0.26 && p < 0.82 ? Math.sin(Math.PI * u) : 0;
+    var lift = 280 * (p > 0.26 && p < 0.82 ? 4 * u * (1 - u) : 0);
+    var tuck = air * air;
+    var up = bell(0.13, 0.4, 0.92);
+    var back = smooth01(clamp(p / 0.17, 0, 1)) * (1 - smooth01(clamp((p - 0.17) / 0.12, 0, 1)));
+    var rest = P.POSES.idle;
+    var armsAt = function (side) {
+      var m = side < 0 ? 1 : -1; // left arm back = +, right arm back = -
+      var a = mixArm(rest[side < 0 ? "left" : "right"], arm(26 * m, 14 * m, "relaxed", -8, 0.96, 0.95), back);
+      a = mixArm(a, arm(152, 170, "open", 4), up);
+      return mixArm(a, arm(-30 * m, -60 * m, "open", -6, 0.96, 0.92), land * (1 - up));
+    };
+    var sw = 30 * crouch + 30 * tuck + 26 * land;
+    var kn = 82 * crouch + 70 * tuck + 74 * land;
     return {
-      legs: { left: legPose(sw + 4, kn, -tuck * 20), right: legPose(sw - 4, kn + 6 * tuck, -tuck * 26), spread: 2.5 },
-      arms: { left: armL, right: armR },
-      lean: 7 * crouch, lift: 260 * air, sway: -22 * tuck,
+      legs: { left: legPose(sw + 3 * air, kn, -18 * tuck), right: legPose(sw - 3 * air, kn + 8 * tuck, -24 * tuck), spread: 2.5 },
+      arms: { left: armsAt(-1), right: armsAt(1) },
+      lean: 9 * crouch + 6 * land - 3 * air, lift: lift, nod: 4 * crouch + 3 * land - 2 * air, sway: -16 * tuck + 10 * land,
     };
   }
 
   var CYCLES = { walk: walk, run: run, jump: jump };
 
   /* Standing still: feet a little apart, toes out. */
-  var STAND = { legs: { left: legPose(0, 0), right: legPose(0, 0), spread: 3 }, arms: null, lean: 0, lift: 0, sway: 0 };
+  var STAND = { legs: { left: legPose(0, 0), right: legPose(0, 0), spread: 3 }, arms: null, lean: 0, lift: 0, sway: 0, nod: 0 };
+
+  /* Blend a cycle toward standing (amount 0 = standing, arms from `pose`). */
+  function cycleBlend(cyc, amount, pose) {
+    if (amount >= 1) return cyc;
+    var k = clamp(amount, 0, 1);
+    var leg = function (a, b) { return legPose(lerp(a.swing, b.swing, k), lerp(a.knee, b.knee, k), lerp(a.foot, b.foot, k)); };
+    return {
+      legs: { left: leg(STAND.legs.left, cyc.legs.left), right: leg(STAND.legs.right, cyc.legs.right), spread: lerp(STAND.legs.spread, cyc.legs.spread, k) },
+      arms: cyc.arms && pose ? { left: mixArm(pose.left, cyc.arms.left, k), right: mixArm(pose.right, cyc.arms.right, k) } : cyc.arms,
+      lean: lerp(0, cyc.lean || 0, k), lift: lerp(0, cyc.lift || 0, k), sway: lerp(0, cyc.sway || 0, k), nod: lerp(0, cyc.nod || 0, k),
+    };
+  }
 
   // ---------- poses over time ----------
 
@@ -238,48 +287,78 @@
 
   // ---------- geometry ----------
 
-  /* Everything that places the parts, in body units. */
+  /* Everything that places the parts, in body units.
+   *   turn  -1..1: 0 = front-on, +-1 = three-quarters toward screen right / left. Default: the
+   *         facing, and +-1 while walking or running (a jump with no facing stays front-on).
+   *         Task 5 eases it (about 0.25 s) to turn back to front when the actor stops.
+   *   cycleAmount 0..1 (default 1): blends the cycle toward standing, for a smooth start / stop. */
   function layout(st) {
     var facing = st.facing || 0;
     var dir = facing < 0 ? -1 : 1;
+    var turn = st.turn !== undefined ? clamp(+st.turn || 0, -1, 1)
+      : facing ? dir : st.cycle && st.cycle !== "jump" ? 1 : 0;
+    var ta = Math.abs(turn);
+    var pose = poseOf(st);
     var cyc = STAND;
     if (st.cycle) {
       if (!CYCLES[st.cycle]) throw new Error("rig: unknown cycle " + st.cycle);
-      cyc = CYCLES[st.cycle](st.phase || 0);
+      var raw = CYCLES[st.cycle](st.phase || 0);
+      // facing left mirrors the figure: legs and arms swap sides
+      cyc = Object.assign({}, raw, dir > 0 ? {} : {
+        legs: { left: raw.legs.right, right: raw.legs.left, spread: raw.legs.spread },
+        arms: { left: raw.arms.right, right: raw.arms.left },
+      });
+      cyc = cycleBlend(cyc, st.cycleAmount === undefined ? 1 : st.cycleAmount, pose);
     }
-    var pose = poseOf(st);
     var poseName = typeof st.pose === "string" ? st.pose : null;
     if (cyc.arms && (poseName === "idle" || st.pose === undefined)) {
-      // the cycle swings the arms; facing left mirrors the figure (the arms swap sides)
-      pose = Object.assign({}, pose, dir > 0 ? { left: cyc.arms.left, right: cyc.arms.right } : { left: cyc.arms.right, right: cyc.arms.left });
+      pose = Object.assign({}, pose, { left: cyc.arms.left, right: cyc.arms.right });
     }
     if (st.held) {
       if (!HELD[st.held]) throw new Error("rig: unknown held item " + st.held);
       pose = Object.assign({}, pose, { right: Object.assign({}, pose.right, { hand: HELD[st.held].hand }) });
     }
-    var legs = dir > 0 ? { left: cyc.legs.left, right: cyc.legs.right } : { left: cyc.legs.right, right: cyc.legs.left };
     var spread = cyc.legs.spread;
-    var hipX = st.cycle ? STRIDE_HIP_X : HIP_X;
-    var L = legPoints(legs.left, -1, dir, spread, hipX);
-    var R = legPoints(legs.right, 1, dir, spread, hipX);
+    var hipX = lerp(HIP_X, STRIDE_HIP_X, ta);
+    var L = legPoints(cyc.legs.left, -1, dir, ta, spread, hipX);
+    var R = legPoints(cyc.legs.right, 1, dir, ta, spread, hipX);
     var ground = FEET - Math.max(L.sole, R.sole);
     var b = 0.015 * (st.breath || 0);
+    // three-quarter view: the torso narrows and its front shifts toward the travel side, the far
+    // arm tucks in behind the body, the head and the face features lead the turn
+    var sx = 1 - 0.2 * ta, tx = 24 * turn;
     return {
-      dir: dir, facing: facing, pose: pose, legs: { left: L, right: R }, cycle: cyc,
-      dy: ground - (cyc.lift || 0), lean: (cyc.lean || 0) * dir, sway: (cyc.sway || 0) * dir,
+      dir: dir, facing: facing, turn: turn, ta: ta, pose: pose, legs: { left: L, right: R }, cycle: cyc, hipX: hipX,
+      // lean, nod and the trailing hem act toward the travel direction: front-on they point at the camera and do not show sideways
+      dy: ground - (cyc.lift || 0), lean: (cyc.lean || 0) * dir * ta, sway: (cyc.sway || 0) * dir * ta, nod: (cyc.nod || 0) * dir * ta,
       b: b, lift: -b * (P.RIG.waist - 344),
-      front: !st.cycle && facing === 0,
+      torsoSX: sx, torsoTX: tx, headTX: 12 * turn,
+      armXL: 150 * (1 - sx) + tx + (turn < 0 ? 22 * ta : 0),
+      armXR: -150 * (1 - sx) + tx - (turn > 0 ? 22 * ta : 0),
+      front: ta < 0.5,
     };
   }
 
-  /* Hip, knee and ankle of one leg; `side` -1 = screen-left leg. Knees bend backwards. */
-  function legPoints(leg, side, dir, spread, hipX) {
+  /* Hip, knee and ankle of one leg; `side` -1 = screen-left leg. Two views, blended by the
+   * turn: in three-quarter view (ta 1) the leg strides in the travel direction with the knee
+   * bending back; front-on (ta 0) the knee comes toward the camera, so the thigh foreshortens,
+   * the knee opens out a little and the shin stays near vertical (a squat, not a diamond). */
+  function legPoints(leg, side, dir, ta, spread, hipX) {
     var hip = { x: side * hipX, y: HIP_Y };
+    var at = function (x0, y0, len, deg) { return { x: x0 + len * Math.sin(rad(deg)), y: y0 + len * Math.cos(rad(deg)) }; };
+    // side view
     var a = side * spread + dir * leg.swing;
-    var knee = { x: hip.x + THIGH * Math.sin(rad(a)), y: hip.y + THIGH * Math.cos(rad(a)) };
-    var b = a - dir * leg.knee;
-    var ankle = { x: knee.x + SHIN * Math.sin(rad(b)), y: knee.y + SHIN * Math.cos(rad(b)) };
-    return { hip: hip, knee: knee, ankle: ankle, a: a, b: b, foot: leg.foot || 0, side: side, sole: ankle.y + SOLE };
+    var kS = at(hip.x, hip.y, THIGH, a);
+    var aS = at(kS.x, kS.y, SHIN, a - dir * leg.knee);
+    // front view
+    var bend = Math.max(0, leg.knee);
+    var af = side * (spread + 0.18 * bend);
+    var kF = at(hip.x, hip.y, THIGH * Math.max(0.35, Math.cos(rad(Math.max(Math.abs(leg.swing), bend * 0.6)))), af);
+    var aF = at(kF.x, kF.y, SHIN, side * spread * 0.5 - side * 0.06 * bend);
+    var knee = { x: lerp(kF.x, kS.x, ta), y: lerp(kF.y, kS.y, ta) };
+    var ankle = { x: lerp(aF.x, aS.x, ta), y: lerp(aF.y, aS.y, ta) };
+    var bAng = Math.atan2(ankle.x - knee.x, ankle.y - knee.y) * 180 / Math.PI;
+    return { hip: hip, knee: knee, ankle: ankle, a: a, b: bAng, foot: (leg.foot || 0) * dir * ta, side: side, sole: ankle.y + SOLE };
   }
 
   /* Rotate a point of the upper body by the lean (around the hips) and lift it. */
@@ -322,7 +401,7 @@
     ]);
   }
 
-  function legNode(pal, o, lp, lay, part) {
+  function legNode(pal, o, lp, lay, part, far) {
     var hip = lp.hip, k = lp.knee, an = lp.ankle;
     var thigh = capsule(hip.x, hip.y, 42, k.x, k.y, 33);
     var shin = capsule(k.x, k.y, 33, an.x, an.y, 27);
@@ -330,20 +409,24 @@
     var shade = capsule(hip.x + 20, hip.y + 12, 18, k.x + 15, k.y, 13);
     var shade2 = capsule(k.x + 15, k.y, 13, an.x + 11, an.y - 6, 10);
     var nx = Math.cos(rad(lp.b)), ny = -Math.sin(rad(lp.b)); // across the shin
-    var foot = lay.front ? 0 : lp.foot * lay.dir;
+    // shoes cross-fade from the front view to the side view as the body turns
+    var sideK = smooth01((lay.ta - 0.25) / 0.5);
+    var shoeAt = "translate(" + f2(an.x) + " " + f2(an.y) + ") rotate(" + f2(lp.foot) + ")";
     return h("g", { "data-part": part }, [
       h("g", { fill: pal.trousersLine, stroke: pal.trousersLine, "stroke-width": 7, "stroke-linejoin": "round" }, [h("path", { d: thigh }), h("path", { d: shin })]),
       h("g", { fill: pal.trousers }, [h("path", { d: thigh }), h("path", { d: shin })]),
       h("path", { d: shade, fill: pal.trousersShade, opacity: 0.8 }),
       h("path", { d: shade2, fill: pal.trousersShade, opacity: 0.8 }),
+      // the far leg sits a little in shadow
+      h("g", { fill: pal.trousersLine, opacity: f2(0.22 * far), display: show(far > 0.01) }, [h("path", { d: thigh }), h("path", { d: shin })]),
       // knee fold and the trouser hem
       h("path", { d: "M " + f2(k.x - 14) + " " + f2(k.y - 6) + " q 12 10 26 2", fill: "none", stroke: pal.trousersLine, "stroke-width": 3, "stroke-linecap": "round", opacity: 0.5 }),
       h("path", { d: "M " + f2(an.x - nx * 29) + " " + f2(an.y - ny * 29 - 6) + " L " + f2(an.x + nx * 29) + " " + f2(an.y + ny * 29 - 6), stroke: pal.trousersLine, "stroke-width": 4, "stroke-linecap": "round" }),
-      h("g", { transform: "translate(" + f2(an.x) + " " + f2(an.y) + ") rotate(" + f2(foot) + ")" }, [shoeNode(pal, o.shoe, lay.front, lp.side, lay.dir)]),
+      h("g", { transform: shoeAt, opacity: f2(1 - sideK), display: show(sideK < 0.99) }, [shoeNode(pal, o.shoe, true, lp.side, lay.dir)]),
+      h("g", { transform: shoeAt, opacity: f2(sideK), display: show(sideK > 0.01) }, [shoeNode(pal, o.shoe, false, lp.side, lay.dir)]),
     ]);
   }
 
-  /* Seat of the trousers: covers the hip joints; outlined on the sides only. */
   /* Seat of the trousers: covers the hip joints; outlined on the sides only. It tapers to the
    * legs, so it narrows while striding (hips closer together). */
   function pelvisNode(pal, hipX) {
@@ -363,11 +446,12 @@
   function coatNode(pal, o, lay) {
     var hem = o.coat;
     var lab = o.palette === "labcoat";
-    var sw = lay.sway; // hem trails the stride
+    var sw = lay.sway * (lab ? 1 : 0.45); // hem trails the stride (a short blazer moves less)
+    var flare = lab ? 11 : 4;
     var gap = lab ? 14 : 32;
     var line = { stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round" };
-    var left = "M -171 800 L " + f2(-182 + sw) + " " + (hem - 6) + " C " + f2(-130 + sw) + " " + (hem + 8) + " " + f2(-64 + sw * 0.6) + " " + (hem + 10) + " " + f2(-gap + sw * 0.4) + " " + hem + " L -1 800 Z";
-    var right = "M 171 800 L " + f2(182 + sw) + " " + (hem - 6) + " C " + f2(130 + sw) + " " + (hem + 8) + " " + f2(64 + sw * 0.6) + " " + (hem + 10) + " " + f2(gap + 4 + sw * 0.4) + " " + hem + " L 5 800 Z";
+    var left = "M -171 800 L " + f2(-171 - flare + sw) + " " + (hem - 6) + " C " + f2(-130 + sw) + " " + (hem + 8) + " " + f2(-64 + sw * 0.6) + " " + (hem + 10) + " " + f2(-gap + sw * 0.4) + " " + hem + " L -1 800 Z";
+    var right = "M 171 800 L " + f2(171 + flare + sw) + " " + (hem - 6) + " C " + f2(130 + sw) + " " + (hem + 8) + " " + f2(64 + sw * 0.6) + " " + (hem + 10) + " " + f2(gap + 4 + sw * 0.4) + " " + hem + " L 5 800 Z";
     // outlines leave the top edge open: the panels continue the torso without a seam
     var open = function (d) { return d.replace(/ Z$/, ""); };
     var kids = [
@@ -375,7 +459,7 @@
       h("path", { d: right, fill: pal.jacket }),
       h("path", Object.assign({ d: open(left), fill: "none" }, line)),
       // shade on the right side, as on the torso above
-      h("path", { d: "M 108 802 L 169 802 L " + f2(178 + sw) + " " + (hem - 8) + " C " + f2(160 + sw) + " " + (hem + 2) + " " + f2(130 + sw) + " " + (hem + 5) + " " + f2(118 + sw * 0.8) + " " + (hem + 6) + " Z", fill: pal.jacketShade }),
+      h("path", { d: "M 108 802 L 169 802 L " + f2(167 + flare + sw) + " " + (hem - 8) + " C " + f2(160 + sw) + " " + (hem + 2) + " " + f2(130 + sw) + " " + (hem + 5) + " " + f2(118 + sw * 0.8) + " " + (hem + 6) + " Z", fill: pal.jacketShade }),
       h("path", { d: "M -150 820 L " + f2(-160 + sw * 0.8) + " " + (hem - 20), stroke: pal.jacketLight, "stroke-width": 10, "stroke-linecap": "round", opacity: 0.5 }),
       // redraw the outlines over the shade
       h("path", Object.assign({ d: open(right), fill: "none" }, line)),
@@ -387,7 +471,7 @@
       });
     } else {
       [-1, 1].forEach(function (s) {
-        kids.push(h("path", { d: "M " + s * 148 + " 858 L " + s * 74 + " 852 L " + s * 76 + " 872 L " + s * 150 + " 878 Z", fill: s > 0 ? pal.jacketShade : pal.jacket, stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linejoin": "round" }));
+        kids.push(h("path", { d: "M " + s * 146 + " 836 L " + s * 74 + " 830 L " + s * 76 + " 848 L " + s * 148 + " 854 Z", fill: s > 0 ? pal.jacketShade : pal.jacket, stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linejoin": "round" }));
       });
     }
     return h("g", { "data-part": "coat" }, kids);
@@ -570,32 +654,52 @@
 
     var torso = o.torso === "presenter" ? P.parts.torso(pal) : o.torso === "sweater" ? sweaterNode(pal) : explorerNode(pal);
     var below = o.coat ? coatNode(pal, o, lay) : o.torso === "sweater" ? sweaterHemNode(pal) : beltNode(pal);
-    var headT = "translate(0 " + f2(lay.lift) + ") rotate(" + f2(tilt) + " 0 " + P.RIG.headPivotY + ")";
+    var T = lay.turn, ta = lay.ta;
+    var headT = "translate(" + f2(lay.headTX) + " " + f2(lay.lift) + ") rotate(" + f2(tilt + lay.nod) + " 0 " + P.RIG.headPivotY + ")";
     // the back hair goes behind the neck and shoulders (long hair falls behind them)
-    var back = h("g", { transform: headT }, [hairBack(pal, pal.hairStyle, sway)]);
+    var back = h("g", { transform: headT }, [h("g", { transform: "translate(" + f2(-8 * T) + " 0)" }, [hairBack(pal, pal.hairStyle, sway)])]);
     var head = h("g", { transform: headT }, [
-      P.parts.head(pal),
-      P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY, pal.look.glasses),
-      hairFront(pal, pal.hairStyle, sway),
+      turnHead(P.parts.head(pal), T),
+      // the face features slide toward the turn and narrow a little (three-quarter view)
+      h("g", { transform: "translate(" + f2(20 * T) + " 0) scale(" + f2(1 - 0.1 * ta) + " 1)" }, [
+        P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY, pal.look.glasses),
+      ]),
+      h("g", { transform: "translate(" + f2(3 * T) + " 0)" }, [hairFront(pal, pal.hairStyle, sway)]),
     ]);
-    var arms = [P.parts.arm(pose.left, false, pal, "arm-left")];
-    if (st.held) arms.push(heldNode(st.held, pose));
-    arms.push(P.parts.arm(pose.right, true, pal, "arm-right"));
+    var armL = h("g", { transform: "translate(" + f2(lay.armXL) + " 0)" }, [P.parts.arm(pose.left, false, pal, "arm-left")]);
+    var armR = h("g", { transform: "translate(" + f2(lay.armXR) + " 0)" },
+      (st.held ? [heldNode(st.held, pose)] : []).concat([P.parts.arm(pose.right, true, pal, "arm-right")]));
+    // in three-quarter view the far arm (screen-right when turning right) goes behind the body
+    var farArm = ta > 0.5 ? (T > 0 ? armR : armL) : null;
+    var arms = farArm ? [T > 0 ? armL : armR] : [armL, armR];
+    var armLift = function (list) { return h("g", { transform: "translate(0 " + f2(lay.lift) + ")" }, list); };
+    // the near leg is drawn last; the far one sits a little in shadow
+    var legL = legNode(pal, o, lay.legs.left, lay, "leg-left", T < 0 ? ta : 0);
+    var legR = legNode(pal, o, lay.legs.right, lay, "leg-right", T > 0 ? ta : 0);
 
     var air = clamp(1 - (lay.cycle.lift || 0) / 400, 0.4, 1);
     var waist = P.RIG.waist;
-    var body = h("g", { "data-part": "body", transform: "translate(0 " + f2(lay.dy) + ")" }, [
-      legNode(pal, o, lay.legs.left, lay, "leg-left"),
-      legNode(pal, o, lay.legs.right, lay, "leg-right"),
-      pelvisNode(pal, lay.legs.right.hip.x),
+    var light = lightOf(st.light);
+    var body = h("g", { "data-part": "body", transform: "translate(0 " + f2(lay.dy) + ")", filter: light ? "url(#{uid}-light)" : undefined }, [
+      T > 0 ? legR : legL,
+      T > 0 ? legL : legR,
+      // the trouser seat narrows with the torso so it never pokes out behind it
+      h("g", { transform: "translate(" + f2(lay.torsoTX * 0.5) + " 0) scale(" + f2(lay.torsoSX) + " 1)" }, [pelvisNode(pal, lay.hipX / lay.torsoSX)]),
       h("g", { "data-part": "upper", transform: "rotate(" + f2(lay.lean) + " 0 " + HIP_Y + ")" }, [
         back,
-        h("g", { transform: "translate(0 " + f2(lay.lift) + ")" }, [P.parts.collarBack(pal), P.parts.neck(pal)]),
-        h("g", { transform: "translate(0 " + waist + ") scale(" + f2(1 + lay.b * 0.4) + " " + f2(1 + lay.b) + ") translate(0 " + -waist + ")" }, [torso, below]),
+        farArm ? armLift([farArm]) : null,
+        h("g", { transform: "translate(" + f2(lay.headTX * 0.6) + " " + f2(lay.lift) + ")" }, [P.parts.collarBack(pal), P.parts.neck(pal)]),
+        h("g", { transform: "translate(0 " + waist + ") scale(" + f2(1 + lay.b * 0.4) + " " + f2(1 + lay.b) + ") translate(0 " + -waist + ")" }, [
+          h("g", { transform: "translate(" + f2(lay.torsoTX) + " 0) scale(" + f2(lay.torsoSX) + " 1)" }, [torso, below]),
+        ]),
         head,
-        h("g", { transform: "translate(0 " + f2(lay.lift) + ")" }, arms),
-      ]),
+        armLift(arms),
+      ].filter(Boolean)),
     ]);
+    var top = [];
+    if (light) top.push(h("defs", {}, [lightFilter(light)]));
+    top.push(h("ellipse", { "data-part": "shadow", cx: f2(4 * T), cy: FEET + 4, rx: f2(210 * air), ry: f2(28 * air), fill: "#000", opacity: f2(0.18 * air) }));
+    top.push(body);
     return h("svg", {
       xmlns: "http://www.w3.org/2000/svg",
       "data-actor": outfitName,
@@ -603,10 +707,58 @@
       width: st.width, height: st.height,
       preserveAspectRatio: "xMidYMid meet",
       style: "overflow: visible",
-    }, [
-      h("ellipse", { "data-part": "shadow", cx: 0, cy: FEET + 4, rx: f2(210 * air), ry: f2(28 * air), fill: "#000", opacity: f2(0.18 * air) }),
-      body,
-    ]);
+    }, top);
+  }
+
+  /* The presenter's head (ears + face skin) turned: the far ear fades behind the cheek and the
+   * near ear moves in a little. The presenter's head node starts with its two ears (left, right). */
+  function turnHead(node, T) {
+    var ta = Math.abs(T);
+    if (ta < 0.01) return node;
+    var kids = node.c.slice();
+    [0, 1].forEach(function (i) {
+      var side = i === 0 ? -1 : 1;
+      var far = side * T > 0;
+      kids[i] = h("g", { transform: far ? undefined : "translate(" + f2(-side * 12 * ta) + " 0)", opacity: far ? f2(1 - smooth01(ta / 0.6)) : undefined }, [node.c[i]]);
+    });
+    return h(node.tag, node.a, kids);
+  }
+
+  // ---------- light: the actor takes on the place's light ----------
+
+  var HEX = /^#[0-9a-fA-F]{6}$/;
+
+  /* {tint, amount 0..1, rim?, rimSide? (1 = light from the right, -1 = left)} or null. */
+  function lightOf(l) {
+    if (!l) return null;
+    if (!HEX.test(l.tint || "")) throw new Error("rig: light.tint must be #rrggbb, got " + l.tint);
+    if (l.rim !== undefined && !HEX.test(l.rim)) throw new Error("rig: light.rim must be #rrggbb, got " + l.rim);
+    var amount = clamp(+l.amount || 0, 0, 1);
+    if (amount === 0 && !l.rim) return null;
+    return { tint: l.tint.toUpperCase(), amount: amount, rim: l.rim ? l.rim.toUpperCase() : null, rimSide: l.rimSide < 0 ? -1 : 1 };
+  }
+
+  /* Multiply by the tint (mixed by amount), then a soft rim on the edges facing the light. */
+  function lightFilter(l) {
+    var k = function (v) { return String(Math.round(v * 1000) / 1000); };
+    var kids = [
+      h("feFlood", { "flood-color": l.tint, result: "tint" }),
+      h("feBlend", { in: "SourceGraphic", in2: "tint", mode: "multiply", result: "mul" }),
+      h("feComposite", { in: "mul", in2: "SourceAlpha", operator: "in", result: "mulin" }),
+      h("feComposite", { in: "mulin", in2: "SourceGraphic", operator: "arithmetic", k1: "0", k2: k(l.amount), k3: k(1 - l.amount), k4: "0", result: "lit" }),
+    ];
+    if (l.rim) {
+      kids.push(
+        h("feOffset", { in: "SourceAlpha", dx: -12 * l.rimSide, dy: 10, result: "off" }),
+        h("feComposite", { in: "SourceAlpha", in2: "off", operator: "out", result: "edge" }),
+        h("feGaussianBlur", { in: "edge", stdDeviation: 4, result: "soft" }),
+        h("feFlood", { "flood-color": l.rim, "flood-opacity": "0.9", result: "rimc" }),
+        h("feComposite", { in: "rimc", in2: "soft", operator: "in", result: "glow" }),
+        h("feComposite", { in: "glow", in2: "SourceAlpha", operator: "in", result: "rimin" }),
+        h("feMerge", {}, [h("feMergeNode", { in: "lit" }), h("feMergeNode", { in: "rimin" })])
+      );
+    }
+    return h("filter", { id: "{uid}-light", filterUnits: "userSpaceOnUse", x: -1000, y: -900, width: 2000, height: 2600, "color-interpolation-filters": "sRGB" }, kids);
   }
 
   /* The figure as an SVG string; every id (and url(#...) reference) starts with idPrefix + "-". */
@@ -620,20 +772,20 @@
   /* The head and hair box (the face area tags must not cover). */
   function headBox(st) {
     var lay = layout(st || {});
-    var c = upper(lay, { x: 0, y: 180 + lay.lift });
+    var c = upper(lay, { x: lay.headTX, y: 180 + lay.lift });
     return { x: c.x - 114, y: c.y - 140, width: 228, height: 278 };
   }
 
   function head(st) {
     var lay = layout(st || {});
-    return upper(lay, { x: 0, y: 200 + lay.lift });
+    return upper(lay, { x: lay.headTX, y: 200 + lay.lift });
   }
 
   /* The screen-right hand (the one that holds props). */
   function hand(st) {
     var lay = layout(st || {});
     var g = gripLocal(lay.pose.right);
-    return upper(lay, { x: -g.x, y: g.y + lay.lift });
+    return upper(lay, { x: -g.x + lay.armXR, y: g.y + lay.lift });
   }
 
   function feet(st) {
@@ -646,8 +798,20 @@
   var oldBox = P.presenterSize ? P.presenterSize("small") : { width: 422, height: 456 };
   var SLOT = { k: Math.round((1.35 * oldBox.height / (724 - 34)) * 1000) / 1000, left: 300, right: 1620, feetY: 1470 };
 
+  /* Ground covered by one cycle (body units): the planted foot's travel, twice per stride.
+   * Move the actor by STRIDE[cycle] * k px per cycle and the feet do not slide. */
+  function strideOf(name) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < 120; i++) {
+      var x = layout({ cycle: name, phase: i / 120, facing: 1 }).legs.left.ankle.x;
+      lo = Math.min(lo, x); hi = Math.max(hi, x);
+    }
+    return Math.round(2 * (hi - lo));
+  }
+  var STRIDE = { walk: strideOf("walk"), run: strideOf("run") };
+
   A.rig = {
-    FEET: FEET, VIEW: VIEW, SLOT: SLOT,
+    FEET: FEET, VIEW: VIEW, SLOT: SLOT, STRIDE: STRIDE, cycleBlend: cycleBlend, light: lightOf,
     POSES: POSES, CYCLES: CYCLES, OUTFITS: OUTFITS, HELD: HELD, EXPRESSIONS: EXPRESSIONS, HAIR: HAIR,
     animatedPose: animatedPose, blendPoses: P.blendPoses, faceAt: P.faceAt,
     palette: paletteFor, layout: layout, tree: tree, svg: svg,

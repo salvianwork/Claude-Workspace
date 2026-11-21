@@ -29,6 +29,12 @@
     anchors: ["rail-near", "rail-far", "bridge", "lake", "barn", "sky"],
     paths: ["rail"],
     actorScale: 1, // mountActor scale for an actor standing on the ground layer (about 390 world px tall)
+    // how an actor here is lit (mountActor light / rig state.light): sun or moon from the right
+    actorLight: {
+      day: { tint: "#FFF3DE", amount: 0.12, rim: "#FFF6DA", rimSide: 1 },
+      sunset: { tint: "#FFB07A", amount: 0.4, rim: "#FFC27E", rimSide: 1 },
+      night: { tint: "#5566A6", amount: 0.7, rim: "#C4D6FF", rimSide: 1 },
+    },
   };
 
   // ---- geometry (ground-layer world px) ------------------------------------------------------
@@ -318,7 +324,9 @@
     }
     s += tag("g", { "clip-path": "url(#" + P + "-lake)" }, lake + tag("g", { "data-part": "fish" }, "") + tag("g", { "data-part": "bubbles" }, ""));
     // trestle bridge: bents in the water, deck over the gap
-    var tr = "", wood = tone("#7B5230"), woodD = tone("#4E3219");
+    // the bridge is lifted a little at night so the deck and legs still read against the water
+    var btone = v === "night" ? function (c) { return D.tint(tone(c), 0.24); } : tone;
+    var tr = "", wood = btone("#7B5230"), woodD = btone("#4E3219");
     for (var bx = G.lakeL + 120; bx < G.lakeR; bx += 240) {
       var by = bedY(bx) - 6, top = G.deckBot;
       tr += tag("path", { d: "M" + (bx - 14) + " " + top + " L" + (bx - 48) + " " + r2(by) + " M" + (bx + 14) + " " + top + " L" + (bx + 48) + " " + r2(by), stroke: wood, "stroke-width": 18, "stroke-linecap": "round" });
@@ -350,9 +358,9 @@
     }
     s += gravel;
     // bridge deck
-    s += tag("rect", { x: G.lakeL - 40, y: G.deckTop, width: G.lakeR - G.lakeL + 80, height: G.deckBot - G.deckTop, fill: tone("#8D6038"), stroke: woodD, "stroke-width": 5 });
+    s += tag("rect", { x: G.lakeL - 40, y: G.deckTop, width: G.lakeR - G.lakeL + 80, height: G.deckBot - G.deckTop, fill: btone("#8D6038"), stroke: woodD, "stroke-width": 5 });
     for (var dk = G.lakeL - 20; dk < G.lakeR + 40; dk += 60) s += tag("path", { d: "M" + dk + " " + (G.deckTop + 4) + " V" + (G.deckBot - 4), stroke: woodD, "stroke-width": 2, opacity: 0.5 });
-    s += tag("path", { d: "M" + (G.lakeL - 40) + " " + (G.deckTop + 6) + " H" + (G.lakeR + 40), stroke: D.tint(tone("#8D6038"), 0.3), "stroke-width": 4 });
+    s += tag("path", { d: "M" + (G.lakeL - 40) + " " + (G.deckTop + 6) + " H" + (G.lakeR + 40), stroke: D.tint(btone("#8D6038"), 0.3), "stroke-width": 4 });
     // sleepers
     var sl = "";
     for (var x = -300; x < 4140; x += 46) sl += tag("path", { d: "M" + (x + 10) + " " + (G.railFar - 6) + " L" + (x - 2) + " " + (G.railNear + 22) + " L" + (x + 22) + " " + (G.railNear + 22) + " L" + (x + 32) + " " + (G.railFar - 6) + " Z", fill: tone("#6E4B32"), stroke: tone("#47301F"), "stroke-width": 2 });

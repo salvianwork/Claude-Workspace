@@ -178,3 +178,90 @@ test("side slot is about 1.35x the old presenter", () => {
   const oldK = box.height / (724 - 34); // px per body unit of the old (calm) presenter framing
   assert.ok(Math.abs(K.rig.SLOT.k / oldK - 1.35) < 0.03, "slot k " + K.rig.SLOT.k + " vs " + oldK);
 });
+
+// ---------- style-lock round: hip-length blazer, three-quarter cycles, lighting by place ----------
+
+test("blazer is hip length; the lab coat stays long", () => {
+  const R = K.rig;
+  assert.ok(R.OUTFITS.blazer.coat > 860 && R.OUTFITS.blazer.coat < 920, "blazer hem " + R.OUTFITS.blazer.coat);
+  assert.ok(R.OUTFITS["lab-coat"].coat > 1000, "lab coat hem " + R.OUTFITS["lab-coat"].coat);
+  // the drawn coat tails stop above the hip threshold too
+  const svg = R.svg(base({ outfit: "blazer" }), "b");
+  const coat = /data-part="coat">(.*?)<\/g>/.exec(svg)[1];
+  // coat paths use absolute M / L / C pairs only: every second number is a y
+  const ys = [...coat.matchAll(/ d="([^"]+)"/g)].flatMap((m) => (m[1].match(/-?[\d.]+/g) || []).map(Number).filter((v, i) => i % 2 === 1));
+  assert.ok(Math.max(...ys) < 930, "blazer coat drawn down to " + Math.max(...ys));
+});
+
+test("cycles turn the body three-quarters toward travel; a turn blend eases back to front", () => {
+  const R = K.rig;
+  assert.equal(R.layout(base({ cycle: "walk", phase: 0.3, facing: 1 })).turn, 1);
+  assert.equal(R.layout(base({ cycle: "run", phase: 0.3, facing: -1 })).turn, -1);
+  assert.equal(R.layout(base({ cycle: "walk", phase: 0.3, facing: 0 })).turn, 1, "walking with no facing goes right");
+  assert.equal(R.layout(base({})).turn, 0, "standing is front-on");
+  assert.equal(R.layout(base({ cycle: "walk", phase: 0.3, facing: 1, turn: 0.4 })).turn, 0.4);
+  // the head leads the turn
+  const front = R.head(base({})).x;
+  const right = R.head(base({ cycle: "walk", phase: 0, facing: 1 })).x;
+  const left = R.head(base({ cycle: "walk", phase: 0, facing: -1 })).x;
+  assert.ok(right > front + 5 && left < front - 5, [left, front, right].join(" "));
+  // the turn blend changes the drawing continuously
+  const sv = (t) => R.svg(base({ cycle: "walk", phase: 0.2, facing: 1, turn: t }), "t");
+  assert.notEqual(sv(0.5), sv(1));
+  assert.notEqual(sv(0.5), sv(0));
+  // cycleAmount 0 is standing still (legs as idle)
+  const still = R.layout(base({ cycle: "walk", phase: 0.3, facing: 1, cycleAmount: 0, turn: 0 }));
+  const idle = R.layout(base({}));
+  for (const s of ["left", "right"]) {
+    assert.ok(Math.abs(still.legs[s].ankle.x - idle.legs[s].ankle.x) < 1e-6 && Math.abs(still.legs[s].ankle.y - idle.legs[s].ankle.y) < 1e-6, s);
+  }
+  assert.ok(R.STRIDE.walk > 200 && R.STRIDE.run > R.STRIDE.walk, JSON.stringify(R.STRIDE));
+});
+
+test("cycles are smooth: no pops between phases, arms swing opposite to the legs", () => {
+  const R = K.rig;
+  const angles = (c) => [c.legs.left.swing, c.legs.left.knee, c.legs.left.foot, c.legs.right.swing, c.legs.right.knee, c.legs.right.foot,
+    c.arms.left.shoulder, c.arms.left.elbow, c.arms.right.shoulder, c.arms.right.elbow, c.lean || 0, c.nod || 0, c.sway || 0];
+  for (const name of ["walk", "run", "jump"]) {
+    const N = 240;
+    let prev = angles(R.CYCLES[name](0)), prevLift = R.CYCLES[name](0).lift;
+    for (let i = 1; i <= N; i++) {
+      const c = R.CYCLES[name](i / N), a = angles(c);
+      a.forEach((v, j) => assert.ok(Math.abs(v - prev[j]) < 5, `${name} jumps ${(v - prev[j]).toFixed(1)} in value ${j} at ${(i / N).toFixed(3)}`));
+      assert.ok(Math.abs(c.lift - prevLift) < 12, `${name} lift pops at ${i / N}`);
+      prev = a; prevLift = c.lift;
+    }
+  }
+  for (const ph of [0.15, 0.25, 0.35, 0.65, 0.75, 0.85]) {
+    const c = R.CYCLES.walk(ph);
+    // left leg forward (+) -> left arm back (left shoulder +) and right arm forward (mirrored: right shoulder +)
+    assert.equal(Math.sign(c.arms.left.shoulder - 3), Math.sign(c.legs.left.swing), "left arm at " + ph);
+    assert.equal(Math.sign(c.arms.right.shoulder - 3), Math.sign(c.legs.left.swing), "right arm at " + ph);
+  }
+  // the walk bobs slightly: hips lower at contact than at passing
+  const dys = Array.from({ length: 40 }, (_, i) => R.layout(base({ cycle: "walk", phase: i / 40, facing: 1 })).dy);
+  const bob = Math.max(...dys) - Math.min(...dys);
+  assert.ok(bob > 6 && bob < 40, "bob " + bob);
+  // the jump starts and ends standing
+  for (const ph of [0, 1]) assert.ok(Math.abs(R.CYCLES.jump(ph).legs.left.knee) < 1e-6 && R.CYCLES.jump(ph).lift === 0, "jump rest at " + ph);
+});
+
+test("actor light: tint, amount and rim are deterministic and scoped to the instance", () => {
+  const R = K.rig;
+  const night = { tint: "#4A5C9A", amount: 0.7, rim: "#CFE0FF" };
+  const a = R.svg(base({ light: night }), "s2-host-0");
+  assert.equal(R.svg(base({ light: { ...night } }), "s2-host-0"), a);
+  assert.notEqual(a, R.svg(base({}), "s2-host-0"));
+  assert.notEqual(a, R.svg(base({ light: { tint: "#FFB68A", amount: 0.35 } }), "s2-host-0"));
+  assert.match(a, /<filter id="s2-host-0-light"/);
+  assert.match(a, /filter="url\(#s2-host-0-light\)"/);
+  assert.match(a, /CFE0FF/i);
+  // no light, or amount 0 with no rim: no filter at all
+  assert.doesNotMatch(R.svg(base({}), "x"), /<filter/);
+  assert.doesNotMatch(R.svg(base({ light: { tint: "#FFFFFF", amount: 0 } }), "x"), /<filter/);
+  assert.throws(() => R.svg(base({ light: { tint: "blue", amount: 0.5 } }), "x"), /light/);
+  // ids stay unique per instance with light on
+  const ids = (p) => [...R.svg(base({ light: night }), p).matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  const A1 = ids("s1-host-0"), B1 = new Set(ids("s1-extra-1-0"));
+  assert.ok(A1.every((id) => !B1.has(id)));
+});

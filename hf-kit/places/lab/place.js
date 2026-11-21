@@ -27,6 +27,12 @@
     anchors: ["bench", "screen", "door", "window"],
     paths: ["bench-top"],
     actorScale: 1.6, // mountActor scale for an actor on the floor (about 620 world px tall): the bench is waist high
+    // how an actor here is lit (mountActor light / rig state.light): window daylight, or the
+    // desk lamp at the right of the bench in the dim lab
+    actorLight: {
+      bright: { tint: "#FFF4E4", amount: 0.08 },
+      dim: { tint: "#4F60A0", amount: 0.68, rim: "#FFD39A", rimSide: 1 },
+    },
   };
 
   // ---- geometry (ground-layer world px) ------------------------------------------------------
