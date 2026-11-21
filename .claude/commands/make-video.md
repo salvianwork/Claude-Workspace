@@ -194,7 +194,8 @@ clarifying question (`question`) goes through these steps, in this order:
    run files. If the command prints `error: …`, carry on in the chat only (no waiter).
 3. **Print** the checkpoint in the chat exactly as the checkpoint says, and then the line
    `…or answer on the studio board.`
-4. **Start the waiter** with the Bash tool and `run_in_background: true` (quote the path):
+4. **Start the waiter** with the Bash tool, `run_in_background: true` and `timeout: 7200000`
+   (2 hours: without it a background command is stopped after 30 minutes). Quote the path:
    ```bash
    python -m tools.dashboard.wait "<run_dir>" --id <id>
    ```
@@ -206,11 +207,13 @@ clarifying question (`question`) goes through these steps, in this order:
      `{"id": "gate-1-1", "decision": "approve", "text": "", "source": "board", "time": "…"}`.
      Print `📋 Answer from the studio board: <decision>` (and its text, if any) and use it.
    - **The waiter woke you, exit 3** (it prints `timeout`). The first time for this `<id>`,
-     re-arm it once: the same command with `run_in_background: true`; print
+     re-arm it once: the same command, `run_in_background: true`, `timeout: 7200000`; print
      `⏸ Still waiting for you: <the checkpoint's question>` and `…or answer on the studio board.`,
      and end your turn. The second time, do not re-arm: say the board is no longer being
      watched, so please answer here in the chat (`/make-video --resume <run_dir>` watches the
      board again).
+   - **The waiter woke you with any other exit code** (it was stopped, or failed): treat it
+     like exit 3 (re-arm once, remind the owner; the second time, chat only).
    - **The owner replied in the chat** (with the waiter still running). Turn the reply into a
      decision (step 6) and record it, so the board shows "Answered in chat":
      ```bash
@@ -230,14 +233,19 @@ clarifying question (`question`) goes through these steps, in this order:
    - **Handle each `<id>` once.** When a waiter wakes you for an id you have already handled
      (for example with the chat answer you just wrote, `"source": "chat"`), or for an id that
      is not the open request, ignore it: never apply an answer twice.
+   - **The owner replies in the chat but no request is open** because their board answer was
+     already used: say `Your board answer was already used: <decision>.` and treat the reply
+     as new input for where the run is now (it is not a second answer to that request).
 6. **Chat reply → decision.** `gate-1`, `gate-1-changed-lines`, `gate-2`, `final`: approve
    (as above; at `final` also "nothing more is needed", "done") → `approve`; anything else →
    `changes`. `stuck-gate-<n>`: `accept`, `cancel`, or else `directions`. `question`: `answer`.
 7. **Decision → the flow below.** `approve` → the checkpoint's **approve** path. `changes` and
-   `directions` → the answer's text is the owner's reply: save it as the owner feedback file
-   (see "Saving owner feedback") and follow the checkpoint's **Changes** / **directions** path.
+   `directions` → the answer's text is the owner's reply: follow the checkpoint's **Changes** /
+   **directions** path with it (that path saves the owner feedback file, see "Saving owner
+   feedback"; save it once).
    `accept` → **accept** anyway. `cancel` → **cancel**. `answer` → the text is the owner's
-   answer to your question. If the text of `changes`, `directions` or `answer` is empty, ask
+   answer to your question: go back to the checkpoint whose answer led to the question and
+   carry on there with it. If the text of `changes`, `directions` or `answer` is empty, ask
    the owner what they want (a `question`).
 
 **Clarifying questions.** Whenever this file says to ask the owner something during a run
@@ -336,7 +344,7 @@ waiter and end your turn.
    ```bash
    python -m tools.dashboard.answers request "<run_dir>" --checkpoint final --title "Video ready" --body "Gate 4 passed. Watch the video, then approve it or say what to change in the sound." --options approve,changes --link "Video=04-video/out/video.mp4" --link "Credits=04-video/credits.md"
    ```
-3. Print `🎬 Done: <full path to run_dir/04-video/out/video.mp4>`, then the path to
+3. Print `🎞 Video ready: <full path to run_dir/04-video/out/video.mp4>`, then the path to
    `<run_dir>/04-video/credits.md` and its contents (the music and sound credits).
    Say: `⏸ Waiting for you: please watch the video and reply "approve", or tell me what to
    change in the sound (e.g. "different music", "fewer effects").`, then
@@ -367,7 +375,9 @@ waiter and end your turn.
 - `✅ Gate n passed`
 - `⏸ Waiting for you: …`, followed (once the request is open) by `…or answer on the studio board.`
 - `📋 Answer from the studio board: <decision>`
-- `🎬 Done: <path>`
+- `🎞 Video ready: <path>` (gate 4 passed, before the owner's final approval)
+- `🎬 Finished: <path>` (after the owner approved the final video)
+- `🎬 Done: <path>` (resuming a run that is already done)
 
 Keep other chatter short. `/video-status` shows the run's status at any time.
 
@@ -403,8 +413,12 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
    `gate-1-changed-lines`, `gate 2: voice` → `gate-2`, `final video` → `final`, `gate <n> stuck`
    → `stuck-gate-<n>`; or it is a `question`) and its `created` is not earlier than the `time`
    of the last status event.
-   - It belongs and `answer` is `null` → print the checkpoint again (4.0 step 3) and re-arm the
-     waiter for the **same id** (4.0 step 4); do not open a new request.
+   - It belongs and `answer` is `null` → print the checkpoint again (4.0 step 3; for a
+     `question`, ask the request's `body` again) and re-arm the waiter for the **same id**
+     (4.0 step 4, with `timeout: 7200000`); do not open a new request. Its exit codes are
+     handled as in 4.0 step 5 (exit 3 or any other exit code: re-arm once, remind the owner).
+     A `question`, once answered, goes back to the checkpoint whose answer led to it (the
+     last status event says which).
    - It belongs and has an answer → the owner answered on the board while no session was
      watching: use that answer (4.0 steps 5 to 7; handle the id once).
    - Otherwise (no request, or one from an earlier checkpoint) → the status is already

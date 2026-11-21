@@ -137,13 +137,19 @@ def update(
 
 
 def _team_for(run_dir: Path) -> dict:
-    """Display names: team.json in the nearest folder above the run, else the defaults."""
-    from tools.dashboard.state import DEFAULT_TEAM, load_team  # state imports this module
+    """Display names: team.json in the nearest folder above the run, else the defaults.
 
-    for parent in Path(run_dir).resolve().parents:
-        if (parent / "team.json").is_file():
-            return load_team(parent)
-    return DEFAULT_TEAM
+    Returns {} (plain role names) if the lookup fails: /video-status must always work.
+    """
+    try:
+        from tools.dashboard.state import DEFAULT_TEAM, load_team  # state imports this module
+
+        for parent in Path(run_dir).resolve().parents:
+            if (parent / "team.json").is_file():
+                return load_team(parent)
+        return {role: dict(v) for role, v in DEFAULT_TEAM.items()}
+    except Exception:  # noqa: BLE001 - names are display-only
+        return {}
 
 
 def format_status(run_dir: Path) -> str:
@@ -154,7 +160,8 @@ def format_status(run_dir: Path) -> str:
         entry = team.get(agent)
         return f"{entry['name']} ({agent})" if isinstance(entry, dict) and entry.get("name") else agent
 
-    step_name = team.get(s["step"], {}).get("name")
+    entry = team.get(s["step"])
+    step_name = entry.get("name") if isinstance(entry, dict) else None
     lines = [
         f"Topic: {s['topic']}",
         f"Step:  {STEP_DISPLAY[s['step']]}" + (f" — {step_name}" if step_name else ""),

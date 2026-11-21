@@ -138,3 +138,29 @@ def test_format_status_done_step_has_no_name(tmp_path):
     run = init_run("X", tmp_path)
     update(run, step="done", state="done", agent="animator", event="video done")
     assert "Step:  [4/4] Done\n" in format_status(run)
+
+
+def test_format_status_falls_back_to_role_names(tmp_path, monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def broken(name, *a, **k):
+        if name == "tools.dashboard.state":
+            raise ImportError("boom")
+        return real_import(name, *a, **k)
+
+    run = init_run("X", tmp_path)
+    monkeypatch.setattr(builtins, "__import__", broken)
+    out = format_status(run)
+    assert "Step:  [1/4] Story\n" in out and " story: started" in out
+    assert "Quill" not in out
+
+
+def test_team_for_returns_a_copy_of_the_defaults(tmp_path):
+    from tools.dashboard.state import DEFAULT_TEAM
+    from tools.pipeline.status import _team_for
+
+    team = _team_for(tmp_path)
+    team["story"]["name"] = "Changed"
+    assert DEFAULT_TEAM["story"]["name"] == "Quill"

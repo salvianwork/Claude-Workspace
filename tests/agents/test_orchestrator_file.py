@@ -282,3 +282,23 @@ def test_resume_re_arms_the_waiter():
     for needle in ["board/request.json", "tools.dashboard.answers show", "same id",
                    "final video"]:
         assert needle in resume, needle
+
+
+def test_waiter_gets_the_two_hour_bash_timeout():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    lines = [ln for ln in text.splitlines() if "run_in_background" in ln]
+    assert len(lines) >= 2  # start + re-arm
+    for ln in lines:
+        assert "timeout: 7200000" in ln, ln
+    assert "any other exit code" in text.lower()
+
+
+def test_final_checkpoint_does_not_say_done_before_approval():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    assert "🎬 Done:" not in final
+    progress = text.split("## 7.", 1)[1].split("## 8.", 1)[0]
+    for needle in ["🎬 Finished:", "🎞 Video ready:", "Your board answer was already used:"]:
+        assert needle in text, needle
+    for needle in ["🎬 Finished:", "🎞 Video ready:"]:
+        assert needle in progress, needle
