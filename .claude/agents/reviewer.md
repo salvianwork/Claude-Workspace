@@ -317,10 +317,10 @@ final approval, so at gate 4 the run has changed nothing in `hf-kit/`):
 
 ```bash
 git status --short hf-kit/src templates/
-git diff --name-only -- hf-kit/props/
+git status --short hf-kit/props/
 ```
 
-The first must print nothing. The second lists changed **tracked** prop files: none may be
+The first must print nothing. In the second, a line starting with ` M`, `M `, ` D` or `D ` is a changed **tracked** prop file: none may be
 inside a prop folder that existed before this run (`hf-kit/props/<other>/…`). Lines added to
 `hf-kit/props/README.md` and new untracked prop folders saved by earlier videos are not this
 run's work and are fine. A folder named after one of this run's new props must not exist yet.
@@ -358,7 +358,7 @@ run's work and are fine. A folder named after one of this run's new props must n
 - [ ] The video does not match the shot list (a different scene, prop, text, camera or
   presenter position than planned) without a reason in `04-video/notes.md`.
 - [ ] **The shared kit was changed**: `git status --short hf-kit/src templates/` prints
-  anything, `git diff --name-only -- hf-kit/props/` shows a file in an existing prop folder, or
+  anything, `git status --short hf-kit/props/` shows a changed or deleted (` M`/` D`) file in an existing prop folder, or
   one of this run's new props already has a `hf-kit/props/<name>/` folder (the Animator draws new
   heroes only in `04-video/hf/scenes/` and saves props only after the owner's final approval).
   Props saved by earlier videos do not count.
@@ -388,7 +388,7 @@ git status --short hf-kit/
 - [ ] This round changed something else in `hf-kit/`: the new or changed entries from this run
   may only be this run's own `hf-kit/props/<name>/` folders and their lines in
   `hf-kit/props/README.md`. Any change under `hf-kit/src`, or to a tracked file of another prop
-  (`git diff --name-only -- hf-kit/props/`), is a must-fix. Untracked prop folders and README
+  (an ` M`/` D` line in `git status --short hf-kit/props/`), is a must-fix. Untracked prop folders and README
   lines of other names were saved by earlier videos: ignore them.
 
 ---

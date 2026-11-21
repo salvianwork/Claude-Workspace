@@ -121,7 +121,7 @@ you: report it in `notes.md` as needing a Design change, and stop.
 ## Step 5 — render with HyperFrames
 
 Renders take about 10–15 × the video's length. Run the render with the Bash tool's
-`run_in_background: true` and `timeout: 600000`, then wait for it to finish (you are told when
+`run_in_background: true` and `timeout: 7200000` (2 hours; a 2-minute video can take 30 minutes or more on a slow PC), then wait for it to finish (you are told when
 it exits; check its output with the tool that reads background output) before you go on.
 Never start a second render while one is still running.
 

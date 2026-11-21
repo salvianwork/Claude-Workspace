@@ -95,7 +95,7 @@ It works in four steps. At each checkpoint, check these things:
 
 Open a second terminal in the project folder, run `.venv\Scripts\activate`, then
 `python -m tools.dashboard`. Keep it open for the checks below (you can do them during the
-video from section 3, or with a short topic such as `/make-video "Why the sky is blue"`).
+video from section 4, or with a short topic such as `/make-video "Why the sky is blue"`).
 
 1. [ ] **Start the studio.** The browser opens a studio with five characters.
    You should see: the board shows your latest video, or "No video running" if there are none.

@@ -139,7 +139,7 @@ def test_animator_builds_hyperframes_heroes():
     for s in ["04-video/hf/scenes/scene-<id>.js", "HFKit.props", "meta", "mount", "update(t, cueState)",
               "anchorsFor(params)", "HFKit.draw", "hf-kit/props/README.md", "hyperframes check",
               "camera timing NOT checked", "04-video/hf/snapshots/", "--engine hyperframes",
-              "timeout: 600000", "run_in_background: true", "04-video/notes.md", "03-design/shots.json",
+              "timeout: 600000", "timeout: 7200000", "run_in_background: true", "04-video/notes.md", "03-design/shots.json",
               "02-voice/words.json", "Math.random"]:
         assert s in body, f"animator.md must mention {s!r}"
     # custom hero drawing is now expected: the v1 rule is gone
@@ -212,8 +212,10 @@ def test_reviewer_gate4_checks_hyperframes():
               "hf-kit/props/<name>/", "prop.js", "preview.png", "README.md", "hf-kit/props/README.md",
               "(cd hf-kit && npm test)", "git status --short hf-kit/src templates/", "hf-kit/src",
               "Prop library check (after the owner's final approval)", "review/gate-props-round-<m>.md",
-              "earlier videos"]:
+              "earlier videos", "git status --short hf-kit/props/"]:
         assert s in gate4, f"reviewer.md gate 4 must mention {s!r}"
+    # git diff is not on the allow-list: it would prompt the owner every round
+    assert "git diff" not in gate4
     assert "after gate 4 PASS" not in gate4
     # the gate-4 kit check must not flag props saved by earlier videos
     assert "git status --short hf-kit/ templates/" not in gate4
