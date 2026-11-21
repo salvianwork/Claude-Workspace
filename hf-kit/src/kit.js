@@ -52,13 +52,13 @@
   }
 
   /* Every kit script, in load order (paths relative to the kit folder). Props and hero modules
-   * load after these (kit/props/<name>/prop.js, scenes/scene-<id>.js); composition.js only
+   * load after these (kit/props/<name>/prop.js, kit/places/<name>/place.js, scenes/scene-<id>.js); composition.js only
    * needs them when mountComposition runs. */
   var SCRIPTS = [
     "src/kit.js", "src/timing.js",
     "src/presenter/look.js", "src/presenter/motion.js", "src/presenter/poses.js", "src/presenter/parts.js", "src/presenter/figure.js",
     "src/actor/rig.js", "src/actor/host.js", "src/actor/actor.js",
-    "src/draw.js", "src/icons.js", "src/shell.js", "src/stage.js",
+    "src/draw.js", "src/world/place.js", "src/icons.js", "src/shell.js", "src/stage.js",
     "src/blocks/kinetic-center-build.js", "src/blocks/transitions.js",
     "src/scenes/common.js", "src/scenes/title.js", "src/scenes/steps.js", "src/scenes/compare.js", "src/scenes/chart.js",
     "src/scenes/kinetic.js", "src/scenes/recap.js", "src/scenes/diagram.js",

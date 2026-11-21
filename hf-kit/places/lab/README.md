@@ -1,0 +1,1 @@
+Warm science lab: window (sky, skyline and a tree outside), wall screen, poster, shelves of glassware, door, pendant lamps, a long workbench with microscope, test tubes, burner and desk lamp, tiled floor; variants bright, dim; anchors bench, screen, door, window; path bench-top.

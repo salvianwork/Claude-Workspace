@@ -146,6 +146,20 @@ def test_install_kit_copies_vendor_src_and_props(tmp_path):
     install_kit(tmp_path)  # idempotent
 
 
+def test_install_kit_copies_places(tmp_path):
+    install_kit(tmp_path)
+    places = tmp_path / "kit" / "places"
+    assert (places / "README.md").is_file()
+    for name in ("countryside", "lab"):
+        assert (places / name / "place.js").is_file()
+        assert (places / name / "README.md").is_file()
+    # a limited list copies only those places (the README always comes along)
+    install_kit(tmp_path, places=["lab"])
+    assert (places / "lab" / "place.js").is_file()
+    assert not (places / "countryside").exists()
+    assert (places / "README.md").is_file()
+
+
 def test_vendor_is_offline_and_licensed():
     assert assert_offline(KIT / "vendor") == []
     assert assert_offline(KIT / "src") == []

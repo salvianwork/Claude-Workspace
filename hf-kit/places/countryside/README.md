@@ -1,0 +1,1 @@
+Railway through farmland, cut away: sky, hills, windmill, barn and silo, meadow, a lake under a trestle bridge, soil in section (ported from the spike's look); variants day, sunset, night; anchors rail-near, rail-far, bridge, lake, barn, sky; path rail.

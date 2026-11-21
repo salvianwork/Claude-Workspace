@@ -159,23 +159,27 @@ def assert_offline(composition_dir: Path) -> list[str]:
 
 
 def install_kit(composition_dir: Path, *, kit_dir: Path = KIT_DIR,
-                props: list[str] | None = None) -> Path:
-    """Copy hf-kit's vendor/, src/ and props/ into <composition_dir>/kit/ (HyperFrames only
-    serves files inside the composition folder). The old kit/ folder is removed first so no
-    stale file survives. `props` limits the copied props to those names (None = all; the
-    props/README.md is always copied). Returns the kit folder."""
+                props: list[str] | None = None, places: list[str] | None = None) -> Path:
+    """Copy hf-kit's vendor/, src/, props/ and places/ into <composition_dir>/kit/ (HyperFrames
+    only serves files inside the composition folder). The old kit/ folder is removed first so no
+    stale file survives. `props` and `places` limit the copied library entries to those names
+    (None = all; each library's README.md is always copied). Returns the kit folder."""
     kit_dir = Path(kit_dir)
     kit = Path(composition_dir) / "kit"
     if kit.exists():
         shutil.rmtree(kit)
     for part in ("vendor", "src"):
         shutil.copytree(kit_dir / part, kit / part)
-    (kit / "props").mkdir(parents=True)
-    shutil.copy2(kit_dir / "props" / "README.md", kit / "props" / "README.md")
-    names = props if props is not None else sorted(
-        d.name for d in (kit_dir / "props").iterdir() if d.is_dir())
-    for name in names:
-        shutil.copytree(kit_dir / "props" / name, kit / "props" / name)
+    for lib, only in (("props", props), ("places", places)):
+        src = kit_dir / lib
+        (kit / lib).mkdir(parents=True)
+        if not src.is_dir():
+            continue
+        if (src / "README.md").is_file():
+            shutil.copy2(src / "README.md", kit / lib / "README.md")
+        names = only if only is not None else sorted(d.name for d in src.iterdir() if d.is_dir())
+        for name in names:
+            shutil.copytree(src / name, kit / lib / name)
     return kit
 
 

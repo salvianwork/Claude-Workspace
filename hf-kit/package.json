@@ -12,7 +12,8 @@
     "sample": "node scripts/sample.mjs",
     "sheet": "node scripts/sheet.mjs",
     "test": "node --test \"test/*.test.js\"",
-    "kit-sheet": "node scripts/kit-sheet.mjs"
+    "kit-sheet": "node scripts/kit-sheet.mjs",
+    "world-sheet": "node scripts/world-sheet.mjs"
   },
   "dependencies": {
     "hyperframes": "0.9.72"
