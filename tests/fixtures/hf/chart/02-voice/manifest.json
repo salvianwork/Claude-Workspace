@@ -1,0 +1,25 @@
+{
+  "language": "en",
+  "engine": "kokoro",
+  "voice": "am_adam",
+  "speed": 1.0,
+  "sample_rate": 24000,
+  "scenes": [
+    {
+      "id": 1,
+      "file": "scene-01.wav",
+      "duration_s": 11.975
+    },
+    {
+      "id": 2,
+      "file": "scene-02.wav",
+      "duration_s": 7.375
+    },
+    {
+      "id": 3,
+      "file": "scene-03.wav",
+      "duration_s": 3.275
+    }
+  ],
+  "total_s": 22.625
+}

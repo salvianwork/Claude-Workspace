@@ -30,6 +30,8 @@ winget install -e --id eSpeak-NG.eSpeak-NG
 
 Notes:
 - It must be **Python 3.12**. Python 3.13 does not work with the voice engine.
+- Node.js must be **version 22 or newer** (the video kit needs it). Check with `node --version`;
+  if it prints `v20...` or older, run the `OpenJS.NodeJS.LTS` line again (or `winget upgrade -e --id OpenJS.NodeJS.LTS`).
 - Git for Windows is needed because Claude Code runs its helper hooks through "Git Bash".
 - The eSpeak line is optional. If you run it and it says no package was found, just skip it.
 
@@ -71,7 +73,34 @@ engine, and `/make-video` will stop and tell you to do this.
 If PowerShell says "running scripts is disabled", run this once and try the activate line again:
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
-## 3. Install the video (Remotion) packages
+## 3. Install the video kit (HyperFrames)
+
+Videos are drawn and rendered with HyperFrames, using the project's own kit in `hf-kit`:
+
+```
+cd hf-kit
+npm ci
+cd ..
+```
+
+What success looks like: npm ends with "added … packages" (warnings in yellow are fine). `npm ci`
+installs exactly the pinned versions, so every PC renders the same.
+
+Quick test (renders a 3-second clip):
+
+```
+cd hf-kit
+npm run sample
+cd ..
+```
+
+You should see a 3-second clip at `hf-kit\sample\out.mp4`. The very first render may download a
+headless browser once; let it finish.
+
+## 3b. Install the old video (Remotion) packages
+
+Remotion is the previous video engine. It stays installed as a fallback until you have approved
+three HyperFrames videos (see `docs\TEST-CHECKLIST.md`).
 
 ```
 cd templates
@@ -119,7 +148,8 @@ It should print `OK`.
 
 The first time you use them, these download automatically, so just let them finish:
 - the Kokoro voice model and the Whisper `small.en` listening model (from HuggingFace),
-- Remotion's own hidden browser (on the first video render).
+- the headless browser HyperFrames renders with (on the first video render, if it is not there yet),
+- Remotion's own hidden browser (only if a Remotion render is ever asked for).
 
 What success looks like: the first video finishes; later videos start faster.
 

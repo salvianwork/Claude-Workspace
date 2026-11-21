@@ -1,0 +1,429 @@
+{
+  "source": "kokoro",
+  "scenes": [
+    {
+      "id": 1,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "Deep",
+          "display": "Deep",
+          "start": 0.275,
+          "end": 0.487
+        },
+        {
+          "i": 1,
+          "text": "under",
+          "display": "under",
+          "start": 0.487,
+          "end": 0.662
+        },
+        {
+          "i": 2,
+          "text": "a",
+          "display": "a",
+          "start": 0.662,
+          "end": 0.725
+        },
+        {
+          "i": 3,
+          "text": "volcano",
+          "display": "volcano",
+          "start": 0.725,
+          "end": 1.35
+        },
+        {
+          "i": 4,
+          "text": "lies",
+          "display": "lies",
+          "start": 1.35,
+          "end": 1.538
+        },
+        {
+          "i": 5,
+          "text": "a",
+          "display": "a",
+          "start": 1.538,
+          "end": 1.6
+        },
+        {
+          "i": 6,
+          "text": "magma",
+          "display": "magma",
+          "start": 1.6,
+          "end": 2.0
+        },
+        {
+          "i": 7,
+          "text": "chamber",
+          "display": "chamber,",
+          "start": 2.0,
+          "end": 2.55
+        },
+        {
+          "i": 8,
+          "text": "a",
+          "display": "a",
+          "start": 2.65,
+          "end": 2.763
+        },
+        {
+          "i": 9,
+          "text": "pool",
+          "display": "pool",
+          "start": 2.763,
+          "end": 3.087
+        },
+        {
+          "i": 10,
+          "text": "of",
+          "display": "of",
+          "start": 3.087,
+          "end": 3.212
+        },
+        {
+          "i": 11,
+          "text": "molten",
+          "display": "molten",
+          "start": 3.212,
+          "end": 3.625
+        },
+        {
+          "i": 12,
+          "text": "rock",
+          "display": "rock.",
+          "start": 3.625,
+          "end": 4.35
+        },
+        {
+          "i": 13,
+          "text": "As",
+          "display": "As",
+          "start": 4.5,
+          "end": 4.7
+        },
+        {
+          "i": 14,
+          "text": "pressure",
+          "display": "pressure",
+          "start": 4.7,
+          "end": 5.075
+        },
+        {
+          "i": 15,
+          "text": "builds",
+          "display": "builds,",
+          "start": 5.075,
+          "end": 5.625
+        },
+        {
+          "i": 16,
+          "text": "the",
+          "display": "the",
+          "start": 5.7,
+          "end": 5.825
+        },
+        {
+          "i": 17,
+          "text": "magma",
+          "display": "magma",
+          "start": 5.825,
+          "end": 6.225
+        },
+        {
+          "i": 18,
+          "text": "pushes",
+          "display": "pushes",
+          "start": 6.225,
+          "end": 6.6
+        },
+        {
+          "i": 19,
+          "text": "up",
+          "display": "up",
+          "start": 6.6,
+          "end": 6.8
+        },
+        {
+          "i": 20,
+          "text": "through",
+          "display": "through",
+          "start": 6.8,
+          "end": 7.0
+        },
+        {
+          "i": 21,
+          "text": "a",
+          "display": "a",
+          "start": 7.0,
+          "end": 7.112
+        },
+        {
+          "i": 22,
+          "text": "narrow",
+          "display": "narrow",
+          "start": 7.112,
+          "end": 7.5
+        },
+        {
+          "i": 23,
+          "text": "vent",
+          "display": "vent.",
+          "start": 7.5,
+          "end": 8.225
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "At",
+          "display": "At",
+          "start": 0.225,
+          "end": 0.338
+        },
+        {
+          "i": 1,
+          "text": "the",
+          "display": "the",
+          "start": 0.338,
+          "end": 0.425
+        },
+        {
+          "i": 2,
+          "text": "crater",
+          "display": "crater",
+          "start": 0.425,
+          "end": 0.738
+        },
+        {
+          "i": 3,
+          "text": "it",
+          "display": "it",
+          "start": 0.738,
+          "end": 0.825
+        },
+        {
+          "i": 4,
+          "text": "bursts",
+          "display": "bursts",
+          "start": 0.825,
+          "end": 1.175
+        },
+        {
+          "i": 5,
+          "text": "out",
+          "display": "out",
+          "start": 1.175,
+          "end": 1.363
+        },
+        {
+          "i": 6,
+          "text": "as",
+          "display": "as",
+          "start": 1.363,
+          "end": 1.5
+        },
+        {
+          "i": 7,
+          "text": "lava",
+          "display": "lava.",
+          "start": 1.5,
+          "end": 2.125
+        },
+        {
+          "i": 8,
+          "text": "The",
+          "display": "The",
+          "start": 2.275,
+          "end": 2.375
+        },
+        {
+          "i": 9,
+          "text": "lava",
+          "display": "lava",
+          "start": 2.375,
+          "end": 2.688
+        },
+        {
+          "i": 10,
+          "text": "flows",
+          "display": "flows",
+          "start": 2.688,
+          "end": 3.075
+        },
+        {
+          "i": 11,
+          "text": "down",
+          "display": "down",
+          "start": 3.075,
+          "end": 3.312
+        },
+        {
+          "i": 12,
+          "text": "the",
+          "display": "the",
+          "start": 3.312,
+          "end": 3.413
+        },
+        {
+          "i": 13,
+          "text": "slopes",
+          "display": "slopes,",
+          "start": 3.413,
+          "end": 3.875
+        },
+        {
+          "i": 14,
+          "text": "cools",
+          "display": "cools",
+          "start": 3.962,
+          "end": 4.412
+        },
+        {
+          "i": 15,
+          "text": "and",
+          "display": "and",
+          "start": 4.412,
+          "end": 4.525
+        },
+        {
+          "i": 16,
+          "text": "hardens",
+          "display": "hardens,",
+          "start": 4.525,
+          "end": 5.075
+        },
+        {
+          "i": 17,
+          "text": "and",
+          "display": "and",
+          "start": 5.15,
+          "end": 5.263
+        },
+        {
+          "i": 18,
+          "text": "the",
+          "display": "the",
+          "start": 5.263,
+          "end": 5.362
+        },
+        {
+          "i": 19,
+          "text": "cone",
+          "display": "cone",
+          "start": 5.362,
+          "end": 5.725
+        },
+        {
+          "i": 20,
+          "text": "grows",
+          "display": "grows",
+          "start": 5.725,
+          "end": 6.037
+        },
+        {
+          "i": 21,
+          "text": "a",
+          "display": "a",
+          "start": 6.037,
+          "end": 6.125
+        },
+        {
+          "i": 22,
+          "text": "new",
+          "display": "new",
+          "start": 6.125,
+          "end": 6.3
+        },
+        {
+          "i": 23,
+          "text": "layer",
+          "display": "layer.",
+          "start": 6.3,
+          "end": 7.125
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "So",
+          "display": "So",
+          "start": 0.25,
+          "end": 0.375
+        },
+        {
+          "i": 1,
+          "text": "magma",
+          "display": "magma",
+          "start": 0.375,
+          "end": 0.775
+        },
+        {
+          "i": 2,
+          "text": "rises",
+          "display": "rises,",
+          "start": 0.775,
+          "end": 1.375
+        },
+        {
+          "i": 3,
+          "text": "erupts",
+          "display": "erupts",
+          "start": 1.45,
+          "end": 1.85
+        },
+        {
+          "i": 4,
+          "text": "as",
+          "display": "as",
+          "start": 1.85,
+          "end": 2.0
+        },
+        {
+          "i": 5,
+          "text": "lava",
+          "display": "lava,",
+          "start": 2.0,
+          "end": 2.425
+        },
+        {
+          "i": 6,
+          "text": "and",
+          "display": "and",
+          "start": 2.462,
+          "end": 2.575
+        },
+        {
+          "i": 7,
+          "text": "builds",
+          "display": "builds",
+          "start": 2.575,
+          "end": 2.9
+        },
+        {
+          "i": 8,
+          "text": "the",
+          "display": "the",
+          "start": 2.9,
+          "end": 3.0
+        },
+        {
+          "i": 9,
+          "text": "mountain",
+          "display": "mountain.",
+          "start": 3.0,
+          "end": 3.85
+        }
+      ]
+    }
+  ]
+}

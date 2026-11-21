@@ -20,3 +20,10 @@ hf-kit/sample/kit/
 docs/hf/*.mp4
 hf-kit/sample/presenter-sheet.png
 hf-kit/sample/presenter-sheet/kit/
+# HyperFrames fixture runs (tests/fixtures/hf): keep the small inputs and hero modules only
+tests/fixtures/hf/*/02-voice/*.wav
+tests/fixtures/hf/*/review/
+tests/fixtures/hf/*/04-video/*
+!tests/fixtures/hf/*/04-video/hf/
+tests/fixtures/hf/*/04-video/hf/*
+!tests/fixtures/hf/*/04-video/hf/scenes/

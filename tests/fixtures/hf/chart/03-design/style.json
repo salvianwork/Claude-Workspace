@@ -1,0 +1,4 @@
+{"colors": {"background": "#0F172A", "surface": "#1E293B", "primary": "#38BDF8", "accent": "#F59E0B", "text": "#F1F5F9"},
+ "fonts": {"heading": "Poppins", "body": "Inter"},
+ "sizes": {"title": 104, "heading": 64, "body": 40, "caption": 40},
+ "presenterOutfit": "labcoat"}
