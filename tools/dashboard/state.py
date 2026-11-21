@@ -63,6 +63,20 @@ def _last_time(status: dict) -> str:
     return str(status.get("created", ""))
 
 
+def _needs_you(run_dir: Path, status: dict) -> bool:
+    """True only while the owner has an open, unanswered request on a live run."""
+    if status.get("state") not in REQUEST_STATES:
+        return False
+    hist = status.get("history")
+    if isinstance(hist, list) and hist and isinstance(hist[-1], dict):
+        if str(hist[-1].get("event", "")).strip().lower() == "cancelled by owner":
+            return False
+    req = read_request(run_dir)
+    if not isinstance(req, dict) or not isinstance(req.get("id"), str):
+        return False
+    return read_answer(run_dir, req["id"]) is None
+
+
 def list_runs(videos_root: Path) -> list[dict]:
     rows = []
     root = Path(videos_root)
@@ -76,7 +90,8 @@ def list_runs(videos_root: Path) -> list[dict]:
         except (RunStateError, OSError):
             continue
         rows.append({"run": d.name, "topic": s.get("topic", ""), "step": s.get("step", ""),
-                     "state": s.get("state", ""), "updated": _last_time(s)})
+                     "state": s.get("state", ""), "updated": _last_time(s),
+                     "needs_you": _needs_you(d, s)})
     rows.sort(key=lambda r: (r["updated"], r["run"]), reverse=True)
     return rows
 

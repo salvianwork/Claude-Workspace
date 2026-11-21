@@ -183,7 +183,7 @@ def test_list_runs_sorted_newest_first(tmp_path):
     rows = list_runs(tmp_path)
     assert [r["run"] for r in rows] == ["b-new", "a-old"]
     assert rows[0] == {"run": "b-new", "topic": "How volcanoes work", "step": "done",
-                       "state": "done", "updated": "2026-11-20T11:30:00"}
+                       "state": "done", "updated": "2026-11-20T11:30:00", "needs_you": False}
     assert list_runs(tmp_path / "missing") == []
 
 
@@ -255,3 +255,46 @@ def test_presenter_outfit(tmp_path, style, want):
 
 def test_presenter_outfit_default_without_status(tmp_path):
     assert run_state(tmp_path, TEAM, now=NOW)["presenterOutfit"] == "blazer"
+
+
+def _needs(tmp_path, src):
+    run = tmp_path / "videos" / src
+    shutil.copytree(FIX / src, run)
+    return run
+
+
+def _needs_you_of(tmp_path, name):
+    return {r["run"]: r["needs_you"] for r in list_runs(tmp_path / "videos")}[name]
+
+
+def test_needs_you_open_request(tmp_path):
+    _needs(tmp_path, "gate1-waiting")
+    _needs(tmp_path, "stuck-gate3")
+    _needs(tmp_path, "story-working")
+    _needs(tmp_path, "stale-request")  # request.json left over, but not waiting any more
+    rows = {r["run"]: r["needs_you"] for r in list_runs(tmp_path / "videos")}
+    assert rows == {"gate1-waiting": True, "stuck-gate3": True, "story-working": False,
+                    "stale-request": False}
+
+
+def test_needs_you_false_once_answered(tmp_path):
+    run = _needs(tmp_path, "gate1-waiting")
+    answers.write_answer(run, "gate-1-1", "approve", source="chat")
+    assert _needs_you_of(tmp_path, "gate1-waiting") is False
+
+
+def test_needs_you_false_when_cancelled_by_owner(tmp_path):
+    run = _needs(tmp_path, "stuck-gate3")
+    status = json.loads((run / "status.json").read_text(encoding="utf-8"))
+    status["history"].append({"time": "2026-11-20T10:45:00", "agent": "reviewer",
+                              "event": "cancelled by owner", "detail": ""})
+    (run / "status.json").write_text(json.dumps(status), encoding="utf-8")
+    # cancelled in chat: no answer file, state stays failed -- still not waiting on the owner
+    assert not list((run / "board").glob("answer-*.json"))
+    assert _needs_you_of(tmp_path, "stuck-gate3") is False
+
+
+def test_needs_you_false_without_request(tmp_path):
+    run = _needs(tmp_path, "gate1-waiting")
+    (run / "board" / "request.json").unlink()
+    assert _needs_you_of(tmp_path, "gate1-waiting") is False

@@ -247,7 +247,7 @@ function mainHTML(st) {
     const said = LABELS[str(a.decision)] || str(a.decision);
     return `<h2 class="status ok">${head}</h2>
       <p class="body">Your answer: <b>${esc(said)}</b>${a.text ? ` — “${esc(a.text)}”` : ""}</p>
-      <p class="meta">The board unlocks when the team picks it up.</p>`;
+      <p class="meta">If Claude Code doesn’t continue within a minute, type anything in the chat (or run /make-video --resume).</p>`;
   }
   if (str(st.state) === "done" || str(st.step) === "done") {
     return `<h2 class="status ok">${CLAPPER} Done</h2>
@@ -456,12 +456,15 @@ async function fetchT(url, opts = {}) {
   }
 }
 
+// runs arrive newest first. Follow the newest run that needs the owner (an open,
+// unanswered request), else the most recent run -- but never override a run the
+// owner picked by hand in the run picker during this page session.
 function pickRun(runs) {
-  const waiting = (r) => r.state === "waiting_owner" || r.state === "failed";
   const cur = runs.find((r) => r.run === S.run);
-  if (cur && (S.userPicked || waiting(cur) || !runs.some(waiting))) return;
+  if (cur && S.userPicked) return;
   S.userPicked = false;
-  S.run = (runs.find(waiting) || runs[0] || { run: null }).run;
+  if (cur && cur.needs_you) return;
+  S.run = (runs.find((r) => r.needs_you) || runs[0] || { run: null }).run;
 }
 
 async function tick() {
@@ -472,7 +475,8 @@ async function tick() {
     const rr = await fetchT("/api/runs");
     const data = rr.ok ? await rr.json() : [];
     S.runs = (Array.isArray(data) ? data : []).filter((r) => r && r.run !== null && r.run !== undefined)
-      .map((r) => ({ run: str(r.run), topic: str(r.topic), step: str(r.step), state: str(r.state) }));
+      .map((r) => ({ run: str(r.run), topic: str(r.topic), step: str(r.step), state: str(r.state),
+        needs_you: r.needs_you === true }));
     pickRun(S.runs);
     let st = null;
     if (S.run) {

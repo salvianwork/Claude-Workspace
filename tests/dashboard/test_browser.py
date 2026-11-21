@@ -168,8 +168,11 @@ def test_board_answered_in_chat(tmp_path):
             {"op": "goto", "url": s.url},
             {"op": "wait_text", "text": "Answered in chat"},
             {"op": "count", "selector": "#board button.decision:enabled"},
+            {"op": "text", "selector": "#board"},
         ])
         assert out["results"][2] == 0
+        assert "type anything in the chat (or run /make-video --resume)" in out["results"][3]
+        assert "unlocks" not in out["results"][3]
 
 
 def test_board_done_links(tmp_path):
@@ -220,6 +223,53 @@ def test_board_run_picker(tmp_path):
         ])
         assert out["results"][2] == 2
         assert out["results"][3] == "gate1-waiting"  # the run waiting for the owner wins
+
+
+def _set_status(videos, run, **changes):
+    f = videos / run / "status.json"
+    status = json.loads(f.read_text(encoding="utf-8"))
+    extra = changes.pop("append", [])
+    status.update(changes)
+    status["history"] += extra
+    f.write_text(json.dumps(status), encoding="utf-8")
+
+
+def test_board_skips_cancelled_run_for_newer_working_run(tmp_path):
+    def mutate(videos):
+        # an old run the owner cancelled at a stuck gate: state stays "failed" forever
+        _set_status(videos, "stuck-gate3", append=[{"time": "2026-11-20T10:45:00", "agent": "reviewer",
+                                                    "event": "cancelled by owner", "detail": ""}])
+        _set_status(videos, "story-working", topic="Why the sky is blue",
+                    append=[{"time": "2026-11-20T11:00:00", "agent": "story", "event": "drafting",
+                             "detail": ""}])
+    with studio(tmp_path, ["stuck-gate3", "story-working"], mutate=mutate) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_selector", "selector": "#run-picker"},
+            {"op": "wait_text", "text": "Quill drafting"},
+            {"op": "sleep", "ms": 1800},  # one more poll: it must not jump back
+            {"op": "eval", "js": "document.querySelector('#run-picker').value"},
+            {"op": "text", "selector": "#board"},
+        ])
+        assert out["results"][4] == "story-working"
+        assert "WAITING FOR YOU" not in out["results"][5]
+
+
+def test_board_keeps_run_picked_by_hand(tmp_path):
+    with studio(tmp_path, ["gate1-waiting", "done"]) as s:
+        pick = ("(() => { const p = document.querySelector('#run-picker'); p.value = 'done';"
+                " p.dispatchEvent(new Event('change', { bubbles: true })); return p.value; })()")
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "WAITING FOR YOU"},
+            {"op": "eval", "js": pick},
+            {"op": "wait_text", "text": "is finished"},
+            {"op": "sleep", "ms": 3500},  # two polls while gate1-waiting still needs the owner
+            {"op": "eval", "js": "document.querySelector('#run-picker').value"},
+            {"op": "text", "selector": "#board"},
+        ])
+        assert out["results"][5] == "done"
+        assert "WAITING FOR YOU" not in out["results"][6]
 
 
 def test_board_copy_reply(tmp_path):
