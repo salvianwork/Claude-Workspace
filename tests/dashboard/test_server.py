@@ -266,3 +266,35 @@ def test_head_options_and_errors_are_json(srv):
     assert r.status == 403
     r, data = req(srv, "PUT", "/api/runs")
     assert r.status == 501 and json.loads(data)["error"] and r.getheader("Cache-Control") == "no-store"
+
+
+@pytest.mark.parametrize("path", ["/", "/static/board.js", "/api/runs", "/api/state?run=done",
+                                  "/files/done/status.json", "/nope", "/files/done/missing.md"])
+def test_hardening_headers_on_every_response(srv, path):
+    r, _ = req(srv, "GET", path)
+    assert r.getheader("X-Content-Type-Options") == "nosniff"
+    assert r.getheader("Cross-Origin-Resource-Policy") == "same-origin"
+    r, _ = req(srv, "GET", path, host="evil.example")  # error responses too
+    assert r.status == 403 and r.getheader("X-Content-Type-Options") == "nosniff"
+
+
+@pytest.mark.parametrize("name", ["page.html", "PAGE.HTM", "x.js", "pic.svg"])
+def test_run_files_that_could_run_script_are_plain_text(srv, name):
+    f = srv.root / "videos/done" / name
+    f.write_text("<script>alert(1)</script>", encoding="utf-8")
+    r, data = req(srv, "GET", f"/files/done/{name}")
+    assert r.status == 200 and data == b"<script>alert(1)</script>"
+    assert r.getheader("Content-Type") == "text/plain; charset=utf-8"
+    assert r.getheader("Content-Security-Policy") == "sandbox"
+
+
+def test_files_get_csp_sandbox_but_board_does_not(srv):
+    r, _ = req(srv, "GET", "/files/done/04-video/credits.md")
+    assert r.getheader("Content-Security-Policy") == "sandbox"
+    r, _ = req(srv, "GET", "/files/done/status.json", {"Range": "bytes=999999-"})
+    assert r.status == 416 and r.getheader("Content-Security-Policy") == "sandbox"
+    for path in ("/", "/static/board.js"):
+        r, _ = req(srv, "GET", path)
+        assert r.getheader("Content-Security-Policy") is None
+    r, _ = req(srv, "GET", "/static/board.js")
+    assert r.getheader("Content-Type") == "text/javascript"  # the board's own JS still runs

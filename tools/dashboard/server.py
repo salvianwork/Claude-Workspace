@@ -9,6 +9,11 @@ Security model:
     Host-checked; the key only guards the one route that writes.
   * Files are served only from inside videos/<run>/ (single folder name, no
     "..", resolved path must stay inside the run folder).
+  * Every response carries X-Content-Type-Options: nosniff and
+    Cross-Origin-Resource-Policy: same-origin. Run files (/files/) are untrusted
+    agent output: HTML/JS/SVG there is served as text/plain, and all /files/
+    responses carry Content-Security-Policy: sandbox, so nothing in a run
+    folder can script the board's origin.
 """
 from __future__ import annotations
 
@@ -36,6 +41,9 @@ TYPES = {
     ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
     ".txt": "text/plain; charset=utf-8",
 }
+# run files that a browser would execute are shown as plain text instead
+AS_TEXT = {".html", ".htm", ".js", ".mjs", ".svg", ".xhtml", ".xml"}
+FILES_CSP = "sandbox"
 _RANGE_RE = re.compile(r"^bytes=(\d*)-(\d*)$")
 
 
@@ -75,6 +83,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
+
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        super().end_headers()
 
     def log_message(self, fmt, *args):  # keep the console quiet
         pass
@@ -184,17 +197,24 @@ class Handler(BaseHTTPRequestHandler):
         run = self._run_dir(run_name)
         if not rel:
             self._fail(404, "not found")
-        self._serve(self._safe_file(run, rel), ranged=True)
+        self._serve(self._safe_file(run, rel), ranged=True, untrusted=True)
 
-    def _serve(self, f: Path, ranged: bool = False) -> None:
+    def _serve(self, f: Path, ranged: bool = False, untrusted: bool = False) -> None:
         size = f.stat().st_size
-        ctype = TYPES.get(f.suffix.lower(), "application/octet-stream")
+        suffix = f.suffix.lower()
+        if untrusted and suffix in AS_TEXT:
+            ctype = "text/plain; charset=utf-8"
+        else:
+            ctype = TYPES.get(suffix, "application/octet-stream")
+        extra = {"Content-Security-Policy": FILES_CSP} if untrusted else {}
         rng = parse_range(self.headers.get("Range"), size) if ranged else None
         if rng == "bad":
             self.send_response(416)
             self.send_header("Content-Range", f"bytes */{size}")
             self.send_header("Content-Length", "0")
             self.send_header("Cache-Control", "no-store")
+            for k, v in extra.items():
+                self.send_header(k, v)
             self.end_headers()
             return
         start, end = rng if rng else (0, size - 1)
@@ -203,13 +223,15 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             self._fail(404, "not found")
         with fh:
-            self._send_body(fh, ctype, size, start, end, rng, ranged)
+            self._send_body(fh, ctype, size, start, end, rng, ranged, extra)
 
-    def _send_body(self, fh, ctype, size, start, end, rng, ranged) -> None:
+    def _send_body(self, fh, ctype, size, start, end, rng, ranged, extra) -> None:
         self.send_response(206 if rng else 200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(max(end - start + 1, 0)))
         self.send_header("Cache-Control", "no-store")
+        for k, v in extra.items():
+            self.send_header(k, v)
         if ranged:
             self.send_header("Accept-Ranges", "bytes")
         if rng:
