@@ -60,4 +60,7 @@
     frames: frames,
     timeline: timeline,
   };
+  /* timing.js (wordTime, cameraAt, cueState, captionPage) merges itself in; cover the
+   * case where it was loaded first. */
+  if (root.HFKitTiming) Object.assign(root.HFKit, root.HFKitTiming);
 })(typeof globalThis !== "undefined" ? globalThis : window);
