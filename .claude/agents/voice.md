@@ -1,6 +1,6 @@
 ---
 name: voice
-description: Records the narration per scene with the local Kokoro voice (02-voice/*.wav + manifest.json) and checks it with a local transcript; use for step 2 of /make-video and for gate-2 or owner voice fixes.
+description: Records the narration per scene with the local Kokoro voice (02-voice/*.wav, manifest.json, words.json) and checks it with a local transcript; use for step 2 of /make-video and for gate-2 or owner voice fixes.
 tools: Read, Write, Edit, Bash
 ---
 
@@ -32,6 +32,11 @@ never edit it), and on a fix round the `feedback_file`, `02-voice/manifest.json`
 - `02-voice/scene-01.wav`, `scene-02.wav`, … — written by the synth tool.
 - `02-voice/manifest.json` — written by the synth tool:
   `{"language":"en","engine":"kokoro","voice":"am_adam","speed":1.0,"sample_rate":24000,"scenes":[{"id":1,"file":"scene-01.wav","duration_s":12.4}],"total_s":96.2}`
+- `02-voice/words.json` — written by the synth tool together with the manifest: each word's
+  start/end in seconds per scene, used for captions, labels and camera cues:
+  `{"source":"kokoro","scenes":[{"id":1,"source":"kokoro","words":[{"i":0,"text":"Deep","display":"Deep","start":0.12,"end":0.38}]}]}`
+  (`text` = the script word, `display` = the word as written with its punctuation, for captions).
+  You never write or edit it; re-recording a scene rewrites it.
 - `02-voice/notes.md` — written by you (format below). This is the main output.
 
 ## Settings
@@ -93,6 +98,16 @@ timeout would cut it off half-way.
 3. Read `02-voice/manifest.json`: every script scene has an entry, and `total_s` is
    **60–180 seconds** (1–3 minutes).
 
+4. Check the word timings: `02-voice/words.json` must exist and have one entry per manifest
+   scene, each with a non-empty `words` list (the synth tool writes it last, so a missing
+   file means the recording did not finish — record again). Note its top-level `source`:
+   `kokoro` (timings from the voice itself, the normal case), `whisper` (fallback: timings
+   heard by faster-whisper — less exact, so say so in `notes.md`), `engine` (another engine's
+   own timestamps) or `mixed` (scenes differ; each scene has its own `source`). Quick check:
+   ```bash
+   python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); print(d['source'], [(s['id'], s.get('source'), len(s['words'])) for s in d['scenes']])" "<run_dir>/02-voice/words.json"
+   ```
+
 ## Fixing problems
 
 Work through each problem in the transcript output:
@@ -136,6 +151,7 @@ Work through each problem in the transcript output:
 - Total length: 96.2 s (scenes: 7)
 - Script copy: 02-voice/script-voice.md — SAME WORDS as 01-script/script.md
 - Transcript check: ok | <n> problems remain
+- Word timings: 02-voice/words.json, source kokoro | whisper (fallback, less exact) | engine | mixed (scenes 3, 5 whisper)
 - Recorded this round: all | scenes 2, 4
 
 ## Punctuation changes
@@ -155,9 +171,11 @@ Work through each problem in the transcript output:
 
 - **Never change words.** Only punctuation, pauses, voice and speed — and punctuation only
   in your copy `02-voice/script-voice.md`.
-- Write only in `02-voice/`. Never edit `01-script/script.md`, `status.json` (the orchestrator
+- Write only in `02-voice/`. Never edit `02-voice/words.json` or `02-voice/manifest.json` by hand
+  (the synth tool writes them). Never edit `01-script/script.md`, `status.json` (the orchestrator
   does), `progress.log`, `brief.md`, `03-design/`, `04-video/` or `review/`.
-- Always run `tools.voice.synth` (with `--script`), then `tools.review.transcript voice`, before replying.
+- Always run `tools.voice.synth` (with `--script`), then `tools.review.transcript voice`, and
+  check `02-voice/words.json` before replying.
 - Local tools only; no network calls.
 
 When done, reply with exactly: DONE <path to main output>

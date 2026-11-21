@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews one gate of a video run (1 script, 2 voice, 3 design, 4 final video) against its checklist and writes review/gate-<n>-round-<m>.md with a PASS or FIX verdict; use at every gate of /make-video, before the owner sees any work.
+description: Reviews one gate of a video run (1 script, 2 voice, 3 shot list, 4 final video) against its checklist and writes review/gate-<n>-round-<m>.md with a PASS or FIX verdict; use at every gate of /make-video, before the owner sees any work.
 tools: Read, Write, Bash, Glob, Grep, WebSearch, WebFetch, Skill
 ---
 
@@ -14,7 +14,7 @@ about taste.
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below are
-  relative to it unless they start with `tools/` or `templates/`.
+  relative to it unless they start with `tools/`, `hf-kit/` or `templates/`.
 - `gate` — 1 (Story), 2 (Voice), 3 (Design) or 4 (Final video).
 - `round` — 1, 2 or 3.
 - `feedback_file` (optional) — owner feedback the agent was asked to address in this round.
@@ -131,43 +131,79 @@ You **cannot judge intonation** — that is the owner's job at the checkpoint. A
 
 ---
 
-## Gate 3 — Design
+## Gate 3 — Design (shot list)
 
-Read `03-design/storyboard.md`, `03-design/style.json`, `03-design/sound.json`,
-`01-script/script.md`, `02-voice/manifest.json` and `templates/README.md` (props limits).
-Allowed values: templates `TitleCard Bullets Diagram Comparison BigNumber Steps Chart Quote Recap`;
+Read `03-design/storyboard.md`, `03-design/shots.json`, `03-design/style.json`,
+`03-design/sound.json`, `01-script/script.md`, `02-voice/manifest.json`, `02-voice/words.json`
+and `hf-kit/props/README.md` (the prop library: what each prop draws, its anchors, phases and
+params). Allowed values: kit scenes `title` `steps` `compare` `chart` `kinetic` `recap`
+`diagram` (props limits in `.claude/agents/design.md`); transitions `cut fade blur slide zoom`;
 moods `curious upbeat calm inspiring dramatic playful`; SFX types
 `whoosh pop ding click swoosh-in reveal`; poses `idle talk point-left point-right think surprised celebrate wave`;
 expressions `neutral happy curious surprised thinking`; position `left right none`; size `large small`;
-outfit (`style.json` → `presenterOutfit`) `blazer labcoat`.
-Check the JSON files parse:
+outfit (`style.json` → `presenterOutfit`) `blazer labcoat`; fonts `Inter Poppins`.
+
+Validate the shot list against the voice and the kit (the new heroes are not drawn yet, so
+`--no-modules`):
+
+```bash
+python -m tools.hf.shots validate "<run_dir>" --no-modules
+```
+
+It prints `shots.json OK (<n> scenes)` or a list of problems; it checks the schema, 2–4 heroes,
+scene ids, that every cue's and camera key's word exists in `02-voice/words.json`, library
+props and their anchors/phases, kit scene props and cue kinds, presenter and transition values
+and the camera timing. Check the JSON files parse:
 `python -c "import json,sys; [json.load(open(f, encoding='utf-8')) for f in sys.argv[1:]]; print('ok')" "<run_dir>/03-design/style.json" "<run_dir>/03-design/sound.json"`
 
+List each scene's words with their indices and times, to check what every cue lands on:
+
+```bash
+python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); [print('scene', s['id'], ' '.join(str(w['i'])+':'+w['text']+'@'+format(w['start'],'.2f') for w in s['words'])) for s in d['scenes']]" "<run_dir>/02-voice/words.json"
+```
+
 **Must-fix if:**
-- [ ] **A scene has no template or plan**: a script scene missing from the storyboard, a
-  template not in the list, or a scene without Props, Layout and motion, Duration, Presenter
-  or SFX line.
+- [ ] **`shots validate` reports any problem or `warning:`** — copy each line into a must-fix
+  item (e.g. a cue word that does not exist, an unknown anchor, a camera that ends after the scene).
+- [ ] **A scene has no plan**: a script scene missing from `shots.json` or the storyboard, the
+  two files disagree, or a storyboard scene lacks its Kind, Duration, Camera, Cues, Presenter,
+  Transition or SFX line (heroes also: Why a hero, Illustration brief, Facts; kit scenes: Props).
 - [ ] A scene's duration is not the manifest's `duration_s` (frames ≠ `ceil(duration_s × 30)`).
-- [ ] Props break a template limit (too many items, a string over its character limit,
-  Chart labels/values counts differ, a Diagram arrow to a missing node id).
+- [ ] **Hero scenes**: not 2–4 heroes; or badly chosen — a hero spent on a title, recap or list
+  while a scene carrying the key mechanism or process stays a kit scene; or a new drawing
+  (`new_prop: true`) asked for when a library prop in `hf-kit/props/README.md` already shows the
+  idea (as is or with its params) — say which prop to reuse.
+- [ ] **A hero's brief or facts are missing or unusable**: no illustration brief (layers, what
+  moves), no facts list, a brief too vague to draw, or a new prop without `anchors` covering
+  every anchor its camera and cues use (and `phases` for its `phase` cues).
+- [ ] **An illustration fact is wrong**: check every item in every hero's facts list and what
+  the brief draws. Web-search anything non-obvious with WebSearch (WebFetch when the snippet is
+  not enough; reliable sources as at gate 1). Wrong or unsupported → must-fix with the correct
+  fact and its source URL.
+- [ ] **The camera is not calm and purposeful**: more than 4 keys in a scene, keys less than
+  about 2 s apart (use the word times), a zoom above 2.5, a move with no reason in the narration,
+  or a focus/follow on a part the narration is not talking about.
+- [ ] **A cue is on the wrong word**: a label, highlight or step lands on a word that does not
+  say that thing (the label "Magma chamber" belongs on "magma", not on "the"), a label's text
+  disagrees with the narration, or a kit scene's items are not cued on the words that say them.
 - [ ] **On-screen text is too long to read in the scene's time**: more than 2 words per
-  second of the scene (`words > 2 × duration_s`).
+  second of the scene (`words > 2 × duration_s`, labels included), or a text over its limit.
 - [ ] **The style is inconsistent**: `style.json` missing a field, not hex colours, a font
-  outside `Inter Poppins Montserrat Merriweather`, sizes outside the schema ranges, low
-  contrast between text and background, or the storyboard asks for scene-specific colours/fonts.
+  outside `Inter Poppins`, sizes outside the ranges (title 40–200, heading 28–140, body 20–90,
+  caption 20–80), low contrast between text and background, or the storyboard asks for
+  scene-specific colours/fonts.
 - [ ] **A visual contradicts the narration** (a number, label, order or claim on screen that
   differs from what is said).
 - [ ] **The music mood doesn't fit the topic** (or is not one of the six moods).
 - [ ] **More sound effects than the limit**: SFX count > number of scenes, or two in one scene,
   or an SFX type not in the list, or `sound.json` disagrees with the storyboard.
-- [ ] **A sound-effect cue lands on a key narration word**: estimate each word's time as
-  `(word index ÷ words in the scene) × (duration_s − 0.4)`; an SFX within 0.6 s of a key word
-  (numbers, names, technical terms, key-claim words) is a must-fix — give a new `at_s`.
-- [ ] **Presenter (spec §6.6)**: a scene's presenter line is missing a pose, expression,
+- [ ] **A sound-effect cue lands on a key narration word**: an SFX within 0.6 s of the `start`
+  (in `02-voice/words.json`) of a key word (numbers, names, technical terms, key-claim words) is
+  a must-fix — give a new `at_s`.
+- [ ] **Presenter (spec §6.6)**: a scene's presenter is missing a pose, expression,
   position or size, or uses a value not in the lists.
-- [ ] **Presenter**: `large` on a dense scene — `large` is allowed only on TitleCard,
-  BigNumber, Quote and Recap; Diagram, Chart and Comparison (and Bullets, Steps) must be
-  `small` or `none`.
+- [ ] **Presenter**: `large` on a dense scene — `large` is allowed only on `title`, `kinetic`
+  and `recap` scenes; hero scenes and `steps`, `compare`, `chart`, `diagram` must be `small` or `none`.
 - [ ] **Presenter outfit**: `style.json` has no `presenterOutfit`, a value other than `blazer` /
   `labcoat`, or one clearly mismatched to the topic — `labcoat` is for science, health,
   medicine, technology and engineering topics; `blazer` for everything else (history, money,
@@ -176,15 +212,18 @@ Check the JSON files parse:
 - [ ] **Presenter** points away from the content (`point-left` while `position: left`, or
   `point-right` while `position: right`).
 
-**Suggestions only:** template variety, nicer layout ideas, icon choices, a different
-(but fitting) mood.
+**Suggestions only:** kit scene variety, nicer drawing or camera ideas, icon choices, a
+different (but fitting) mood or transition.
 
 ---
 
 ## Gate 4 — Final video
 
-Inputs: `04-video/out/video.mp4`, `04-video/scenes.json`, `04-video/credits.md`,
-`04-video/notes.md`, `03-design/storyboard.md`, `03-design/sound.json`, `02-voice/manifest.json`.
+Inputs: `04-video/out/video.mp4`, `04-video/render.log` (the render's output),
+`04-video/hf/data.json` (what the composition plays: each scene's start, frames, cues,
+presenter and mouth), `04-video/hf/snapshots/`, `04-video/hf/scenes/` (the new hero modules),
+`04-video/credits.md`, `04-video/notes.md`, `03-design/storyboard.md`, `03-design/shots.json`,
+`03-design/sound.json`, `02-voice/manifest.json`, `02-voice/words.json`.
 
 **1. Watch it.** If the Skill tool offers the **watch-video** skill, use it on
 `04-video/out/video.mp4` (keyframes + transcript). Otherwise (or if it fails), fall back to
@@ -197,34 +236,64 @@ python -c "import sys; from pathlib import Path; from tools.review.keyframes imp
 
 Frame `frame-0001.png` is at 0 s, `frame-0002.png` at 2 s, and so on (`frame-k` ≈ (k − 1) × 2 s).
 
-**2. Know what should be on screen when, and where the mouth must be closed/open:**
+**2. `hyperframes check` and the build.** Read `04-video/render.log` (the Animator saves the
+render output there). The render rebuilds the composition and runs `hyperframes check` first;
+the log must end with `video written: <path>` and contain no `error:` and no `warning:` line.
+Also `04-video/hf/data.json` → `warnings` must be an empty list. A warning containing
+`camera timing NOT checked` (a hero module without `anchorsFor`) is always a must-fix.
+
+**3. Know what should be on screen when, where each cue must land, and where the mouth must
+be closed/open** (from the built composition; times are seconds in the video):
 
 ```bash
-python - "<run_dir>" <<'EOF'
+python - "<run_dir>" <<'PY'
 import json, sys, pathlib
 run = pathlib.Path(sys.argv[1])
-d = json.loads((run / "04-video" / "scenes.json").read_text(encoding="utf-8"))
-start = 0
+d = json.loads((run / "04-video" / "hf" / "data.json").read_text(encoding="utf-8"))
 for s in d["scenes"]:
-    n, p, m = s["durationInFrames"], s["presenter"], s.get("mouth", [])
-    print(f"scene {s['id']}: {start/30:.1f}-{(start+n)/30:.1f} s  {s['template']}  presenter {p['position']}/{p['size']}  mouth frames: {len(m)}")
-    if p["position"] != "none" and m:
+    start, n, p, m = s["start"], s["frames"], s["presenter"], s.get("mouth", [])
+    what = s.get("prop") if s["kind"] == "hero" else s.get("scene")
+    print(f"scene {s['id']}: {start:.1f}-{start + s['duration']:.1f} s  {s['kind']} {what}  presenter {p.get('position')}/{p.get('size')}  mouth frames: {len(m)}")
+    words = {w["i"]: w for w in s["words"]}
+    for c in s["cues"]:
+        at = c.get("at", {})
+        t = at["t"] if "t" in at else words[at["word"]]["start"]
+        said = words[at["word"]]["text"] if "word" in at else "-"
+        print(f"   cue {c['show']} {c.get('target', c.get('index', ''))} {c.get('text', '')!r} on {said!r}: expected at {start + t:.2f} s")
+    if p.get("position", "none") != "none" and m:
         inner = range(15, max(15, n - 15))
         quiet = [i for i in inner if m[i] < 0.15]
         loud = [i for i in inner if m[i] >= 0.7] or sorted(inner, key=lambda i: -m[i])[:1]
-        if quiet: print(f"   mouth closed expected at {(start+quiet[len(quiet)//2])/30:.2f} s")
-        if loud: print(f"   mouth open expected at {(start+loud[len(loud)//2])/30:.2f} s")
-    start += n
-EOF
+        if quiet: print(f"   mouth closed expected at {start + quiet[len(quiet)//2]/30:.2f} s")
+        if loud: print(f"   mouth open expected at {start + loud[len(loud)//2]/30:.2f} s")
+PY
 ```
 
-Grab any single frame (e.g. those mouth times) and look at it with Read:
+(Only if `04-video/notes.md` says `Engine: remotion` — the owner asked for the old engine:
+read the timeline from `04-video/scenes.json` instead, each scene `durationInFrames` long, and
+skip the HyperFrames-only items: render log check, hero snapshots, labels.)
+
+Grab any single frame (e.g. those cue and mouth times) and look at it with Read:
 
 ```bash
 ffmpeg -v error -y -ss <seconds> -i "<run_dir>/04-video/out/video.mp4" -frames:v 1 "<run_dir>/review/frames-gate4-round-<m>/at-<seconds>s.png"
 ```
 
-**3. Transcript of the final MP4** (always run it, even after watch-video — it also compares
+**Labels on their words (±0.3 s):** for every `label` and `highlight` cue (and a sample of kit
+step/point cues), grab a frame 0.3 s **before** and 0.3 s **after** its expected time: before,
+it is not there yet; after, it is fully shown on the right part. (A label fades in over its
+first 0.25 s from the word's `start` in `02-voice/words.json`.) Also compare the snapshots in
+`04-video/hf/snapshots/` (`scene-<id>-start|mid|end.png`, taken just after the scene starts,
+at its middle and just before it ends) with the cue times: a label whose word is spoken before
+a snapshot's moment must be visible in it.
+
+**Illustrations:** look at every hero scene's snapshots and keyframes against its
+illustration brief and facts list in the storyboard.
+
+**Motion:** during each camera move (the storyboard's Camera line), grab frames 0.5 s apart
+and check the motion is calm (no dizzying moves).
+
+**4. Transcript of the final MP4** (always run it, even after watch-video — it also compares
 with the voice-only transcript, reusing `review/voice-transcripts.json` from gate 2 when the
 recordings have not changed). Run it with the Bash tool's `timeout: 600000`:
 
@@ -234,7 +303,7 @@ python -m tools.review.transcript final "<run_dir>"
 
 Prints `{"problems":[...],"missing_vs_voice":[...],"ok":…}`.
 
-**4. Loudness and mix:**
+**5. Loudness and mix:**
 
 ```bash
 python -m tools.audio.measure "<run_dir>"
@@ -242,13 +311,32 @@ python -m tools.audio.measure "<run_dir>"
 
 Prints `{"gap_db":…,"lufs":…,"sfx_count":…,"scenes":…,"problems":[...]}`.
 
+**6. The shared kit is untouched:**
+
+```bash
+git status --short hf-kit/ templates/
+```
+
+Before the new props are saved it should print nothing (nothing under `hf-kit/src`, no prop
+folder changed).
+
 **Must-fix if:**
+- [ ] **`hyperframes check` is not clean**: `04-video/render.log` is missing, has an `error:`
+  or `warning:` line (always for `camera timing NOT checked`), does not end with `video written`,
+  or `04-video/hf/data.json` lists `warnings`.
 - [ ] **Visuals are out of sync with the voice**: a keyframe shows a different scene than the
   timeline above says for that time, or the video length differs from the manifest `total_s`
   by more than 1 s.
+- [ ] **A label or cue misses its word by more than ±0.3 s**: not visible 0.3 s after its
+  expected time, or already visible 0.3 s before it; or it points at the wrong part.
+- [ ] **An illustration does not match its brief**: a layer or moving part the brief asks for
+  is missing, a fact in its facts list is drawn wrong, or the drawing shows something the
+  narration does not say.
+- [ ] **Dizzying motion**: the camera whips, spins, shakes or zooms hard, the picture strobes
+  or flickers, or several things race at once so the eye cannot follow.
 - [ ] **Text is cut off or overlapping** anywhere (titles, items, labels, captions).
 - [ ] **A scene is missing** (a storyboard scene never appears).
-- [ ] **Rendering glitches**: blank or black frames mid-video, missing icons (empty boxes),
+- [ ] **Rendering glitches**: blank or black frames mid-video, a hero scene empty or frozen,
   broken layout, flicker, wrong colours vs `style.json`.
 - [ ] **The voice is not clearly louder than the music**: `measure` reports any problem —
   `gap_db` < 12 dB, `lufs` outside −15…−13 (target −14), or more SFX than scenes.
@@ -262,13 +350,33 @@ Prints `{"gap_db":…,"lufs":…,"sfx_count":…,"scenes":…,"problems":[...]}`
 - [ ] **Mouth moving while the voice is silent (or still while it speaks)**: at the "closed
   expected" times the mouth is open, or at the "open expected" times it is closed; or a scene
   with a visible presenter has no `mouth` data (`mouth frames: 0`).
-- [ ] The video does not match the storyboard (a different template, text or presenter
-  position than planned) without a reason in `04-video/notes.md`.
-- [ ] The Animator created a custom component or changed files under `templates/` (not
-  allowed in v1; it must use the closest template and note a suggestion). Check with
-  `git status --short templates/` — it should print nothing.
+- [ ] The video does not match the shot list (a different scene, prop, text, camera or
+  presenter position than planned) without a reason in `04-video/notes.md`.
+- [ ] **The shared kit was changed**: `git status --short hf-kit/ templates/` shows any change
+  under `hf-kit/src`, an existing prop or `templates/` (the Animator draws new heroes only in
+  `04-video/hf/scenes/` and adds props only after PASS).
 
-**Suggestions only:** motion taste, pacing ideas, icon choices.
+**Suggestions only:** motion taste, pacing ideas, drawing details beyond the brief.
+
+### Prop library check (after gate 4 PASS)
+
+When the `note` says the Animator saved the new props after gate 4 passed, review only this
+(write the review file you are told to write, same format). For each `new_prop` hero in
+`03-design/shots.json` (prop `<name>`):
+
+```bash
+git status --short hf-kit/
+cd hf-kit && npm test
+```
+
+**Must-fix if:**
+- [ ] `hf-kit/props/<name>/` is missing or incomplete: it needs `prop.js` (registers
+  `HFKit.props["<name>"]` with `meta.name` = `<name>`, `anchorsFor`, no run-specific paths or
+  text), `preview.png` (a real snapshot of the drawing) and `README.md` (exactly one line).
+- [ ] `hf-kit/props/README.md` has no ``- `<name>` — …`` line for it.
+- [ ] `npm test` (the props contract test) fails.
+- [ ] Anything else in `hf-kit/` changed: `git status --short hf-kit/` may show only the new
+  `hf-kit/props/<name>/` folders and `hf-kit/props/README.md` — never `hf-kit/src` or another prop.
 
 ---
 
