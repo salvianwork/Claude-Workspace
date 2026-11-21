@@ -162,7 +162,7 @@ it immediately.)*
 |---|---|
 | Custom illustrations vary in quality from video to video | Shared kit + illustration helpers; shot-list review at gate 3; Flip's snapshot self-check; owner sees the result |
 | Wrong facts in drawings | Fact list in each illustration brief; Sage web-checks; anti-goal |
-| Much slower per video (custom code per scene) | 90-minute target tracked on the fixture video; reuse of kit parts; registry blocks where they fit |
+| Much slower per video (custom code per scene) | Hero scenes only (2–4) custom; prop library reuse; times measured on the fixture videos and reported |
 | HyperFrames render problems on Windows | Owner test early; Remotion fallback kept until 3 approved videos |
 | Hidden network use (CDN, fonts, telemetry) | Vendored assets, telemetry env var, a test that renders with the network blocked |
 | HyperFrames upstream changes | Pinned version; upgrade only on purpose |
