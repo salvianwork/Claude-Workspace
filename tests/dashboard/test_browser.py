@@ -322,3 +322,43 @@ def test_board_escapes_html(tmp_path):
         text = out["results"][5]
         for want in ("Topic " + XSS, "B " + XSS, "L " + XSS):
             assert want in text
+
+
+STUDIO_JS = """(async () => {
+  const cv = document.querySelector('#studio');
+  const g = cv.getContext('2d');
+  const d = g.getImageData(0, 0, cv.width, cv.height).data;
+  const seen = new Set();
+  let sum = 0, sum2 = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4 * 97) {
+    const v = d[i] + d[i + 1] + d[i + 2];
+    sum += v; sum2 += v * v; n++; seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+  }
+  const runs = await (await fetch('/api/runs')).json();
+  const api = runs.length ? await (await fetch('/api/state?run=' + encodeURIComponent(runs[0].run))).json() : null;
+  return {variance: sum2 / n - (sum / n) ** 2, colours: seen.size, debug: window.__studioDebug(),
+          api: api && api.agents, w: cv.width, h: cv.height};
+})()"""
+
+
+@pytest.mark.parametrize("state", ALL_STATES)
+def test_studio_draws_agents(tmp_path, state):
+    with studio(tmp_path, [state]) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_selector", "selector": "#board[data-ready]"},
+            {"op": "sleep", "ms": 1000},
+            {"op": "eval", "js": STUDIO_JS},
+        ])
+        r = out["results"][3]
+        assert r["w"] > 300 and r["h"] > 200
+        assert r["variance"] > 200 and r["colours"] > 40, r  # a drawn picture, not a blank fill
+        api = r["api"] or {role: {"where": "kitchen", "activity": "idle"}
+                           for role in ("story", "voice", "design", "animator", "reviewer")}
+        dbg = r["debug"]
+        assert set(dbg) == set(api)
+        for role, want in api.items():
+            got = dbg[role]
+            assert (got["where"], got["activity"]) == (want["where"], want["activity"]), role
+            assert isinstance(got["x"], (int, float)) and isinstance(got["y"], (int, float))
+            assert 0 <= got["x"] < 332 and 0 <= got["y"] < 270

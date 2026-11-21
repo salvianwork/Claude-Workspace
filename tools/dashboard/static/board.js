@@ -310,6 +310,11 @@ function renderControls(st) {
 }
 
 // ---------- public render ----------
+/** The latest /api/state the board shows (null when there is no run); the studio map reads it. */
+export function getBoardState() {
+  return S.state;
+}
+
 export function renderBoard(state) {
   S.state = state || null;
   render();

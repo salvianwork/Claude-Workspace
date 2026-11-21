@@ -28,6 +28,8 @@ MAX_EVENTS = 30
 REQUEST_STATES = {"waiting_owner", "failed"}
 VIDEO = "04-video/out/video.mp4"
 CREDITS = "04-video/credits.md"
+STYLE = "03-design/style.json"
+OUTFITS = ("blazer", "labcoat")
 _REVIEW_RE = re.compile(r"^gate-1-round-(\d+)\.md$")
 _REVIEW_HEAD_RE = re.compile(r"^#\s*Gate\s+1,\s*round\s+(\d+)\s*:\s*(PASS|FIX)\b", re.I)
 _GATE_EVENT_RE = re.compile(r"gate\s+(\d+)\s+(PASS|FIX)", re.I)
@@ -258,6 +260,16 @@ def _video(run_dir: Path) -> dict | None:
     return {"path": VIDEO, "credits": CREDITS if (run_dir / CREDITS).is_file() else None}
 
 
+def _presenter_outfit(run_dir: Path) -> str:
+    """The presenter's outfit for this video (style.json), "blazer" when missing or invalid."""
+    try:
+        style = json.loads((run_dir / STYLE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return OUTFITS[0]
+    outfit = style.get("presenterOutfit") if isinstance(style, dict) else None
+    return outfit if outfit in OUTFITS else OUTFITS[0]
+
+
 def _done_time(history) -> datetime | None:
     for h in reversed(history if isinstance(history, list) else []):
         if isinstance(h, dict) and re.search(r"\bdone\b", str(h.get("event", "")).lower()):
@@ -270,7 +282,8 @@ def run_state(run_dir: Path, team: dict, now: datetime | None = None) -> dict:
     now = now or datetime.now()
     base = {"run": run_dir.name, "topic": "", "step": "story", "state": "starting", "round": 1,
             "team": team, "agents": _agents("", "starting", False), "track": [], "request": None,
-            "answered": None, "summary": None, "voice": None, "events": [], "video": None}
+            "answered": None, "summary": None, "voice": None, "events": [], "video": None,
+            "presenterOutfit": _presenter_outfit(run_dir)}
     try:
         status = load_status(run_dir)
     except (RunStateError, OSError):

@@ -233,3 +233,25 @@ def test_waiting_event_wording_from_progress_log(tmp_path):
     (run / "status.json").write_text(json.dumps(data), encoding="utf-8")
     ev = run_state(run, TEAM, now=NOW)["events"]
     assert ev[-1]["text"] == "Waiting for you: voice approval" and ev[-1]["kind"] == "owner"
+
+
+@pytest.mark.parametrize("style,want", [
+    (None, "blazer"),
+    ({"presenterOutfit": "labcoat"}, "labcoat"),
+    ({"presenterOutfit": "blazer"}, "blazer"),
+    ({"presenterOutfit": "tuxedo"}, "blazer"),
+    ("{not json", "blazer"),
+    ([1, 2], "blazer"),
+])
+def test_presenter_outfit(tmp_path, style, want):
+    run = tmp_path / "r"
+    shutil.copytree(FIX / "gate1-waiting", run)
+    if style is not None:
+        (run / "03-design").mkdir()
+        text = style if isinstance(style, str) else json.dumps(style)
+        (run / "03-design" / "style.json").write_text(text, encoding="utf-8")
+    assert run_state(run, TEAM, now=NOW)["presenterOutfit"] == want
+
+
+def test_presenter_outfit_default_without_status(tmp_path):
+    assert run_state(tmp_path, TEAM, now=NOW)["presenterOutfit"] == "blazer"

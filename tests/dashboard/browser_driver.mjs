@@ -58,7 +58,7 @@ try {
         await page.route("**/api/answer", (route) =>
           route.fulfill({ status: s.status, contentType: "application/json", body: JSON.stringify(s.body) }));
         break;
-      case "screenshot": await page.screenshot({ path: s.path, fullPage: !!s.full }); break;
+      case "screenshot": await page.screenshot({ path: s.path, fullPage: !!s.full, ...(s.clip ? { clip: s.clip } : {}) }); break;
       default: throw new Error("unknown op " + s.op);
     }
     out.results.push(r);

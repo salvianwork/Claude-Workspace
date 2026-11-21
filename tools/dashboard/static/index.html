@@ -4,7 +4,7 @@
 <style>
   :root {
     --font: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", Menlo, "Liberation Mono", monospace;
-    --board-w: clamp(440px, 34vw, 680px);
+    --board-w: clamp(440px, 30.5vw, 680px); /* 30.5vw leaves the map 332x4 = 1328 px at 1920 wide */
     /* fallbacks; palette.js overwrites these on load */
     --c-ink: #0b1410; --c-board: #1c3426; --c-text: #f2ecd8;
   }
@@ -137,33 +137,16 @@
   }
 </style></head>
 <body>
-<!-- Left: the studio map. Task 5 draws the pixel-art rooms here. -->
+<!-- Left: the studio map (studio.js draws the pixel-art rooms and the crew). -->
 <canvas id="studio" aria-label="Studio map"></canvas>
 <!-- Right: the answer board (board.js). -->
 <aside id="board" aria-live="polite"></aside>
 <script type="module">
-  import { PALETTE, applyCssVars } from "/static/palette.js";
-  import { startBoard } from "/static/board.js";
+  import { applyCssVars } from "/static/palette.js";
+  import { startBoard, getBoardState } from "/static/board.js";
+  import { startStudio } from "/static/studio.js";
   applyCssVars();
-  // Placeholder until Task 5 replaces it with the map renderer.
-  const cv = document.getElementById("studio");
-  function placeholder() {
-    const dpr = window.devicePixelRatio || 1;
-    const w = cv.clientWidth, h = cv.clientHeight;
-    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-    const g = cv.getContext("2d");
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.fillStyle = PALETTE.mapVoid; g.fillRect(0, 0, w, h);
-    g.fillStyle = PALETTE.mapFloor;
-    for (let y = 12; y < h; y += 24) for (let x = 12; x < w; x += 24) g.fillRect(x, y, 3, 3);
-    g.strokeStyle = PALETTE.mapFloor; g.lineWidth = 6;
-    g.strokeRect(40, 40, w - 80, h - 80);
-    g.fillStyle = PALETTE.mapText; g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = `700 ${Math.max(18, Math.round(w / 40))}px ui-monospace, Consolas, "DejaVu Sans Mono", monospace`;
-    g.fillText("Studio map — coming in Task 5", w / 2, h / 2);
-  }
-  placeholder();
-  addEventListener("resize", placeholder);
   startBoard(document.getElementById("board"));
+  startStudio(document.getElementById("studio"), getBoardState);
 </script>
 </body></html>
