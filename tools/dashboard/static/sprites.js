@@ -5,6 +5,7 @@
 // hue-shifted ramps per material, outlines taken from the sprite's own darkest ramp colour
 // with a 1-px rim light on the lit (top-left) side, dither only where two bands meet.
 // The Bayer matrix, band() and hash() below are adapted from Codixel's core/pixel.js (MIT).
+// The MIT permission notice applies to that code: https://github.com/mankidev/codixel/blob/main/LICENSE
 import { MAP, CREW, PRESENTER } from "./palette.js";
 
 // ---------------------------------------------------------------------------

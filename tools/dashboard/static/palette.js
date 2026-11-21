@@ -47,6 +47,7 @@ export function applyCssVars(el = document.documentElement) {
 // lights lean yellow/warm (Codixel's rule). Light comes from the top left.
 // ---------------------------------------------------------------------------
 
+// The MIT permission notice applies to hueRamp/hslHex below: https://github.com/mankidev/codixel/blob/main/LICENSE
 /** Hue-shifted ramp of n colours (port of Codixel's P.hueRamp, MIT, (c) 2026 mankidev). */
 export function hueRamp(n, { hue = 110, shift = 40, sat = 0.5, satDrop = 0.35, light = [0.15, 0.7] } = {}) {
   const toward = (h, target, amt) => {

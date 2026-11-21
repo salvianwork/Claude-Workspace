@@ -74,6 +74,13 @@ const FACING = {
 const VISIT = { story: "visit-writers", voice: "visit-booth", design: "visit-design", animator: "visit-animator" };
 const SEATED = new Set(["story-desk", "voice-desk", "reviewer-desk", "animator-desk"]);
 
+/** Floor boxes [x0, y0, x1, y1] per `where` value (debug / tests). */
+export const ROOM_BOXES = {
+  "writers-room": ROOMS.writers, booth: ROOMS.booth, kitchen: ROOMS.kitchen, "art-room": ROOMS.art,
+  "review-room": ROOMS.review, "review-door": ROOMS.review,
+};
+for (const k of Object.keys(ROOM_BOXES)) { const r = ROOM_BOXES[k]; ROOM_BOXES[k] = [r.x, r.y, r.x + r.w - 1, r.y + r.h - 1]; }
+
 const ADJ = (() => {
   const a = {};
   for (const n of Object.keys(NODES)) a[n] = [];
@@ -432,7 +439,8 @@ export class World {
     this.api = agentsOf(null);
     this.st = null;
     this.run = undefined;
-    this.seen = new Set();
+    this.seen = new Map(); // event key -> how many times it has been seen (max over polls)
+    this.triggered = 0;     // stamps + errands started by new events (for tests)
     this.stamps = [];   // {role:"reviewer", text, t0}
     this.names = { ...DEFAULT_NAMES };
   }
@@ -494,11 +502,16 @@ export class World {
     if (outfit !== this.outfit) { this.outfit = outfit; this.bg = paintBackground(outfit); }
     const api = agentsOf(st);
     const events = st && Array.isArray(st.events) ? st.events : [];
-    const keyOf = (e, i) => `${i}|${e && e.time}|${e && e.agent}|${e && e.text}`;
+    // The API sends a sliding window of the last events, so indexes shift once a run has more:
+    // key on content only and count repeats, so an event is new only when its key now occurs
+    // more often than it ever did before.
+    const keyOf = (e) => (e && typeof e === "object" ? `${e.time}|${e.agent}|${e.kind}|${e.text}` : String(e));
+    const counts = new Map();
+    for (const e of events) { const k = keyOf(e); counts.set(k, (counts.get(k) || 0) + 1); }
     if (fresh) {
       // a new run (or the first look): everyone simply is where the state says; carriers walk
       this.run = runKey;
-      this.seen = new Set(events.map(keyOf));
+      this.seen = new Map(counts);
       this.stamps = [];
       for (const r of ROLES) {
         const a = this.agents[r], spot = spotFor(r, api[r], st);
@@ -514,17 +527,26 @@ export class World {
     }
     // new events -> stamps and hand-off errands
     const errands = {};
-    events.forEach((e, i) => {
-      const k = keyOf(e, i);
-      if (this.seen.has(k)) return;
-      this.seen.add(k);
-      if (!e || typeof e !== "object") return;
-      if (e.kind === "pass" || e.kind === "fix") this.stamps.push({ text: e.kind === "pass" ? "PASS" : "FIX", t0: t });
+    const added = new Map();
+    for (const [k, n] of counts) {
+      const before = this.seen.get(k) || 0;
+      if (n > before) { added.set(k, n - before); this.seen.set(k, n); }
+    }
+    // the newest occurrences of each key are the new ones
+    for (let i = events.length - 1; i >= 0; i--) {
+      const e = events[i], k = keyOf(e);
+      if (!added.get(k)) continue;
+      added.set(k, added.get(k) - 1);
+      if (!e || typeof e !== "object") continue;
+      if (e.kind === "pass" || e.kind === "fix") {
+        this.stamps.push({ text: e.kind === "pass" ? "PASS" : "FIX", t0: t });
+        this.triggered++;
+      }
       if (e.kind === "handoff" && ORDER.includes(e.agent)) {
         const giver = ORDER[ORDER.indexOf(e.agent) - 1];
-        if (giver) errands[giver] = VISIT[e.agent];
+        if (giver && !errands[giver]) { errands[giver] = VISIT[e.agent]; this.triggered++; }
       }
-    });
+    }
     for (const r of ROLES) {
       const a = this.agents[r], spot = spotFor(r, api[r], st);
       const carry = api[r].activity === "carrying" ? (r === "reviewer" ? "fix" : "paper") : null;
@@ -545,6 +567,8 @@ export class World {
       const p = this.pos(this.agents[r], t);
       out[r] = { ...this.api[r], x: Math.round(p.x), y: Math.round(p.y), walking: p.walking, dir: p.dir };
     }
+    out.triggered = this.triggered;
+    out.rooms = ROOM_BOXES;
     return out;
   }
 
@@ -613,7 +637,7 @@ export class World {
       });
       // tags sit above the head, or above the raised flag / the "!" bubble
       const lift = p.walking ? (r === "design" ? 19 : 17) : act === "alarm" ? 31 : act === "waiting" ? 33 : r === "design" ? 19 : 17;
-      tags.push({ role: r, name: this.names[r], x, y: y + dy - lift, color: CREW[r].tag });
+      tags.push({ role: r, name: clampName(this.names[r]), x, y: y + dy - lift, color: CREW[r].tag });
     }
     // overlays that sit on desks in front of the seated person
     if (working("story")) items.push({ y: 77.5, draw: () => this.typing(b, t, slow) });
@@ -743,6 +767,9 @@ export class World {
 // ---------------------------------------------------------------------------
 // DOM: canvas sizing, frame loop, text layer
 // ---------------------------------------------------------------------------
+/** Name tags stay short: at most 10 characters, ending with "…" when cut. */
+export const clampName = (n) => { const c = [...String(n)]; return c.length > 10 ? c.slice(0, 9).join("") + "…" : c.join(""); };
+
 const FONT = 'ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", Menlo, monospace';
 
 /** Start the studio on a canvas; getState() returns the latest /api/state (or null). */
@@ -846,6 +873,7 @@ export function startStudio(canvas, getState) {
 
   function loop() {
     requestAnimationFrame(loop);
+    if (document.hidden) return; // nothing to see: skip the work in a background tab
     const t = now();
     if (frozen === null && t - last < FPS_MS) return;
     last = t;

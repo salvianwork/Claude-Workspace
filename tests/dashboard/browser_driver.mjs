@@ -2,7 +2,7 @@
 // Usage: node browser_driver.mjs '<json steps>'   (or a path to a .json file)
 // Prints one JSON object: {"ok": bool, "results": [...], "errors": [...], "error"?: str}
 import { createRequire } from "node:module";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -54,6 +54,7 @@ try {
         break;
       }
       case "sleep": await page.waitForTimeout(s.ms); break;
+      case "write_file": writeFileSync(s.path, s.text, "utf8"); break; // change a run mid-test
       case "mock_answer":
         await page.route("**/api/answer", (route) =>
           route.fulfill({ status: s.status, contentType: "application/json", body: JSON.stringify(s.body) }));

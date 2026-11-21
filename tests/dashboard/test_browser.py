@@ -356,9 +356,56 @@ def test_studio_draws_agents(tmp_path, state):
         api = r["api"] or {role: {"where": "kitchen", "activity": "idle"}
                            for role in ("story", "voice", "design", "animator", "reviewer")}
         dbg = r["debug"]
+        rooms = dbg.pop("rooms")
+        assert dbg.pop("triggered") == 0  # nothing replays on the first look
         assert set(dbg) == set(api)
         for role, want in api.items():
             got = dbg[role]
             assert (got["where"], got["activity"]) == (want["where"], want["activity"]), role
             assert isinstance(got["x"], (int, float)) and isinstance(got["y"], (int, float))
             assert 0 <= got["x"] < 332 and 0 <= got["y"] < 270
+            if not got["walking"]:  # standing agents are inside the room the API names
+                x0, y0, x1, y1 = rooms[want["where"]]
+                assert x0 <= got["x"] <= x1 and y0 <= got["y"] <= y1, (role, got, want)
+
+
+def _long_history(n):
+    """A reviewing run with n alternating gate PASS/FIX events (more than the API's 30-event window)."""
+    hist = [{"time": "2026-11-20T10:00:00", "agent": "story", "event": "started", "detail": ""}]
+    for i in range(1, n):
+        hist.append({"time": f"2026-11-20T{10 + i // 60:02d}:{i % 60:02d}:00", "agent": "reviewer",
+                     "event": "gate 1 FIX" if i % 2 else "gate 1 PASS", "detail": f"round {i}"})
+    return hist
+
+
+def test_studio_new_event_triggers_once_across_sliding_window(tmp_path):
+    def mutate(videos):
+        status = json.loads((videos / "gate1-reviewing" / "status.json").read_text(encoding="utf-8"))
+        status["history"] = _long_history(36)
+        (videos / "gate1-reviewing" / "status.json").write_text(json.dumps(status), encoding="utf-8")
+
+    with studio(tmp_path, ["gate1-reviewing"], mutate=mutate) as s:
+        path = Path(s.root) / "videos" / "gate1-reviewing" / "status.json"
+        status = json.loads(path.read_text(encoding="utf-8"))
+        status["history"].append({"time": "2026-11-20T11:00:00", "agent": "reviewer", "event": "gate 1 PASS",
+                                  "detail": "round 99"})
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_selector", "selector": "#board[data-ready]"},
+            {"op": "sleep", "ms": 500},
+            {"op": "eval", "js": "__studioDebug().triggered"},
+            {"op": "write_file", "path": str(path), "text": json.dumps(status)},
+            {"op": "wait_text", "text": "round 99"},
+            {"op": "sleep", "ms": 500},
+            {"op": "eval", "js": "__studioDebug().triggered"},
+        ])
+        assert out["results"][3] == 0
+        assert out["results"][7] == 1  # only the one new event, not the whole shifted window
+
+
+def test_studio_clamps_long_names():
+    p = subprocess.run(["node", "--input-type=module", "-e",
+                        f"import('{(REPO / 'tools/dashboard/static/studio.js').as_uri()}')"
+                        ".then(m => console.log(JSON.stringify([m.clampName('Quill'), m.clampName('Bartholomew-Long'),"
+                        " m.clampName('Abcdefghij')])))"], capture_output=True, text=True, timeout=60)
+    assert json.loads(p.stdout) == ["Quill", "Bartholom…", "Abcdefghij"], p.stderr
