@@ -52,6 +52,20 @@ def test_numbers_keep_script_text():
     assert w[3]["end"] == pytest.approx(1.75)
 
 
+def test_display_keeps_script_punctuation():
+    timed = [{"text": t, "start": i * .3, "end": i * .3 + .25}
+             for i, t in enumerate(["Deep", "down", "sits", "a", "magma", "chamber", ",", "a", "pool", "of", "rock", "."])]
+    w = align_to_script("Deep down sits a magma chamber, a pool of rock. \u2014 \"Hot!\"", timed)
+    assert [x["text"] for x in w] == ["Deep", "down", "sits", "a", "magma", "chamber", "a", "pool", "of", "rock", "Hot"]
+    assert [x["display"] for x in w] == ["Deep", "down", "sits", "a", "magma", "chamber,", "a", "pool", "of", "rock. \u2014",
+                                         "\"Hot!\""]
+
+
+def test_display_matches_text_without_punctuation():
+    w = align_to_script("Lava is 1,000 °C", [{"text": "lava", "start": 0, "end": .2}])
+    assert [x["display"] for x in w] == ["Lava", "is", "1,000", "°C"]
+
+
 def test_unmatched_tokens_interpolated():
     timed = [{"text": "alpha", "start": 0.0, "end": 0.5},
              {"text": "gamma", "start": 1.5, "end": 2.0}]
@@ -82,6 +96,7 @@ def test_kokoro_word_times_real(tmp_path):
     w = data["scenes"][0]["words"]
     info = sf.info(str(out / "scene-01.wav"))
     assert "1,000" in [x["text"] for x in w]
+    assert [x["display"] for x in w][3] == "ground," and w[-1]["display"] == "crater."
     assert all(x["start"] < x["end"] for x in w)
     assert all(a["start"] <= b["start"] for a, b in zip(w, w[1:]))
     assert w[-1]["end"] <= info.frames / info.samplerate + 0.05

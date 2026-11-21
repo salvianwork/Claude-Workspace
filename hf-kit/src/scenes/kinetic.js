@@ -10,26 +10,34 @@
   function tokens(text) { return String(text).trim().split(/\s+/); }
   function norm(w) { return String(w).toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""); }
 
-  function splitLines(tok, size, width) {
-    var full = S.textWidth(tok.join(" "), size, "heading");
-    if (full <= width) return [tok.length];
-    var best = 1, bestW = Infinity;
-    for (var k = 1; k < tok.length; k++) {
-      var w = Math.max(S.textWidth(tok.slice(0, k).join(" "), size, "heading"), S.textWidth(tok.slice(k).join(" "), size, "heading"));
-      if (w < bestW) { bestW = w; best = k; }
+  /* Best split of the words into `n` lines: the widest line as narrow as possible. */
+  function splitInto(tok, n) {
+    var best = null, bestW = Infinity;
+    function w(a, b) { return S.textWidth(tok.slice(a, b).join(" "), 1, "heading"); }
+    if (n === 1) return [tok.length];
+    for (var i = 1; i < tok.length; i++) {
+      if (n === 2) { var m = Math.max(w(0, i), w(i, tok.length)); if (m < bestW) { bestW = m; best = [i, tok.length - i]; } continue; }
+      for (var j = i + 1; j < tok.length; j++) {
+        var m3 = Math.max(w(0, i), w(i, j), w(j, tok.length));
+        if (m3 < bestW) { bestW = m3; best = [i, j - i, tok.length - j]; }
+      }
     }
-    return [best, tok.length - best];
+    return best;
   }
 
+  /* 1-3 lines: the layout with the tallest block (big type) that fits the box. */
   function geometry(p, box, style) {
     var tok = tokens(p.text), width = box.width * 0.92;
-    var size = 104, lines;
-    for (; size >= 44; size -= 4) {
-      lines = splitLines(tok, size, width);
-      var from = 0, ok = true;
-      for (var l = 0; l < lines.length; l++) { if (S.textWidth(tok.slice(from, from + lines[l]).join(" "), size, "heading") > width) ok = false; from += lines[l]; }
-      if (ok && lines.length <= 2) break;
+    var choice = null;
+    for (var n = 1; n <= Math.min(3, tok.length); n++) {
+      var lines = splitInto(tok, n), from = 0, widest = 0;
+      lines.forEach(function (c) { widest = Math.max(widest, S.textWidth(tok.slice(from, from + c).join(" "), 1, "heading")); from += c; });
+      var size = Math.floor(Math.min(150, width / widest, box.height * 0.9 / (1.3 * n)) / 2) * 2;
+      if (size < 44) continue;
+      if (!choice || n * size > choice.n * choice.size * 1.05) choice = { n: n, size: size, lines: lines };
     }
+    if (!choice) choice = { n: 1, size: 44, lines: [tok.length] };
+    var size = choice.size, lines = choice.lines;
     var lh = Math.round(size * 1.3);
     var total = lh * lines.length;
     var y0 = box.y + (box.height - total) / 2;
@@ -44,13 +52,11 @@
       at += n;
     });
     anchors.text = { x: box.x + box.width / 2, y: y0 + total / 2 };
-    var cursor = 0;
     tok.forEach(function (w, i) {
       var row = rows.filter(function (r) { return i >= r.from && i < r.from + r.count; })[0];
       anchors["word-" + i] = { x: box.x + box.width / 2, y: row.y + lh / 2 };
-      cursor++;
     });
-    return { geom: { tokens: tok, rows: rows, size: size, lh: lh }, boxes: boxes, fonts: fonts, anchors: anchors };
+    return { geom: { tokens: tok, rows: rows, size: size, lh: lh, center: { x: anchors.text.x, y: anchors.text.y } }, boxes: boxes, fonts: fonts, anchors: anchors };
   }
 
   /* Word i lands on its "word" cue, else on the next spoken word with the same text, else
@@ -80,7 +86,7 @@
     var emph = (p.emphasis || []).map(norm);
     var ups = [];
     if (p.icon) {
-      var bg = S.div(stage, "hf-kinetic-icon", { x: ctx.plan.anchors.text.x - 260, y: ctx.plan.anchors.text.y - 260, width: 520, height: 520 }, { opacity: "0.07" });
+      var bg = S.div(stage, "hf-kinetic-icon", { x: g.center.x - 260, y: g.center.y - 260, width: 520, height: 520 }, { opacity: "0.07" });
       bg.innerHTML = K.icons.svg(p.icon, 520, st.colors.primary, 1.2);
       ups.push(function (t) { bg.style.transform = "rotate(" + D.r2(4 * D.wobble(t * 0.3, 4)) + "deg) scale(" + D.r2(1 + 0.04 * D.prog(t, 0, ctx.duration)) + ")"; });
     }

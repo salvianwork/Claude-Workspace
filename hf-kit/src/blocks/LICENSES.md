@@ -8,14 +8,33 @@ GSAP and fonts from CDNs, which the ports do not).
 | Port | Upstream item | Upstream sha256 (hyperframes.lock.json) | Licence |
 |---|---|---|---|
 | `kinetic-center-build.js` | `kinetic-center-build` (component) | `774f75b80d82fbc0c6226b85743804fb7a2229fb038eb0d38fa2e9503072c2e0` | MIT, Copyright (c) 2026 Remocn (full text in the upstream file header, reproduced below) |
-| `transitions.js` | `transitions-dissolve` (block) | `9a862ff4ffd2cf583a2877a1429965ace11096e9609ca851069a08bb44c0c954` | Apache-2.0 (HyperFrames registry; the item carries no header of its own, the `hyperframes` package is Apache-2.0) |
+| `transitions.js` | `transitions-dissolve` (block) | `9a862ff4ffd2cf583a2877a1429965ace11096e9609ca851069a08bb44c0c954` | Apache-2.0 (see below) |
 
 Looked at and **not adopted**: `chart-story` (fixed 3.3 s build envelope and variables, not
 cue-driven; our chart scene builds each bar on its word), `animated-bar-chart` (UI card),
 `text-stagger` (kinetic-center-build fits narration better), `transitions-*` showcases other than
 dissolve (flashy distortion/3D moves break the calm-motion rule).
 
+## Apache-2.0 notice (transitions-dissolve)
+
+`transitions.js` is a derivative of the HyperFrames registry block `transitions-dissolve`,
+from HyperFrames by HeyGen (https://github.com/heygen-com/hyperframes, registry of CLI 0.9.72),
+licensed under the Apache License, Version 2.0. The item file carries no notice of its own; the
+`hyperframes` package declares `"license": "Apache-2.0"`. Full licence text:
+`LICENSE-Apache-2.0.txt` (this folder); also at https://www.apache.org/licenses/LICENSE-2.0.
+
+Modified: ported to a cue-driven classic script, GSAP removed. Only the crossfade and blur
+crossfade values (blur 10 px, scale 0.97 in / 1.03 out, 0.5 s power2.inOut) were kept; slide,
+zoom and cut were added in the same shape; the showcase page, its info bars and CDN script are not
+included. The unmodified original is `upstream/transitions-dissolve.html.txt`.
+
+Distributed under the License on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
 ## MIT licence (kinetic-center-build)
+
+Modified: ported to a cue-driven classic script, GSAP removed (word start times come from the
+narration; layout maths kept).
+
 
 MIT License
 

@@ -195,9 +195,13 @@ test("transitions: fade, blur, slide and zoom go from hidden to shown", () => {
 
 test("blocks keep their licence notes", () => {
   const lic = readFileSync(new URL("src/blocks/LICENSES.md", KIT), "utf8");
-  for (const needle of ["kinetic-center-build", "MIT", "Remocn", "transitions-dissolve", "Apache-2.0", "0.9.72"]) {
+  for (const needle of ["kinetic-center-build", "MIT", "Remocn", "transitions-dissolve", "Apache-2.0", "0.9.72",
+    "LICENSE-Apache-2.0.txt", "github.com/heygen-com/hyperframes", "Modified: ported to a cue-driven classic script, GSAP removed"]) {
     assert.ok(lic.includes(needle), needle);
   }
+  const apache = readFileSync(new URL("src/blocks/LICENSE-Apache-2.0.txt", KIT), "utf8");
+  assert.match(apache, /Apache License\s+Version 2\.0, January 2004/);
+  assert.match(apache, /END OF TERMS AND CONDITIONS/);
   for (const f of readdirSync(new URL("src/blocks/", KIT))) {
     if (f.endsWith(".js")) assert.doesNotMatch(readFileSync(new URL("src/blocks/" + f, KIT), "utf8").replace(/\/\*[\s\S]*?\*\//g, ""), /https?:\/\//, f);
   }
@@ -331,6 +335,23 @@ test("scene plans stay inside the content box for every presenter layout", () =>
       assert.ok(!intersects(a, b), `${n} ${position}/${size}: ${a.name} overlaps ${b.name}`);
     }
   }
+});
+
+test("the content block is vertically centred (+-12 %) and fills >= 45 % of the content box", () => {
+  for (const n of SCENES) for (const position of POSITIONS) for (const size of SIZES) {
+    const presenter = { position, size };
+    const box = K.layout(undefined, presenter).content;
+    const plan = K.scenes[n].plan({ props: GOOD[n], words: WORDS, duration: 8, cues: [], presenter });
+    const top = Math.min(...plan.boxes.map((b) => b.y)), bottom = Math.max(...plan.boxes.map((b) => b.y + b.height));
+    const where = `${n} ${position}/${size}: block ${Math.round(top)}..${Math.round(bottom)} in ${box.y}..${box.y + box.height}`;
+    assert.ok(Math.abs((top + bottom) / 2 - (box.y + box.height / 2)) <= 0.12 * box.height, where);
+    assert.ok(bottom - top >= 0.45 * box.height, where);
+  }
+});
+
+test("captions show the word as written (display) when words.json has it", () => {
+  assert.equal(K.captionWord({ text: "chamber", display: "chamber," }), "chamber,");
+  assert.equal(K.captionWord({ text: "rock" }), "rock");
 });
 
 test("on-screen text is at least 32 px", () => {

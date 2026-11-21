@@ -9,6 +9,8 @@ Algorithm (align_to_script):
   3. The two word sequences are aligned monotonically (difflib.SequenceMatcher).
   4. A script token takes start = first start, end = last end of the engine tokens its words
      matched (so "1,000" spoken as several tokens spans all of them).
+  4b. Each word also keeps `display`: the token exactly as written, punctuation included
+     ("chamber,", "rock."), for captions; `text` (used for cue matching) is unchanged.
   5. Script tokens with no match are interpolated evenly in the gap between the nearest timed
      neighbours. Finally times are forced monotonic with start < end.
 Times are seconds from the start of the scene wav.
@@ -34,8 +36,25 @@ def script_tokens(text: str) -> list[str]:
     return [t for t in toks if t]
 
 
+def display_tokens(text: str) -> list[str]:
+    """The script tokens exactly as written (punctuation kept), one per script_tokens() entry.
+    A token that is only punctuation (e.g. a dash) joins the previous token with a space."""
+    out: list[str] = []
+    pending = ""
+    for raw in text.split():
+        if raw.strip(_STRIP):
+            out.append(pending + raw)
+            pending = ""
+        elif out:
+            out[-1] += " " + raw
+        else:
+            pending += raw + " "
+    return out
+
+
 def align_to_script(script_text: str, timed: list[dict]) -> list[dict]:
     toks = script_tokens(script_text)
+    shown = display_tokens(script_text)
     if not toks:
         return []
     if not timed:
@@ -86,7 +105,7 @@ def align_to_script(script_text: str, timed: list[dict]) -> list[dict]:
     for i, tok in enumerate(toks):
         s = max(float(start[i]), prev_end)
         e = max(float(end[i]), s + _MIN_DUR)
-        out.append({"i": i, "text": tok, "start": round(s, 3), "end": round(e, 3)})
+        out.append({"i": i, "text": tok, "display": shown[i], "start": round(s, 3), "end": round(e, 3)})
         prev_end = e
     return out
 

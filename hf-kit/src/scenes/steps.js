@@ -13,10 +13,10 @@
     if (tg) { boxes.push(Object.assign({ name: "title" }, tg)); fonts.push({ name: "title", size: tg.size }); anchors.title = { x: tg.x + tg.width / 2, y: tg.y + tg.height / 2 }; }
     var top = tg ? tg.bar.y + 40 : box.y;
     var n = p.steps.length, cw = box.width / n;
-    var disc = Math.round(Math.min(150, cw * 0.56, (box.y + box.height - top) * 0.38));
+    var disc = Math.round(Math.min(190, cw * 0.6, (box.y + box.height - top) * 0.42));
     var lw = cw - 24;
-    var size = 40;
-    p.steps.forEach(function (it) { size = Math.min(size, S.fitText(S.itemText(it), lw, S.range(40, 32, 2), 2, "body").size); });
+    var size = 46;
+    p.steps.forEach(function (it) { size = Math.min(size, S.fitText(S.itemText(it), lw, S.range(46, 32, 2), 2, "body").size); });
     var lines = Math.max.apply(null, p.steps.map(function (it) { return S.lineCount(S.itemText(it), size, lw, "body"); }));
     var lh = Math.ceil(size * 1.2 * lines);
     var group = disc + 34 + lh;

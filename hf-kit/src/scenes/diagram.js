@@ -22,16 +22,18 @@
     var top = tg ? tg.bar.y + 36 : box.y, bottom = box.y + box.height, n = p.nodes.length;
     var areaW = box.width, areaH = bottom - top;
     var flow = p.layout === "flow";
-    var labelW = flow ? Math.min(320, areaW / n - 24) : Math.min(320, areaW / 3.2);
-    var size = 38;
-    p.nodes.forEach(function (nd) { size = Math.min(size, S.fitText(nd.label, labelW, S.range(38, 32, 2), 2, "body").size); });
+    var labelW = flow ? Math.min(340, areaW / n - 24) : Math.min(320, areaW / 3.2);
+    var size = 42;
+    p.nodes.forEach(function (nd) { size = Math.min(size, S.fitText(nd.label, labelW, S.range(42, 32, 2), 2, "body").size); });
     var lines = Math.max.apply(null, p.nodes.map(function (nd) { return S.lineCount(nd.label, size, labelW, "body"); }));
     var labelH = Math.ceil(size * 1.2 * lines);
-    var disc = Math.round(Math.min(flow ? 140 : 120, (areaW / n) * 0.5, areaH * 0.3));
+    var disc = Math.round(Math.min(flow ? 190 : 130, (areaW / n) * 0.55, areaH * 0.3));
     var pts = [];
     if (flow) {
+      // a gentle zig-zag, so the flow reads as a journey and fills the frame
+      var zig = Math.min(110, areaH * 0.16);
       var cw = areaW / n, gy = top + (areaH - (disc + 18 + labelH)) / 2 + disc / 2;
-      for (var i = 0; i < n; i++) pts.push({ x: box.x + cw * (i + 0.5), y: gy });
+      for (var i = 0; i < n; i++) pts.push({ x: box.x + cw * (i + 0.5), y: gy + (i % 2 ? zig : -zig) });
     } else {
       var hub = p.layout === "hub";
       var cx = box.x + areaW / 2, cy, a, k;

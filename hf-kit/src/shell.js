@@ -151,6 +151,10 @@
   }
 
   // ---- captions -------------------------------------------------------------------------
+  /* The word as the caption shows it: words.json `display` (script token with punctuation) if
+   * present, else `text`. */
+  function captionWord(w) { return w.display || w.text; }
+
   /* Word-highlighted captions in the caption slot (from shell().layers.captions). Fixed pages of
    * `maxWords` words (HFKit.captionPage); the spoken word is in the accent colour, words not yet
    * spoken are dimmed. Returns {update(t)}. */
@@ -177,7 +181,7 @@
         spans = pg.words.map(function (w, j) {
           var s = doc.createElement("span");
           s.className = "hf-caption-word";
-          s.textContent = w.text + (j < pg.words.length - 1 ? " " : "");
+          s.textContent = captionWord(w) + (j < pg.words.length - 1 ? " " : "");
           bar.appendChild(s);
           return s;
         });
@@ -196,6 +200,6 @@
   Object.assign(K, {
     PRESENTER_WIDTH: PRESENTER_WIDTH, resolveStyle: resolveStyle, layout: layout,
     kitFrame: kitFrame, heroFrame: heroFrame, driftSafe: driftSafe, DRIFT_INSET: DRIFT_INSET, view: view, normaliseAnchors: normaliseAnchors, drift: drift,
-    shell: shell, mountCaptions: mountCaptions,
+    shell: shell, mountCaptions: mountCaptions, captionWord: captionWord,
   });
 })(typeof globalThis !== "undefined" ? globalThis : window);

@@ -45,6 +45,9 @@ const CASES = [
     expect: [["point-0", 4], ["point-2", 20]] },
   { scene: "diagram", props: { title: "The rock cycle", layout: "cycle", nodes: [{ label: "Magma", icon: "flame" }, { label: "Igneous rock", icon: "mountain" }, { label: "Sediment", icon: "drop" }, { label: "Heat & pressure", icon: "gauge" }] },
     cues: [{ at: { word: 3 }, show: "node", index: 0 }, { at: { word: 8 }, show: "node", index: 1 }], expect: [["node-0", 3], ["node-1", 8]] },
+  { scene: "diagram", label: "diagram-flow", props: { layout: "flow", nodes: [{ label: "Rain", icon: "cloud" }, { label: "River", icon: "water" }, { label: "Sea", icon: "wave" }] },
+    cues: [], expect: [] },
+  { scene: "kinetic", label: "kinetic-short", props: { text: "Lava is hot", emphasis: ["hot"] }, cues: [], expect: [] },
   { scene: "diagram", label: "diagram-hub", props: { title: "What a volcano needs", layout: "hub", nodes: [{ label: "Volcano", icon: "mountain" }, { label: "Heat", icon: "flame" }, { label: "Gas", icon: "cloud" }, { label: "Magma", icon: "drop" }] },
     cues: [], expect: [] },
 ];
@@ -102,6 +105,15 @@ function pageChecks(c) {
     if (A.left < B.right - 2 && B.left < A.right - 2 && A.top < B.bottom - 2 && B.top < A.bottom - 2
         && !rects[i].e.contains(rects[j].e) && !rects[j].e.contains(rects[i].e))
       fails.push("text overlap: " + rects[i].key + " / " + rects[j].key);
+  }
+  // the content block (text, discs, cards, rows) is centred and fills the content box
+  if (!c.drift) {
+    const parts = [...root.querySelectorAll(".hf-text, .hf-disc, .hf-card, .hf-recap-row")].filter((e) => +getComputedStyle(e).opacity > 0.05 && !e.closest(".hf-captions"))
+      .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.width < 1900);
+    const top = Math.min(...parts.map((r) => r.top)), bottom = Math.max(...parts.map((r) => r.bottom));
+    const b = L.content, mid = b.y + b.height / 2;
+    if (Math.abs((top + bottom) / 2 - mid) > 0.12 * b.height) fails.push("content block not centred: " + Math.round(top) + ".." + Math.round(bottom) + " in " + b.y + ".." + (b.y + b.height));
+    if (bottom - top < 0.45 * b.height) fails.push("content block too small: " + Math.round(bottom - top) + " px of " + b.height);
   }
   if (!api.anchors || !api.anchors.center) fails.push("no anchors.center");
   return fails;

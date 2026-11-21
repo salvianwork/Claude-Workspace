@@ -70,11 +70,11 @@
       var K = window.HFKit;
       var plan = JSON.parse(document.getElementById("sheet-plan").textContent).scenes;
 
-      /* Narration words at an even pace (a stand-in for words.json). */
+      /* Narration words at an even pace (a stand-in for words.json, `display` keeps punctuation). */
       function say(text, t0, pace) {
         return text.split(/\s+/).map(function (w, i) {
           var s = Math.round((t0 + i * pace) * 1000) / 1000;
-          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), start: s, end: Math.round((s + pace * 0.8) * 1000) / 1000 };
+          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), display: w, start: s, end: Math.round((s + pace * 0.8) * 1000) / 1000 };
         });
       }
       /* Spike narration with its Kokoro key times (chamber 2.08, pressure 5.23, pushes 6.75,
@@ -88,7 +88,7 @@
           var a = keys[k], b = keys[Math.min(k + 1, keys.length - 1)];
           var s = b[0] === a[0] ? a[1] + (i - a[0]) * 0.3 : a[1] + (b[1] - a[1]) * (i - a[0]) / (b[0] - a[0]);
           s = Math.round(s * 1000) / 1000;
-          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), start: s, end: Math.round((s + 0.26) * 1000) / 1000 };
+          return { i: i, text: w.replace(/^[^\w]+|[^\w]+$/g, ""), display: w, start: s, end: Math.round((s + 0.26) * 1000) / 1000 };
         });
       }
       /* Mouth loudness per frame from the words (talk shapes while a word is spoken). */

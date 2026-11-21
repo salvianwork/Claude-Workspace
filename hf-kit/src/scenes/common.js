@@ -133,7 +133,7 @@
   /* Title block at the top of the box: {box, size, lines}. Optional; height 0 when absent. */
   function titleGeom(title, box, maxSize) {
     if (!title) return null;
-    var f = fitText(title, box.width, range(maxSize || 64, 44, 4), 2, "heading");
+    var f = fitText(title, box.width, range(maxSize || 72, 44, 4), 2, "heading");
     var h = Math.ceil(f.size * 1.16 * f.lines);
     return { text: title, x: box.x, y: box.y, width: box.width, height: h, size: f.size, lines: f.lines, bar: { x: box.x, y: box.y + h + 14, width: 120, height: 8 } };
   }
@@ -241,7 +241,8 @@
     var keys = K.resolveCamera(opts.camera || [], opts.words || [], opts.sceneId, norm);
     var still = { x: 0.5, y: 0.5, zoom: 1 };
     var useDrift = opts.drift !== false;
-    var draw = def.render({ stage: sh.layers.stage, overlay: sh.layers.overlay, plan: plan, props: opts.props, style: sh.style, duration: duration, shell: sh });
+    var body = div(sh.layers.stage, "hf-body", { x: 0, y: plan.dy, width: K.CANVAS.width, height: K.CANVAS.height });
+    var draw = def.render({ stage: body, overlay: sh.layers.overlay, plan: plan, props: opts.props, style: sh.style, duration: duration, shell: sh });
     var fits = Array.prototype.slice.call(rootEl.querySelectorAll(".hf-fit"));
     function update(t) {
       sh.update(t);
@@ -278,8 +279,17 @@
         var g = def.geometry(opts.props, K.driftSafe(L.content), style, L);
         var reveal = def.reveal ? def.reveal(opts, duration) : planReveals(def.counts(opts.props), opts.cues, opts.words, duration, opts.sceneId);
         g.anchors = g.anchors || {};
+        // centre the whole block (title + body) vertically in the drift-safe box: the scene draws
+        // in its own coordinates inside a layer moved by dy; boxes and anchors are reported moved
+        var safe = K.driftSafe(L.content);
+        var top = Math.min.apply(null, g.boxes.map(function (b) { return b.y; }));
+        var bottom = Math.max.apply(null, g.boxes.map(function (b) { return b.y + b.height; }));
+        var dy = Math.round(safe.y + safe.height / 2 - (top + bottom) / 2);
+        dy = Math.max(safe.y - top, Math.min(safe.y + safe.height - bottom, dy));
+        g.boxes = g.boxes.map(function (b) { return Object.assign({}, b, { y: b.y + dy }); });
+        Object.keys(g.anchors).forEach(function (k) { g.anchors[k] = { x: g.anchors[k].x, y: g.anchors[k].y + dy }; });
         g.anchors.center = { x: L.content.x + L.content.width / 2, y: L.content.y + L.content.height / 2 };
-        return Object.assign(g, { reveal: reveal, box: L.content, layout: L, style: style });
+        return Object.assign(g, { reveal: reveal, box: L.content, layout: L, style: style, dy: dy });
       },
     };
     scene.mount = function (rootEl, opts) { return mountScene({ validate: scene.validate, validateCues: scene.validateCues, plan: scene.plan, render: def.render }, rootEl, opts); };
