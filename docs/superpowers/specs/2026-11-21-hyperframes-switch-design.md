@@ -1,7 +1,7 @@
 # HyperFrames Switch — Design
 
 **Date:** 2026-11-21
-**Status:** Draft, waiting for owner approval
+**Status:** Waiting for owner approval
 **Builds on:** `2026-11-19-video-agent-team-design.md` (pipeline) and
 `2026-11-20-studio-dashboard-design.md` (studio)
 
@@ -41,7 +41,8 @@ by HeyGen, Apache-2.0) instead of extending Remotion.
 - Labels or animations out of sync with the words.
 - Anything sent to the internet during a render (code, fonts, usage data).
 - A video that takes so long to make that the owner stops using the tool —
-  **target ≤ 90 minutes** per 2-minute video on the owner's PC.
+  target about 1.5–3 h per 2-minute video at first, faster as the prop library
+  grows (§12).
 
 ## 3. Constraints
 
@@ -190,9 +191,23 @@ it immediately.)*
    one-command test render of the kit sample on the PC, as soon as the kit
    exists, before the agents are switched over.
 
-## 12. Open question (owner)
+## 12. Owner decision: hero scenes + kit + prop library
 
-- **Speed vs. how much is custom-drawn** — see §2 "≤ 90 minutes". The test
-  scene took ~1.5 h to hand-draw for 14 seconds; a 2-minute video has 8–10
-  scenes. Options: fully custom every scene (slow), or custom "hero" scenes
-  plus kit/registry scenes and a growing prop library (faster over time).
+- Each video has **2–4 custom-drawn "hero" scenes** (the moments that carry
+  the explanation, e.g. the eruption, the heart pumping). Iris marks them in
+  the shot list; Sage checks the choice at gate 3.
+- **All other scenes use kit and registry pieces**: charts, step-by-step
+  diagrams, comparisons, kinetic text, transitions — still animated, with
+  camera and word-timed cues.
+- **Prop library:** every custom illustration Flip draws is saved as a
+  reusable, parameterised prop in `hf-kit/props/<name>/` (with a preview
+  image and a one-line description). Iris checks the library first and reuses
+  or adapts a prop before asking for a new drawing, so videos get faster over
+  time.
+- **Time target:** about 1.5–3 hours per 2-minute video at first, falling as
+  the library grows. Real times are measured on the fixture videos and
+  reported to the owner.
+
+## 13. Open questions
+
+- None. Ready for owner approval.
