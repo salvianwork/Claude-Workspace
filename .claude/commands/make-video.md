@@ -225,7 +225,14 @@ clarifying question (`question`) goes through these steps, in this order:
      ```bash
      python -m tools.dashboard.answers show "<run_dir>"
      ```
-     and use its `answer` (decision and text) **instead of** the chat reply; tell the owner
+     If its `answer` is `null` (the board is still writing its answer file), wait 1 second and
+     run `show` once more:
+     ```bash
+     python -c "import time; time.sleep(1)"
+     python -m tools.dashboard.answers show "<run_dir>"
+     ```
+     Then use its `answer` (decision and text) **instead of** the chat reply (if it is still
+     `null`, use the chat reply as it is); tell the owner
      `The studio board already had an answer (<decision>), so I used that one.` Any other
      `error: …` → use the chat reply as it is. Then stop the background waiter (stop its
      background task); it also exits by itself within a second now that the answer file

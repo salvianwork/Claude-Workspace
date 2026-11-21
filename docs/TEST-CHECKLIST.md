@@ -68,7 +68,7 @@ Open a second terminal in the project folder, run `.venv\Scripts\activate`, then
 video from section 3, or with a short topic such as `/make-video "Why the sky is blue"`).
 
 1. [ ] **Start the studio.** The browser opens a studio with five characters.
-   You should see: the board says "No video running" and everyone is in the kitchen.
+   You should see: the board shows your latest video, or "No video running" if there are none.
 2. [ ] **Answer gate 1 on the board.** Start `/make-video`; when the script is ready, click
    **Approve** on the board (do not type in the chat).
    You should see: the board says "Sent", and within a few seconds Claude Code continues by

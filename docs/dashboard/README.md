@@ -105,6 +105,11 @@ studio falls back to the default names.
 
 - **"Port busy" / it starts on another number.** Nothing to fix: it tries the next ports by itself
   (8766, 8767 ...). Use the link it prints.
+- **"No free port in 8765-8775".** Eleven studios (or other programs) already hold those ports.
+  Close the other studio windows (terminals running `python -m tools.dashboard`), or start it
+  on another range with `python -m tools.dashboard --port 9000`.
+- **Start it from the right folder.** The studio must be started from the same project folder
+  Claude Code runs in; otherwise it looks at a different `videos` folder and never sees your run.
 - **"Studio key missing".** You opened the page without its key. Close the tab and open the link
   printed in the terminal again (the whole link, including `?key=...`). The key changes every
   time you start the studio, so old bookmarks stop working.
@@ -119,5 +124,5 @@ studio falls back to the default names.
 ## Checked so far
 
 The "Claude Code wakes up by itself after a board answer" step was tested and works in a cloud
-session. It still has to be confirmed on your Windows PC: see item 4 in section "The studio
+session. It still has to be confirmed on your Windows PC: see item 2 in section "The studio
 dashboard" of `docs\TEST-CHECKLIST.md`.

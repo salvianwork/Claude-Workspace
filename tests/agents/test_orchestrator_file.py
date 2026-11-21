@@ -302,3 +302,12 @@ def test_final_checkpoint_does_not_say_done_before_approval():
         assert needle in text, needle
     for needle in ["🎬 Finished:", "🎞 Video ready:"]:
         assert needle in progress, needle
+
+
+def test_already_answered_rereads_a_null_answer_once():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    i = text.index("already answered`, the board answered first")
+    part = text[i:text.index("**Handle each `<id>` once.**", i)]
+    assert part.count("python -m tools.dashboard.answers show") == 2
+    assert "is `null`" in part and "wait 1 second" in part
+    assert 'python -c "import time; time.sleep(1)"' in part
