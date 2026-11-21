@@ -2,7 +2,8 @@
 
 Files live in <run>/board/ (created on demand):
   request.json          the one current request
-  requests.log          JSON lines, one per write_request (id source: k = 1 + the
+  requests.log          JSON lines, one per write_request, appended BEFORE request.json
+                        is written (id source: k = 1 + the
                         number of earlier lines with the same checkpoint)
   answer-<id>.json      the owner's answer, written once (open "x")
 
@@ -81,9 +82,12 @@ def write_request(run_dir, checkpoint, title, body, options, links=None) -> dict
     req = {"id": next_request_id(run_dir, checkpoint), "checkpoint": checkpoint,
            "title": title, "body": body, "options": list(options),
            "links": list(links or []), "created": _now()}
-    _atomic_write(_board(run_dir) / "request.json", req)
+    # Log first: if we crash between the two writes the id is already used, so a
+    # retry gets a fresh id instead of reusing one an old answer file may match.
+    _board(run_dir).mkdir(parents=True, exist_ok=True)
     with open(_board(run_dir) / "requests.log", "a", encoding="utf-8") as fh:
         fh.write(json.dumps({"id": req["id"], "created": req["created"]}, ensure_ascii=False) + "\n")
+    _atomic_write(_board(run_dir) / "request.json", req)
     return req
 
 

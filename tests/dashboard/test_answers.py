@@ -108,3 +108,14 @@ def test_cli_team_prints_the_team(tmp_path):
     assert team["story"]["name"] == "Nib" and team["reviewer"]["name"] == "Sage"
     p = run_cli("team", "--root", tmp_path / "nowhere")
     assert p.returncode == 0 and json.loads(p.stdout)["story"]["name"] == "Quill"
+
+
+def test_request_logged_before_request_file(tmp_path, monkeypatch):
+    """A crash while writing request.json must not let the next request reuse the id."""
+    def crash(path, data):
+        raise OSError("disk full")
+    monkeypatch.setattr(answers, "_atomic_write", crash)
+    with pytest.raises(OSError):
+        answers.write_request(tmp_path, "gate-1", "T", "B", ["approve"])
+    monkeypatch.undo()
+    assert answers.write_request(tmp_path, "gate-1", "T", "B", ["approve"])["id"] == "gate-1-2"
