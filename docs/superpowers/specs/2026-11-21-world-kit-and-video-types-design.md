@@ -1,7 +1,7 @@
 # World Kit and Video Types — Design
 
 **Date:** 2026-11-21
-**Status:** Waiting for owner approval (builder check done, §15)
+**Status:** Approved by owner 2026-11-21
 **Builds on:** `2026-11-21-hyperframes-switch-design.md` (HyperFrames, hero scenes,
 prop library), `2026-11-19-video-agent-team-design.md` (pipeline, approvals, audio, presenter)
 
