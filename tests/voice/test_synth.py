@@ -40,6 +40,13 @@ class FakeEngine:
         t = np.arange(int(self.sample_rate * seconds)) / self.sample_rate
         return (0.3 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
 
+    def synth_words(self, text, voice, speed):
+        audio = self.synth(text, voice, speed)
+        words = text.split()
+        step = len(audio) / self.sample_rate / max(1, len(words))
+        return audio, [{"text": w, "start": i * step, "end": (i + 1) * step}
+                       for i, w in enumerate(words)]
+
 
 @pytest.fixture
 def paths(tmp_path):

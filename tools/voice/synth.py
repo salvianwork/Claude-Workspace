@@ -10,6 +10,7 @@ import soundfile as sf
 
 from tools.pipeline.script import parse_script
 from tools.voice.engine import TTSEngine, get_engine
+from tools.voice.words import align_to_script, whisper_words, write_words
 
 PAD_S = 0.4
 DEFAULT_VOICE = "am_adam"  # male, chosen by the owner to match the presenter
@@ -45,17 +46,27 @@ def synth_scenes(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     entries = []
+    words_by_scene: dict[int, list[dict]] = {}
+    source = "kokoro" if engine.name == "kokoro" else engine.name
     for scene in script.scenes:
         path = out_dir / _wav_name(scene.id)
         if only is not None and scene.id not in only:
             info = sf.info(str(path))
             duration = info.frames / info.samplerate
         else:
-            audio = np.asarray(engine.synth(scene.narration, voice, speed), dtype=np.float32)
+            if hasattr(engine, "synth_words"):
+                raw, timed = engine.synth_words(scene.narration, voice, speed)
+            else:
+                raw, timed = engine.synth(scene.narration, voice, speed), []
+            audio = np.asarray(raw, dtype=np.float32)
             pad = np.zeros(int(round(PAD_S * engine.sample_rate)), dtype=np.float32)
             audio = np.concatenate([audio, pad])
             sf.write(str(path), audio, engine.sample_rate)
             duration = len(audio) / engine.sample_rate
+            if not timed:  # engine gave no timestamps: listen to the wav instead
+                timed = whisper_words(path)
+                source = "whisper"
+            words_by_scene[scene.id] = align_to_script(scene.narration, timed)
         entries.append({"id": scene.id, "file": path.name, "duration_s": round(duration, 3)})
 
     manifest = {
@@ -67,6 +78,7 @@ def synth_scenes(
         "scenes": entries,
         "total_s": round(sum(e["duration_s"] for e in entries), 3),
     }
+    write_words(out_dir, words_by_scene, source)
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return manifest
 
