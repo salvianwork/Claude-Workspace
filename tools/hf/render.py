@@ -23,9 +23,10 @@ _SCANNED = {".html", ".htm", ".js", ".mjs", ".css"}
 _SKIP_DIRS = {"node_modules", ".hyperframes", ".git"}
 _URL = re.compile(r"https?://[^\s\"'<>()`]+", re.I)
 _COMMENT = re.compile(r"/\*.*?\*/|<!--.*?-->", re.S)
-# Never fetched: XML namespace names, and the bare site URL in GSAP's "target not found"
-# console warning (vendor/gsap.min.js).
-_NOT_FETCHED = re.compile(r"^(https?://www\.w3\.org/(1999|2000)/\S*|https://gsap\.com)$", re.I)
+# Never fetched: the XML namespace names the kit uses, and (only in the vendored GSAP file) the
+# bare site URL in GSAP's "target not found" console warning.
+_NAMESPACES = {"http://www.w3.org/1999/xhtml", "http://www.w3.org/2000/svg", "http://www.w3.org/1999/xlink"}
+_GSAP_SITE = "https://gsap.com"
 
 
 class HFError(Exception):
@@ -124,18 +125,32 @@ def assert_offline(composition_dir: Path) -> list[str]:
         if any(part in _SKIP_DIRS for part in rel.parts):
             continue
         text = _COMMENT.sub(" ", path.read_text(encoding="utf-8", errors="replace"))
+        vendored_gsap = path.name == "gsap.min.js" and path.parent.name == "vendor"
         for url in _URL.findall(text):
-            if not _NOT_FETCHED.match(url):
-                found.append(f"{rel.as_posix()}: {url}")
+            if url in _NAMESPACES or (vendored_gsap and url == _GSAP_SITE):
+                continue
+            found.append(f"{rel.as_posix()}: {url}")
     return found
 
 
-def install_kit(composition_dir: Path) -> Path:
+def install_kit(composition_dir: Path, *, kit_dir: Path = KIT_DIR,
+                props: list[str] | None = None) -> Path:
     """Copy hf-kit's vendor/, src/ and props/ into <composition_dir>/kit/ (HyperFrames only
-    serves files inside the composition folder). Returns the kit folder."""
+    serves files inside the composition folder). The old kit/ folder is removed first so no
+    stale file survives. `props` limits the copied props to those names (None = all; the
+    props/README.md is always copied). Returns the kit folder."""
+    kit_dir = Path(kit_dir)
     kit = Path(composition_dir) / "kit"
-    for part in ("vendor", "src", "props"):
-        shutil.copytree(KIT_DIR / part, kit / part, dirs_exist_ok=True)
+    if kit.exists():
+        shutil.rmtree(kit)
+    for part in ("vendor", "src"):
+        shutil.copytree(kit_dir / part, kit / part)
+    (kit / "props").mkdir(parents=True)
+    shutil.copy2(kit_dir / "props" / "README.md", kit / "props" / "README.md")
+    names = props if props is not None else sorted(
+        d.name for d in (kit_dir / "props").iterdir() if d.is_dir())
+    for name in names:
+        shutil.copytree(kit_dir / "props" / name, kit / "props" / name)
     return kit
 
 

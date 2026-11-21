@@ -183,3 +183,25 @@ def test_sample_renders_offline(tmp_path, monkeypatch):
     assert v["r_frame_rate"] == "30/1"
     assert assert_offline(SAMPLE) == []
     assert not any((tmp_path / "empty-font-cache").rglob("*.woff2"))  # nothing fetched
+
+
+def test_assert_offline_allows_only_known_namespaces_and_vendored_gsap(tmp_path):
+    (tmp_path / "vendor").mkdir()
+    (tmp_path / "vendor" / "gsap.min.js").write_text('console.warn("see https://gsap.com")', encoding="utf-8")
+    (tmp_path / "a.js").write_text(
+        'var a="http://www.w3.org/2000/svg", b="http://www.w3.org/1999/xhtml", c="http://www.w3.org/1999/xlink";\n'
+        'fetch("https://www.w3.org/2000/evil.js"); fetch("https://gsap.com");', encoding="utf-8")
+    found = assert_offline(tmp_path)
+    assert found == ["a.js: https://www.w3.org/2000/evil.js", "a.js: https://gsap.com"]
+
+
+def test_install_kit_clears_stale_files_and_can_limit_props(tmp_path):
+    stale = tmp_path / "kit" / "src" / "old.js"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("stale", encoding="utf-8")
+    install_kit(tmp_path, props=[])
+    assert not stale.exists()
+    assert (tmp_path / "kit" / "src" / "kit.js").is_file()
+    assert not (tmp_path / "kit" / "props" / "volcano").exists()
+    install_kit(tmp_path, props=["volcano"])
+    assert (tmp_path / "kit" / "props" / "volcano" / "prop.js").is_file()
