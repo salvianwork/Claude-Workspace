@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from tools.pipeline.fsutil import replace_retry
 
 CHECKPOINTS = {"gate-1", "gate-1-changed-lines", "gate-2", "final", "question"}
 STUCK_RE = re.compile(r"^stuck-gate-[1-4]$")
@@ -44,7 +45,7 @@ def _atomic_write(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    os.replace(tmp, path)
+    replace_retry(tmp, path)
 
 
 def _valid_checkpoint(checkpoint: str) -> bool:

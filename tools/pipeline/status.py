@@ -11,6 +11,8 @@ import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 
+from tools.pipeline.fsutil import replace_retry
+
 STEPS = ("story", "voice", "design", "animator", "done")
 STATES = ("working", "reviewing", "waiting_owner", "fixing", "failed", "done")
 STEP_DISPLAY = {
@@ -43,7 +45,7 @@ def _write_status(run_dir: Path, status: dict) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(status, f, indent=2, ensure_ascii=False)
-        os.replace(tmp, run_dir / "status.json")
+        replace_retry(Path(tmp), run_dir / "status.json")
     except BaseException:
         if os.path.exists(tmp):
             os.unlink(tmp)
