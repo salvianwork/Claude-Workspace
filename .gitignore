@@ -27,3 +27,10 @@ tests/fixtures/hf/*/04-video/*
 !tests/fixtures/hf/*/04-video/hf/
 tests/fixtures/hf/*/04-video/hf/*
 !tests/fixtures/hf/*/04-video/hf/scenes/
+# World-look fixture runs (tests/fixtures/hf/world/<name>): the same rule one folder deeper
+tests/fixtures/hf/world/*/02-voice/*.wav
+tests/fixtures/hf/world/*/review/
+tests/fixtures/hf/world/*/04-video/*
+!tests/fixtures/hf/world/*/04-video/hf/
+tests/fixtures/hf/world/*/04-video/hf/*
+!tests/fixtures/hf/world/*/04-video/hf/scenes/

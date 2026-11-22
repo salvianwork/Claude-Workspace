@@ -1,0 +1,35 @@
+{
+  "language": "en",
+  "engine": "kokoro",
+  "voice": "am_adam",
+  "speed": 1.0,
+  "sample_rate": 24000,
+  "scenes": [
+    {
+      "id": 1,
+      "file": "scene-01.wav",
+      "duration_s": 4.75
+    },
+    {
+      "id": 2,
+      "file": "scene-02.wav",
+      "duration_s": 6.425
+    },
+    {
+      "id": 3,
+      "file": "scene-03.wav",
+      "duration_s": 5.575
+    },
+    {
+      "id": 4,
+      "file": "scene-04.wav",
+      "duration_s": 4.725
+    },
+    {
+      "id": 5,
+      "file": "scene-05.wav",
+      "duration_s": 4.75
+    }
+  ],
+  "total_s": 26.225
+}

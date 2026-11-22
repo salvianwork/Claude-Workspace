@@ -1,0 +1,456 @@
+{
+ "schema": 2,
+ "type": "explainer",
+ "audience": "all-ages",
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "place": "ocean",
+   "variant": "surface",
+   "new_place": false,
+   "facts": [
+    "the Sun's heat makes sea water evaporate",
+    "water vapour is an invisible gas (the wisps only hint where it rises)"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "sunlight warms the sea: a warm glow spreads over the water by the boat",
+     "moves": [
+      {
+       "do": "pull_out",
+       "target": "surface",
+       "zoom": 0.85,
+       "from": 1.15,
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "wave"
+      },
+      {
+       "do": "glow",
+       "target": "surface",
+       "at": {
+        "word": 2
+       },
+       "radius": 700,
+       "rays": 8,
+       "color": "#FFD27A",
+       "duration": 5
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "faint wisps of water vapour rise from the warm sea into the air; the host points at them",
+     "moves": [
+      {
+       "do": "point",
+       "who": "host",
+       "target": "surface",
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "smoke",
+       "target": "surface",
+       "at": {
+        "word": 8
+       },
+       "color": "#F4FAFF",
+       "size": 1.3,
+       "rise": 160,
+       "wind": 20,
+       "duration": 4
+      },
+      {
+       "do": "smoke",
+       "target": "boat",
+       "at": {
+        "word": 9
+       },
+       "color": "#F4FAFF",
+       "size": 1.0,
+       "rise": 150,
+       "wind": 30,
+       "duration": 3.5,
+       "seed": 7
+      },
+      {
+       "do": "label",
+       "target": "surface",
+       "text": "Water vapour",
+       "side": "above",
+       "at": {
+        "word": 16
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "place": "sky-fantasy",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "warm, moist air rises",
+    "air is colder higher up, so rising air cools"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "island"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "a glowing bubble of warm, moist air lifts off the island beside the host and rises into the sky",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "island",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "say",
+       "who": "host",
+       "until": {
+        "word": 4
+       }
+      },
+      {
+       "do": "pulse_along",
+       "path": "flight",
+       "from": "island",
+       "to": "sky",
+       "speed": 380,
+       "ease": "inOut",
+       "color": "#FFB86B",
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "tag_follow",
+       "target": "pulse",
+       "text": "Warm, moist air",
+       "until": {
+        "word": 9
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 4
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "high in the sky a cold blue glow surrounds the air as it climbs; the camera rises after it",
+     "moves": [
+      {
+       "do": "pull_out",
+       "target": "sky",
+       "zoom": 0.7,
+       "at": {
+        "word": 10
+       }
+      },
+      {
+       "do": "glow",
+       "target": "sky",
+       "at": {
+        "word": 8
+       },
+       "radius": 420,
+       "color": "#BFE6FF",
+       "duration": 3.5
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Colder up here",
+       "side": "right",
+       "at": {
+        "word": 10
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious",
+       "at": {
+        "word": 10
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "slide"
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "place": "sky-fantasy",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "cooled water vapour condenses into tiny droplets",
+    "a cloud is made of a huge number of droplets"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "where the air cooled, tiny droplets sparkle into being",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 1.0,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-right",
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "sparkle",
+       "target": "sky",
+       "at": {
+        "word": 2
+       },
+       "radius": 320,
+       "count": 22,
+       "color": "#E6F6FF",
+       "duration": 2.4
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Tiny droplets",
+       "side": "below",
+       "at": {
+        "word": 5
+       },
+       "until": {
+        "word": 8
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 6
+     },
+     "action": "billions of droplets gather and a big white cloud billows up from them",
+     "moves": [
+      {
+       "do": "smoke",
+       "target": "sky",
+       "at": {
+        "word": 6
+       },
+       "color": "#FFFFFF",
+       "size": 3,
+       "rise": 40,
+       "wind": 15,
+       "life": 3.2,
+       "duration": 3
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Cloud",
+       "side": "below",
+       "at": {
+        "word": 12
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "place": "sky-fantasy",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "droplets collide and grow",
+    "drops too heavy to stay up fall as rain"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "island"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the cloud swells and darkens over the island as its droplets bump together and grow",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "island",
+       "zoom": 0.62,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "smoke",
+       "target": "sky",
+       "at": {
+        "t": 0
+       },
+       "color": "#7E8A9A",
+       "size": 3.2,
+       "rise": 30,
+       "wind": 10,
+       "life": 3.5,
+       "duration": 5.5
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 2
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 6
+     },
+     "action": "heavy drops fall as rain onto the island and splash around the host, who shrugs and laughs",
+     "moves": [
+      {
+       "do": "speed_lines",
+       "target": "sky",
+       "at": {
+        "word": 14
+       },
+       "angle": -90,
+       "count": 34,
+       "length": 520,
+       "spread": 820,
+       "color": "#5FA8E8",
+       "edge": "#2F5F8C",
+       "duration": 2
+      },
+      {
+       "do": "splash",
+       "target": "island",
+       "at": {
+        "word": 16
+       },
+       "color": "#A9DBFF"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 14
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "shrug",
+       "at": {
+        "word": 15
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Rain",
+       "side": "right",
+       "at": {
+        "word": 16
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  }
+ ]
+}

@@ -1,0 +1,407 @@
+{
+ "schema": 2,
+ "type": "explainer",
+ "audience": "all-ages",
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "place": "volcano",
+   "variant": "day",
+   "new_place": true,
+   "facts": [
+    "the magma chamber lies deep beneath the volcano",
+    "magma is molten rock",
+    "pressure pushes magma up through a narrow vent",
+    "not to scale: a real volcano is thousands of times taller than a person"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "foot"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the whole volcano, cut away: the host at its foot points down at the chamber; the camera pushes down to the glowing pool of molten rock",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "chamber",
+       "zoom": 0.6,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "at": {
+        "word": 0
+       },
+       "until": {
+        "word": 6
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "chamber",
+       "at": {
+        "word": 3
+       }
+      },
+      {
+       "do": "push_in",
+       "target": "chamber",
+       "zoom": 1.2,
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "label",
+       "target": "chamber",
+       "text": "Magma chamber",
+       "side": "above",
+       "at": {
+        "word": 7
+       },
+       "until": {
+        "word": 13
+       }
+      },
+      {
+       "do": "glow",
+       "target": "chamber",
+       "at": {
+        "word": 11
+       },
+       "radius": 520,
+       "color": "#FFB347",
+       "duration": 3
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 13
+     },
+     "action": "pressure pulses through the chamber, then magma climbs the vent toward the crater as the camera rises with it",
+     "moves": [
+      {
+       "do": "rings",
+       "target": "chamber",
+       "at": {
+        "word": 14
+       },
+       "count": 3,
+       "interval": 0.45,
+       "speed": 700,
+       "radius": 650,
+       "squash": 0.5,
+       "color": "#FFB347"
+      },
+      {
+       "do": "custom",
+       "name": "magma-rise",
+       "params": {
+        "duration": 2.0
+       },
+       "at": {
+        "word": 17
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "raise",
+       "at": {
+        "word": 17
+       }
+      },
+      {
+       "do": "pull_out",
+       "target": "vent",
+       "zoom": 0.7,
+       "at": {
+        "word": 23
+       }
+      },
+      {
+       "do": "label",
+       "target": "vent",
+       "text": "Vent",
+       "side": "left",
+       "at": {
+        "word": 22
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "place": "volcano",
+   "variant": "day",
+   "new_place": true,
+   "facts": [
+    "magma that bursts out at the surface is called lava",
+    "lava flows down the slopes, cools and hardens",
+    "each eruption adds a new layer to the cone",
+    "not to scale"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "at the crater the magma bursts out: a fountain of glowing lava and a column of ash; the host is startled",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "crater",
+       "zoom": 0.9,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "say",
+       "who": "host",
+       "until": {
+        "word": 3
+       }
+      },
+      {
+       "do": "custom",
+       "name": "eruption",
+       "params": {
+        "flow": 0.6,
+        "cool": 3.1,
+        "grow": 4.9
+       },
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "burst",
+       "target": "crater",
+       "at": {
+        "word": 4
+       },
+       "radius": 420,
+       "color": "#FFB347"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "pulse_along",
+       "path": "lava-flow",
+       "from": "crater",
+       "to": "slope",
+       "duration": 2.2,
+       "ease": "inOut",
+       "color": "#FFB347",
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "tag_follow",
+       "target": "pulse",
+       "text": "Lava",
+       "until": {
+        "word": 14
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 8
+     },
+     "action": "lava runs down both slopes as the camera pulls back, then darkens as it cools and hardens; the cone grows a new dark layer",
+     "moves": [
+      {
+       "do": "pull_out",
+       "target": "vent",
+       "zoom": 0.65,
+       "at": {
+        "word": 13
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "slope",
+       "at": {
+        "word": 14
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "at": {
+        "word": 14
+       }
+      },
+      {
+       "do": "label",
+       "target": "slope",
+       "text": "New layer",
+       "side": "left",
+       "at": {
+        "word": 21
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "place": "volcano",
+   "variant": "dusk",
+   "new_place": true,
+   "facts": [
+    "magma rises, erupts as lava and builds the mountain",
+    "not to scale"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "at dusk, magma races up the vent, erupts from the crater and runs down the slopes, hardening into a new layer, as the camera pulls back to the whole mountain; the host celebrates",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "vent",
+       "zoom": 0.9,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-right",
+       "at": {
+        "word": 0
+       }
+      },
+      {
+       "do": "custom",
+       "name": "magma-rise",
+       "params": {
+        "duration": 0.9
+       },
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "custom",
+       "name": "eruption",
+       "params": {
+        "vent": false,
+        "flow": 0.3,
+        "cool": 1.6,
+        "grow": 1.2
+       },
+       "at": {
+        "word": 3
+       }
+      },
+      {
+       "do": "burst",
+       "target": "crater",
+       "at": {
+        "word": 3
+       },
+       "radius": 380,
+       "color": "#FFB347"
+      },
+      {
+       "do": "sparkle",
+       "target": "slope",
+       "at": {
+        "word": 7
+       },
+       "radius": 320,
+       "color": "#FFD27A"
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "at": {
+        "word": 6
+       }
+      },
+      {
+       "do": "pull_out",
+       "target": "vent",
+       "zoom": 0.6,
+       "at": {
+        "word": 9
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  }
+ ]
+}

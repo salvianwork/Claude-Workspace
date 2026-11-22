@@ -1,0 +1,504 @@
+{
+  "source": "kokoro",
+  "scenes": [
+    {
+      "id": 1,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "What",
+          "display": "What",
+          "start": 0.25,
+          "end": 0.388
+        },
+        {
+          "i": 1,
+          "text": "if",
+          "display": "if",
+          "start": 0.388,
+          "end": 0.512
+        },
+        {
+          "i": 2,
+          "text": "the",
+          "display": "the",
+          "start": 0.512,
+          "end": 0.637
+        },
+        {
+          "i": 3,
+          "text": "Moon",
+          "display": "Moon",
+          "start": 0.637,
+          "end": 0.95
+        },
+        {
+          "i": 4,
+          "text": "disappeared",
+          "display": "disappeared?",
+          "start": 0.95,
+          "end": 1.75
+        },
+        {
+          "i": 5,
+          "text": "Imagine",
+          "display": "Imagine",
+          "start": 1.887,
+          "end": 2.4
+        },
+        {
+          "i": 6,
+          "text": "it",
+          "display": "it",
+          "start": 2.4,
+          "end": 2.55
+        },
+        {
+          "i": 7,
+          "text": "simply",
+          "display": "simply",
+          "start": 2.55,
+          "end": 2.875
+        },
+        {
+          "i": 8,
+          "text": "vanished",
+          "display": "vanished",
+          "start": 2.875,
+          "end": 3.275
+        },
+        {
+          "i": 9,
+          "text": "tonight",
+          "display": "tonight.",
+          "start": 3.275,
+          "end": 4.05
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "The",
+          "display": "The",
+          "start": 0.25,
+          "end": 0.325
+        },
+        {
+          "i": 1,
+          "text": "tides",
+          "display": "tides",
+          "start": 0.325,
+          "end": 0.713
+        },
+        {
+          "i": 2,
+          "text": "would",
+          "display": "would",
+          "start": 0.713,
+          "end": 0.887
+        },
+        {
+          "i": 3,
+          "text": "shrink",
+          "display": "shrink.",
+          "start": 0.887,
+          "end": 1.525
+        },
+        {
+          "i": 4,
+          "text": "Only",
+          "display": "Only",
+          "start": 1.663,
+          "end": 1.962
+        },
+        {
+          "i": 5,
+          "text": "the",
+          "display": "the",
+          "start": 1.962,
+          "end": 2.062
+        },
+        {
+          "i": 6,
+          "text": "Sun's",
+          "display": "Sun's",
+          "start": 2.062,
+          "end": 2.425
+        },
+        {
+          "i": 7,
+          "text": "tides",
+          "display": "tides",
+          "start": 2.425,
+          "end": 2.788
+        },
+        {
+          "i": 8,
+          "text": "would",
+          "display": "would",
+          "start": 2.788,
+          "end": 2.9
+        },
+        {
+          "i": 9,
+          "text": "remain",
+          "display": "remain,",
+          "start": 2.9,
+          "end": 3.4
+        },
+        {
+          "i": 10,
+          "text": "roughly",
+          "display": "roughly",
+          "start": 3.475,
+          "end": 3.85
+        },
+        {
+          "i": 11,
+          "text": "a",
+          "display": "a",
+          "start": 3.85,
+          "end": 3.962
+        },
+        {
+          "i": 12,
+          "text": "third",
+          "display": "third",
+          "start": 3.962,
+          "end": 4.263
+        },
+        {
+          "i": 13,
+          "text": "as",
+          "display": "as",
+          "start": 4.263,
+          "end": 4.412
+        },
+        {
+          "i": 14,
+          "text": "big",
+          "display": "big",
+          "start": 4.412,
+          "end": 4.612
+        },
+        {
+          "i": 15,
+          "text": "as",
+          "display": "as",
+          "start": 4.612,
+          "end": 4.75
+        },
+        {
+          "i": 16,
+          "text": "today's",
+          "display": "today's.",
+          "start": 4.75,
+          "end": 5.725
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "Nights",
+          "display": "Nights",
+          "start": 0.275,
+          "end": 0.562
+        },
+        {
+          "i": 1,
+          "text": "would",
+          "display": "would",
+          "start": 0.562,
+          "end": 0.662
+        },
+        {
+          "i": 2,
+          "text": "be",
+          "display": "be",
+          "start": 0.662,
+          "end": 0.8
+        },
+        {
+          "i": 3,
+          "text": "darker",
+          "display": "darker,",
+          "start": 0.8,
+          "end": 1.175
+        },
+        {
+          "i": 4,
+          "text": "too",
+          "display": "too.",
+          "start": 1.238,
+          "end": 1.775
+        },
+        {
+          "i": 5,
+          "text": "With",
+          "display": "With",
+          "start": 1.95,
+          "end": 2.15
+        },
+        {
+          "i": 6,
+          "text": "no",
+          "display": "no",
+          "start": 2.15,
+          "end": 2.325
+        },
+        {
+          "i": 7,
+          "text": "moonlight",
+          "display": "moonlight,",
+          "start": 2.325,
+          "end": 2.725
+        },
+        {
+          "i": 8,
+          "text": "only",
+          "display": "only",
+          "start": 2.775,
+          "end": 3.062
+        },
+        {
+          "i": 9,
+          "text": "the",
+          "display": "the",
+          "start": 3.062,
+          "end": 3.188
+        },
+        {
+          "i": 10,
+          "text": "stars",
+          "display": "stars",
+          "start": 3.188,
+          "end": 3.65
+        },
+        {
+          "i": 11,
+          "text": "would",
+          "display": "would",
+          "start": 3.65,
+          "end": 3.8
+        },
+        {
+          "i": 12,
+          "text": "light",
+          "display": "light",
+          "start": 3.8,
+          "end": 4.025
+        },
+        {
+          "i": 13,
+          "text": "the",
+          "display": "the",
+          "start": 4.025,
+          "end": 4.125
+        },
+        {
+          "i": 14,
+          "text": "way",
+          "display": "way.",
+          "start": 4.125,
+          "end": 4.875
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "And",
+          "display": "And",
+          "start": 0.225,
+          "end": 0.338
+        },
+        {
+          "i": 1,
+          "text": "over",
+          "display": "over",
+          "start": 0.338,
+          "end": 0.55
+        },
+        {
+          "i": 2,
+          "text": "millions",
+          "display": "millions",
+          "start": 0.55,
+          "end": 0.938
+        },
+        {
+          "i": 3,
+          "text": "of",
+          "display": "of",
+          "start": 0.938,
+          "end": 1.025
+        },
+        {
+          "i": 4,
+          "text": "years",
+          "display": "years,",
+          "start": 1.025,
+          "end": 1.55
+        },
+        {
+          "i": 5,
+          "text": "Earth's",
+          "display": "Earth's",
+          "start": 1.65,
+          "end": 1.975
+        },
+        {
+          "i": 6,
+          "text": "tilt",
+          "display": "tilt",
+          "start": 1.975,
+          "end": 2.25
+        },
+        {
+          "i": 7,
+          "text": "could",
+          "display": "could",
+          "start": 2.25,
+          "end": 2.362
+        },
+        {
+          "i": 8,
+          "text": "become",
+          "display": "become",
+          "start": 2.362,
+          "end": 2.737
+        },
+        {
+          "i": 9,
+          "text": "far",
+          "display": "far",
+          "start": 2.737,
+          "end": 3.025
+        },
+        {
+          "i": 10,
+          "text": "less",
+          "display": "less",
+          "start": 3.025,
+          "end": 3.225
+        },
+        {
+          "i": 11,
+          "text": "steady",
+          "display": "steady.",
+          "start": 3.225,
+          "end": 4.05
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "But",
+          "display": "But",
+          "start": 0.225,
+          "end": 0.338
+        },
+        {
+          "i": 1,
+          "text": "the",
+          "display": "the",
+          "start": 0.338,
+          "end": 0.425
+        },
+        {
+          "i": 2,
+          "text": "Moon",
+          "display": "Moon",
+          "start": 0.425,
+          "end": 0.688
+        },
+        {
+          "i": 3,
+          "text": "is",
+          "display": "is",
+          "start": 0.688,
+          "end": 0.762
+        },
+        {
+          "i": 4,
+          "text": "still",
+          "display": "still",
+          "start": 0.762,
+          "end": 1.025
+        },
+        {
+          "i": 5,
+          "text": "here",
+          "display": "here,",
+          "start": 1.025,
+          "end": 1.45
+        },
+        {
+          "i": 6,
+          "text": "keeping",
+          "display": "keeping",
+          "start": 1.575,
+          "end": 1.887
+        },
+        {
+          "i": 7,
+          "text": "our",
+          "display": "our",
+          "start": 1.887,
+          "end": 2.025
+        },
+        {
+          "i": 8,
+          "text": "tides",
+          "display": "tides,",
+          "start": 2.025,
+          "end": 2.45
+        },
+        {
+          "i": 9,
+          "text": "and",
+          "display": "and",
+          "start": 2.487,
+          "end": 2.587
+        },
+        {
+          "i": 10,
+          "text": "our",
+          "display": "our",
+          "start": 2.587,
+          "end": 2.737
+        },
+        {
+          "i": 11,
+          "text": "seasons",
+          "display": "seasons,",
+          "start": 2.737,
+          "end": 3.225
+        },
+        {
+          "i": 12,
+          "text": "steady",
+          "display": "steady.",
+          "start": 3.275,
+          "end": 4.075
+        }
+      ]
+    }
+  ]
+}

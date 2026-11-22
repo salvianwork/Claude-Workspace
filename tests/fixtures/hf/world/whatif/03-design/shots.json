@@ -1,0 +1,452 @@
+{
+ "schema": 2,
+ "type": "what-if",
+ "audience": "all-ages",
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "place": "space",
+   "variant": "earth-orbit",
+   "new_place": false,
+   "facts": [
+    "imagined: the Moon vanishes (a thought experiment, labelled Imagine…)",
+    "not to scale: the Moon is shown near Earth for the picture"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "Earth and the Moon from orbit; the host wonders as the camera pushes in on the Moon",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "open",
+       "zoom": 0.8,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      },
+      {
+       "do": "label",
+       "target": "open",
+       "text": "not to scale",
+       "at": {
+        "word": 0
+       }
+      },
+      {
+       "do": "push_in",
+       "target": "moon",
+       "zoom": 1.4,
+       "at": {
+        "word": 4
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "imagined: the Moon flashes and vanishes, leaving empty space; the host is amazed",
+     "moves": [
+      {
+       "do": "label",
+       "target": "moon",
+       "text": "Imagine…",
+       "side": "below",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "moon",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "custom",
+       "name": "moon-vanish",
+       "at": {
+        "word": 8
+       }
+      },
+      {
+       "do": "sparkle",
+       "target": "moon",
+       "at": {
+        "word": 8
+       },
+       "radius": 260,
+       "count": 14,
+       "color": "#F6F2DC"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 8
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "place": "ocean",
+   "variant": "surface",
+   "new_place": false,
+   "facts": [
+    "the Sun also raises tides",
+    "with no Moon, tides would be roughly a third of today's size",
+    "time is sped up: each rise and fall of the float stands for a tide of about 12 hours"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "a tide pole in the sea: the water and its float rise and fall over today's full range",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "surface",
+       "zoom": 1.15,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "say",
+       "who": "host"
+      },
+      {
+       "do": "custom",
+       "name": "tide-gauge",
+       "params": {
+        "period": 2.0,
+        "range": 150,
+        "ratio": 0.333
+       },
+       "at": {
+        "word": 3
+       }
+      },
+      {
+       "do": "label",
+       "target": "boat",
+       "text": "Without the Moon",
+       "side": "above",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 4
+     },
+     "action": "the rise and fall shrinks to a small bob between new orange marks, a third of the old range; the host points at it",
+     "moves": [
+      {
+       "do": "point",
+       "who": "host",
+       "target": "surface",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "label",
+       "target": "surface",
+       "text": "Tides: a third",
+       "side": "right",
+       "at": {
+        "word": 10
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "slide"
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "place": "forest",
+   "variant": "night",
+   "new_place": false,
+   "facts": [
+    "without the Moon there is no moonlight; nights are lit only by the stars (and are darker)"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "trail"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host walks the dark forest trail at night: no moon in the sky, only the dim blue starlight",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "trail",
+       "zoom": 1.25,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "walk_to",
+       "who": "host",
+       "to": "log",
+       "at": {
+        "word": 0
+       }
+      },
+      {
+       "do": "label",
+       "target": "host",
+       "text": "No moonlight",
+       "side": "above",
+       "at": {
+        "word": 5
+       },
+       "until": {
+        "word": 11
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 8
+     },
+     "action": "the host stops and peers up at the faint stars, the only light on the trail",
+     "moves": [
+      {
+       "do": "point",
+       "who": "host",
+       "target": "canopy",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious",
+       "at": {
+        "word": 9
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "place": "space",
+   "variant": "earth-orbit",
+   "new_place": false,
+   "facts": [
+    "the Moon helps keep Earth's axial tilt (about 23.4 degrees) steady",
+    "without it the tilt could vary much more over millions of years (the size of the swing drawn is illustrative)",
+    "not to scale"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "Earth's spin axis sticks out of the planet, swaying only slightly",
+     "moves": [
+      {
+       "do": "pull_out",
+       "target": "planet",
+       "zoom": 0.72,
+       "from": 0.85,
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      },
+      {
+       "do": "label",
+       "target": "open",
+       "text": "not to scale",
+       "at": {
+        "word": 0
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "the axis starts to swing wider and wider as the camera eases back; the host is surprised",
+     "moves": [
+      {
+       "do": "custom",
+       "name": "axis-wobble",
+       "params": {
+        "swing": 12,
+        "base": -3
+       },
+       "at": {
+        "word": 6
+       }
+      },
+      {
+       "do": "label",
+       "target": "planet",
+       "text": "Tilt: less steady",
+       "side": "left",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 9
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 5,
+   "kind": "world",
+   "place": "rooftop-night",
+   "variant": "clear",
+   "new_place": false,
+   "facts": [
+    "back in the real world: the Moon is still here",
+    "the Moon drives most of the tides and steadies Earth's tilt, and so the seasons"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "back in the real world: over a city rooftop at night the bright full Moon shines; the host points up at it",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.75,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 6
+     },
+     "action": "the camera pulls back over the moonlit rooftop and the host celebrates",
+     "moves": [
+      {
+       "do": "pull_out",
+       "target": "sky",
+       "zoom": 0.62,
+       "at": {
+        "word": 12
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 8
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  }
+ ]
+}

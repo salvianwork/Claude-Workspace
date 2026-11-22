@@ -1,0 +1,380 @@
+{
+  "source": "kokoro",
+  "scenes": [
+    {
+      "id": 1,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "Sound",
+          "display": "Sound",
+          "start": 0.275,
+          "end": 0.55
+        },
+        {
+          "i": 1,
+          "text": "needs",
+          "display": "needs",
+          "start": 0.55,
+          "end": 0.8
+        },
+        {
+          "i": 2,
+          "text": "something",
+          "display": "something",
+          "start": 0.8,
+          "end": 1.062
+        },
+        {
+          "i": 3,
+          "text": "to",
+          "display": "to",
+          "start": 1.062,
+          "end": 1.15
+        },
+        {
+          "i": 4,
+          "text": "travel",
+          "display": "travel",
+          "start": 1.15,
+          "end": 1.562
+        },
+        {
+          "i": 5,
+          "text": "through",
+          "display": "through.",
+          "start": 1.562,
+          "end": 2.175
+        },
+        {
+          "i": 6,
+          "text": "In",
+          "display": "In",
+          "start": 2.388,
+          "end": 2.562
+        },
+        {
+          "i": 7,
+          "text": "air",
+          "display": "air,",
+          "start": 2.562,
+          "end": 2.875
+        },
+        {
+          "i": 8,
+          "text": "it",
+          "display": "it",
+          "start": 2.95,
+          "end": 3.075
+        },
+        {
+          "i": 9,
+          "text": "moves",
+          "display": "moves",
+          "start": 3.075,
+          "end": 3.362
+        },
+        {
+          "i": 10,
+          "text": "about",
+          "display": "about",
+          "start": 3.362,
+          "end": 3.688
+        },
+        {
+          "i": 11,
+          "text": "343",
+          "display": "343",
+          "start": 3.688,
+          "end": 4.8
+        },
+        {
+          "i": 12,
+          "text": "metres",
+          "display": "metres",
+          "start": 4.8,
+          "end": 5.175
+        },
+        {
+          "i": 13,
+          "text": "per",
+          "display": "per",
+          "start": 5.175,
+          "end": 5.338
+        },
+        {
+          "i": 14,
+          "text": "second",
+          "display": "second.",
+          "start": 5.338,
+          "end": 5.975
+        },
+        {
+          "i": 15,
+          "text": "In",
+          "display": "In",
+          "start": 6.112,
+          "end": 6.275
+        },
+        {
+          "i": 16,
+          "text": "water",
+          "display": "water,",
+          "start": 6.275,
+          "end": 6.65
+        },
+        {
+          "i": 17,
+          "text": "about",
+          "display": "about",
+          "start": 6.7,
+          "end": 7.0
+        },
+        {
+          "i": 18,
+          "text": "1,480",
+          "display": "1,480.",
+          "start": 7.0,
+          "end": 8.75
+        },
+        {
+          "i": 19,
+          "text": "And",
+          "display": "And",
+          "start": 8.875,
+          "end": 9.037
+        },
+        {
+          "i": 20,
+          "text": "in",
+          "display": "in",
+          "start": 9.037,
+          "end": 9.188
+        },
+        {
+          "i": 21,
+          "text": "steel",
+          "display": "steel,",
+          "start": 9.188,
+          "end": 9.6
+        },
+        {
+          "i": 22,
+          "text": "nearly",
+          "display": "nearly",
+          "start": 9.65,
+          "end": 9.988
+        },
+        {
+          "i": 23,
+          "text": "6,000",
+          "display": "6,000.",
+          "start": 9.988,
+          "end": 11.275
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "In",
+          "display": "In",
+          "start": 0.275,
+          "end": 0.362
+        },
+        {
+          "i": 1,
+          "text": "a",
+          "display": "a",
+          "start": 0.362,
+          "end": 0.425
+        },
+        {
+          "i": 2,
+          "text": "gas",
+          "display": "gas,",
+          "start": 0.425,
+          "end": 0.775
+        },
+        {
+          "i": 3,
+          "text": "the",
+          "display": "the",
+          "start": 0.812,
+          "end": 0.9
+        },
+        {
+          "i": 4,
+          "text": "particles",
+          "display": "particles",
+          "start": 0.9,
+          "end": 1.4
+        },
+        {
+          "i": 5,
+          "text": "are",
+          "display": "are",
+          "start": 1.4,
+          "end": 1.538
+        },
+        {
+          "i": 6,
+          "text": "far",
+          "display": "far",
+          "start": 1.538,
+          "end": 1.8
+        },
+        {
+          "i": 7,
+          "text": "apart",
+          "display": "apart.",
+          "start": 1.8,
+          "end": 2.475
+        },
+        {
+          "i": 8,
+          "text": "In",
+          "display": "In",
+          "start": 2.612,
+          "end": 2.712
+        },
+        {
+          "i": 9,
+          "text": "a",
+          "display": "a",
+          "start": 2.712,
+          "end": 2.812
+        },
+        {
+          "i": 10,
+          "text": "solid",
+          "display": "solid,",
+          "start": 2.812,
+          "end": 3.2
+        },
+        {
+          "i": 11,
+          "text": "they",
+          "display": "they",
+          "start": 3.237,
+          "end": 3.375
+        },
+        {
+          "i": 12,
+          "text": "are",
+          "display": "are",
+          "start": 3.375,
+          "end": 3.5
+        },
+        {
+          "i": 13,
+          "text": "tightly",
+          "display": "tightly",
+          "start": 3.5,
+          "end": 3.888
+        },
+        {
+          "i": 14,
+          "text": "linked",
+          "display": "linked,",
+          "start": 3.888,
+          "end": 4.35
+        },
+        {
+          "i": 15,
+          "text": "so",
+          "display": "so",
+          "start": 4.45,
+          "end": 4.625
+        },
+        {
+          "i": 16,
+          "text": "each",
+          "display": "each",
+          "start": 4.625,
+          "end": 4.888
+        },
+        {
+          "i": 17,
+          "text": "push",
+          "display": "push",
+          "start": 4.888,
+          "end": 5.188
+        },
+        {
+          "i": 18,
+          "text": "is",
+          "display": "is",
+          "start": 5.188,
+          "end": 5.325
+        },
+        {
+          "i": 19,
+          "text": "passed",
+          "display": "passed",
+          "start": 5.325,
+          "end": 5.638
+        },
+        {
+          "i": 20,
+          "text": "on",
+          "display": "on",
+          "start": 5.638,
+          "end": 5.85
+        },
+        {
+          "i": 21,
+          "text": "quickly",
+          "display": "quickly.",
+          "start": 5.85,
+          "end": 6.7
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "source": "kokoro",
+      "words": [
+        {
+          "i": 0,
+          "text": "Sound",
+          "display": "Sound",
+          "start": 0.275,
+          "end": 0.525
+        },
+        {
+          "i": 1,
+          "text": "travels",
+          "display": "travels",
+          "start": 0.525,
+          "end": 0.988
+        },
+        {
+          "i": 2,
+          "text": "fastest",
+          "display": "fastest",
+          "start": 0.988,
+          "end": 1.5
+        },
+        {
+          "i": 3,
+          "text": "through",
+          "display": "through",
+          "start": 1.5,
+          "end": 1.712
+        },
+        {
+          "i": 4,
+          "text": "solids",
+          "display": "solids.",
+          "start": 1.712,
+          "end": 2.6
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+{"colors": {"background": "#0F172A", "surface": "#1E293B", "primary": "#38BDF8", "accent": "#F59E0B", "text": "#F1F5F9"},
+ "fonts": {"heading": "Poppins", "body": "Inter"},
+ "captions": {"size": 60, "position": "bottom"}}
