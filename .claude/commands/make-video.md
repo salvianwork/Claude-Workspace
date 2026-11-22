@@ -1,6 +1,6 @@
 ---
-description: Make an explainer video with the agent team (story → voice → design → animator, each checked by the reviewer), or resume a run with --resume <run_dir>.
-argument-hint: "<topic>" [notes] | --resume <run_dir>
+description: Make an explainer or what-if video with the agent team (story → voice → design → animator, each checked by the reviewer), or resume a run with --resume <run_dir>.
+argument-hint: "<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [notes] | --resume <run_dir>
 ---
 
 # /make-video — the orchestrator
@@ -50,9 +50,26 @@ design **Iris**, animator **Flip**, reviewer **Sage**.
 
 **`$ARGUMENTS` starts with `--resume`** → the rest is `<run_dir>`. Go to section 8.
 
-**Otherwise** `$ARGUMENTS` is `"<topic>" [notes]`: the quoted part (or, with no quotes, the
-whole text) is the topic; anything after the closing quote is the owner's notes. If there is
-no topic, ask for one in the chat and stop (there is no run folder yet, so no board request).
+**Otherwise** `$ARGUMENTS` is `"<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [notes]`:
+the quoted part (or, with no quotes, the text before the first `--`) is the topic; `--type <type>`
+and `--audience <audience>` (anywhere after the topic) are the video settings; everything else
+after the topic is the owner's notes. If there is no topic, ask for one in the chat and stop
+(there is no run folder yet, so no board request).
+
+**Check the settings before anything else** (there is no run folder yet):
+- `--type` is the video type (its recipe, spec §5): `explainer` (a hook → 3–5 ideas, each shown →
+  a recap) or `what-if` (the question → what would happen, step by step → a twist or the answer).
+  Without `--type` the type is `propose`: Quill proposes one in the script, and the owner sees it
+  at script approval.
+- `--type` `story`, `action` or `other` (e.g. `--type story`): these types are coming in a later
+  phase. Print exactly
+  `The <type> video type is coming in a later phase. For now use --type explainer or --type what-if, or leave --type out and Quill proposes one.`
+  and **stop**: start no agent, create no run folder, write no file.
+- Any other `--type` value → print `Unknown video type "<type>": use --type explainer or --type what-if.`
+  and stop the same way.
+- `--audience` is `all-ages` (the default when it is left out: family-friendly), `teens` or
+  `adults`. Any other value → print `Unknown audience "<audience>": use --audience all-ages, teens or adults.`
+  and stop the same way.
 
 1. Create the run (it prints the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`;
    this is `<run_dir>` from now on; it also records step `story`, state `working`, round 1):
@@ -60,8 +77,16 @@ no topic, ask for one in the chat and stop (there is no run folder yet, so no bo
    python -m tools.pipeline.status init "<topic>"
    ```
 2. Write the owner's notes into `<run_dir>/brief.md`, on the lines after `Owner notes:`
-   (verbatim; write `none` if there are none). Change nothing else in `brief.md`.
-3. Print `Run folder: <run_dir>` and go to section 3 with step `story`, round 1, no feedback file.
+   (verbatim; write `none` if there are none), and add two lines at the end of the file, after
+   `language: en`: `type: <type>` (`explainer` or `what-if`; `type: propose` when there was no
+   `--type`) and `audience: <audience>`.
+   Change nothing else in `brief.md`. The agents read the type and audience there.
+3. Record the settings in the run state:
+   ```bash
+   python -m tools.pipeline.status update "<run_dir>" --agent story --event "video settings" --detail "type <type>, audience <audience>"
+   ```
+4. Print `Run folder: <run_dir>` and `Type: <type> (or: Quill proposes one), audience: <audience>`,
+   then go to section 3 with step `story`, round 1, no feedback file.
 
 ## 2. Steps, gates and agents
 
@@ -268,13 +293,19 @@ waiter and end your turn.
 ### 4.1 After gate 1 — the script
 
 1. Record: `python -m tools.pipeline.status update "<run_dir>" --agent story --step story --state waiting_owner --event "waiting for owner" --detail "gate 1: script"`
-2. Open the request (4.0), `<r>` = the round that passed:
+2. Read the video settings from the script header (the lines `**Type:**`, `**Audience:**` and
+   `**Host outfit:**` under its title) and open the request (4.0), `<r>` = the round that passed:
    ```bash
-   python -m tools.dashboard.answers request "<run_dir>" --checkpoint gate-1 --title "Script ready" --body "Gate 1 passed in round <r>. <scenes> scenes, <words> words, about <seconds> s. Read the script, then approve it or say what to change." --options approve,changes --link "Full script=01-script/script.md" --link "Review=review/gate-1-round-<r>.md"
+   python -m tools.dashboard.answers request "<run_dir>" --checkpoint gate-1 --title "Script ready" --body "Gate 1 passed in round <r>. A <type> video for <audience>, the host in the <outfit>. <scenes> scenes, <words> words, about <seconds> s. Read the script, then approve it or say what to change." --options approve,changes --link "Full script=01-script/script.md" --link "Review=review/gate-1-round-<r>.md"
    ```
    Print `⏸ Waiting for you: please read the script and reply "approve" or tell me what to change.`
-   Then print the full `<run_dir>/01-script/script.md`, the path to the last review file and
+   Then print `Type: <type> · Audience: <audience> · Host outfit: <outfit>` (add
+   `(proposed by Quill)` after the type when `brief.md` says `type: propose`), the full
+   `<run_dir>/01-script/script.md`, the path to the last review file and
    `…or answer on the studio board.` Start the waiter and end your turn (4.0).
+   The owner may change the type, the audience or the outfit here: that is a **change** (4); the
+   script header then carries the new values. A `story`, `action` or `other` type is coming in a
+   later phase: say so and ask which of `explainer` or `what-if` they want (a `question`, 4.0).
 3. **approve** → `python -m tools.pipeline.status update "<run_dir>" --agent story --event "owner approved script"`, then step `voice`, round 1, no feedback file.
 4. **Changes** → save `review/owner-gate-1-<k>.md`, start a new cycle for gate 1, then
    section 3 for `story` with round 1 and `feedback_file` = that owner file (the reviewer also
@@ -357,22 +388,25 @@ waiter and end your turn.
    change in the sound (e.g. "different music", "fewer effects").`, then
    `…or answer on the studio board.` Start the waiter and end your turn (4.0). The
    `Notification` hook tells the owner the video is ready.
-   **approve** (or "nothing more is needed") → save the new props (below, 6.1), then record
-   both, then print `🎬 Finished: <full path to the video>` and stop.
+   **approve** (or "nothing more is needed") → save the new props and places (below, 6.1), then
+   record both, then print `🎬 Finished: <full path to the video>` and stop.
 
-   **6.1 Save the new props (after approval, before done).** List the run's new hero drawings:
+   **6.1 Save the new props and places (after approval, before done).** List the run's new
+   drawings for the libraries: hero props (`new_prop`, older schema-1 runs) and places
+   (`new_place`, saved to `hf-kit/places/<name>/`):
    ```bash
-   python -c "import json, sys; d = json.load(open(sys.argv[1], encoding='utf-8')); print(' '.join(s['prop'] for s in d['scenes'] if s.get('kind') == 'hero' and s.get('new_prop')) or 'none')" "<run_dir>/03-design/shots.json"
+   python -c "import json, sys; s = json.load(open(sys.argv[1], encoding='utf-8'))['scenes']; n = ['prop ' + p for p in sorted({x['prop'] for x in s if x.get('kind') == 'hero' and x.get('new_prop')})] + ['place ' + p for p in sorted({x['place'] for x in s if x.get('kind') == 'world' and x.get('new_place')})]; print(', '.join(n) or 'none')" "<run_dir>/03-design/shots.json"
    ```
-   `none` → go straight to "record". Otherwise run this loop, round `r` = 1, 2, 3:
+   `none` → go straight to "record". Otherwise run this loop, round `r` = 1, 2, 3 (the events
+   keep the names `saving props` and `gate props`; they cover the places too):
    1. Record and print `▶ [4/4] <Name> (Animator) is working…`, then start `animator` with
-      `note: owner approved the final video — save the new props` (and, from round 2,
+      `note: owner approved the final video — save the new props and places` (and, from round 2,
       `feedback_file: <run_dir>/review/gate-props-round-<r-1>.md`). Check the reply (section 2).
       ```bash
       python -m tools.pipeline.status update "<run_dir>" --agent animator --step animator --state working --round <r> --event "saving props" --detail "<feedback_file or empty>"
       ```
       (Use `--state fixing` instead of `--state working` when a `feedback_file` is given.)
-   2. Record and print `🔍 <Reviewer name> is checking the prop library (round r/3)…`, then
+   2. Record and print `🔍 <Reviewer name> is checking the prop and place library (round r/3)…`, then
       start `reviewer` with `gate: props`, `round: <r>`. It writes
       `review/gate-props-round-<r>.md` (first line `# Gate props, round <r>: PASS|FIX`); check
       the reply (section 2, with `n` = `props`).

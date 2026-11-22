@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews one gate of a video run (1 script, 2 voice, 3 shot list, 4 final video) against its checklist and writes review/gate-<n>-round-<m>.md with a PASS or FIX verdict; use at every gate of /make-video, before the owner sees any work.
+description: Reviews one gate of a video run (1 script, 2 voice, 3 world shot list, 4 final video, or the prop and place library after the owner's final approval) against its checklist — the type's recipe, show-don't-tell, facts and scale, the audience — and writes review/gate-<n>-round-<m>.md with a PASS or FIX verdict; use at every gate of /make-video, before the owner sees any work.
 tools: Read, Write, Bash, Glob, Grep, WebSearch, WebFetch, Skill
 ---
 
@@ -15,15 +15,18 @@ about taste.
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below are
   relative to it unless they start with `tools/`, `hf-kit/` or `templates/`.
-- `gate` — 1 (Story), 2 (Voice), 3 (Design), 4 (Final video) or `props` (the prop library
-  check after the owner approved the final video; review file `review/gate-props-round-<m>.md`).
+- `gate` — 1 (Story), 2 (Voice), 3 (Design), 4 (Final video) or `props` (the prop and place
+  library check after the owner approved the final video; review file
+  `review/gate-props-round-<m>.md`).
 - `round` — 1, 2 or 3.
 - `feedback_file` (optional) — owner feedback the agent was asked to address in this round.
   If given, check that every point in it was addressed; an unaddressed point is a must-fix.
 - `note` (optional) — a one-line hint from the orchestrator (e.g. "the previous review file is missing; review from scratch").
   Follow it; it never overrides the rules in this file.
 
-Always read `brief.md` first (topic, audience, owner notes).
+Always read `brief.md` first (topic, owner notes, and the video settings `type:` and
+`audience:`). From gate 1 on, the script header (`**Type:**`, `**Audience:**`,
+`**Host outfit:**`) holds the video's type, audience and host outfit.
 
 ## Output (the only things you write)
 
@@ -65,7 +68,7 @@ Run every command from the workspace root and quote paths (they may contain spac
 
 ## Gate 1 — Story
 
-Read `01-script/script.md`. Run:
+Read `01-script/script.md` and `brief.md`. Run:
 
 ```bash
 python -m tools.pipeline.checks story "<run_dir>/01-script/script.md"
@@ -82,8 +85,28 @@ It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
 - [ ] A factual statement in the narration is **not listed** under `## Key claims` (so it was
   never checked) → must-fix: add it as a claim (and check it yourself now).
 - [ ] **The length is outside 150–450 words**, or `checks story` reports any problem.
+- [ ] **The header is missing or wrong**: no `**Type:**`, `**Audience:**` or `**Host outfit:**`
+  line under the title; a type other than `explainer` / `what-if`; a type or audience that
+  differs from the one `brief.md` sets (`type: propose` lets Quill choose); an audience other
+  than `all-ages` / `teens` / `adults`; an outfit other than `blazer` / `lab-coat` / `casual` /
+  `explorer`, or one clearly mismatched to the topic (`lab-coat` is for science, health and
+  technology; a lab coat on a history video is wrong).
+- [ ] **The type's recipe is not followed**: an `explainer` without a hook, with fewer than 3
+  or more than 5 idea scenes, or without a recap; a `what-if` without the question up front,
+  without consequences that follow step by step (each caused by the one before), or without a
+  twist or the answer at the end.
+- [ ] **A `what-if` is not plausible or not signposted**: the imagined consequences break
+  known science (web-search the real facts they build on, as for claims), or the imagined part
+  is not clearly signposted ("Imagine…", "If…, then…") so a viewer could take it as fact.
 - [ ] **The order is confusing**: a scene uses an idea before it is explained, or the scenes
-  do not build from hook → explanation → takeaway.
+  do not build in the recipe's order.
+- [ ] **A sentence cannot be shown**: narration only text could carry (a list of factors, a
+  definition with nothing to see), or a "Visual idea" that is a slide, a list, a chart or a big
+  number instead of something happening in a place. Every sentence must be one that
+  can be shown; an abstract idea needs a concrete metaphor.
+- [ ] **Not suitable for the audience**: for `all-ages`, anything gory, cruel, frightening or
+  adult, or words a curious 10-year-old cannot follow; for `teens` and `adults`, anything
+  gratuitous.
 - [ ] **The narration is hard to say aloud**: sentences much over ~25 words, tongue
   twisters, symbols or abbreviations a voice will misread ("3–5", "e.g.", "km/h", URLs),
   brackets, or text formatting inside narration.
@@ -135,96 +158,118 @@ You **cannot judge intonation** — that is the owner's job at the checkpoint. A
 ## Gate 3 — Design (shot list)
 
 Read `03-design/storyboard.md`, `03-design/shots.json`, `03-design/style.json`,
-`03-design/sound.json`, `01-script/script.md`, `02-voice/manifest.json`, `02-voice/words.json`
-and `hf-kit/props/README.md` (the prop library: what each prop draws, its anchors, phases and
-params). Allowed values: kit scenes `title` `steps` `compare` `chart` `kinetic` `recap`
-`diagram` (props limits in `.claude/agents/design.md`); transitions `cut fade blur slide zoom`;
-moods `curious upbeat calm inspiring dramatic playful`; SFX types
-`whoosh pop ding click swoosh-in reveal`; poses `idle talk point-left point-right think surprised celebrate wave`;
-expressions `neutral happy curious surprised thinking`; position `left right none`; size `large small`;
-outfit (`style.json` → `presenterOutfit`) `blazer labcoat`; fonts `Inter Poppins`.
+`03-design/sound.json`, `01-script/script.md` (its header: type, audience, host outfit),
+`02-voice/manifest.json`, `02-voice/words.json`, and the libraries the plan draws on:
+`hf-kit/places/README.md` (places, variants, anchors, paths), `hf-kit/MOVES.md` (the moves,
+the camera rules and the kit warnings) and `hf-kit/props/README.md` (drawings a `custom` move
+may adapt). Allowed values: types `explainer what-if`; audiences `all-ages teens adults`;
+host outfits (`cast`) `blazer` `lab-coat` `casual` `explorer`; extras `extra-<n>`;
+transitions `cut fade blur slide zoom`; moods `curious upbeat calm inspiring dramatic playful`;
+SFX types `whoosh pop ding click swoosh-in reveal`; fonts `Inter Poppins`; captions size
+24–120 px (`position` `bottom` or `top`).
 
-Validate the shot list against the voice and the kit (the new heroes are not drawn yet, so
-`--no-modules`):
+Validate the shot list against the voice and the kit (new places and custom pieces are not
+drawn yet, so `--no-modules`):
 
 ```bash
 python -m tools.hf.shots validate "<run_dir>" --no-modules
 ```
 
-It prints `shots.json OK (<n> scenes)` or a list of problems; it checks the schema, 2–4 heroes,
-scene ids, that every cue's and camera key's word exists in `02-voice/words.json`, library
-props and their anchors/phases, kit scene props and cue kinds, presenter and transition values
-and the camera timing. Check the JSON files parse:
+It prints `shots.json OK (<n> scenes)` or a list of problems, plus any kit `warning:` lines;
+it checks the schema, type, audience, cast, scene ids, every place and variant, every actor,
+every beat's moves (names, actors, anchors, paths, targets, effects, text limits, the title in
+scene 1 only, a beat with no moves), the "not to scale" rule, the 1–2 host step-ins and the
+camera timing. Check the JSON files parse:
 `python -c "import json,sys; [json.load(open(f, encoding='utf-8')) for f in sys.argv[1:]]; print('ok')" "<run_dir>/03-design/style.json" "<run_dir>/03-design/sound.json"`
 
-List each scene's words with their indices and times, to check what every cue lands on:
+List each scene's words with their indices and times, to check what every beat and move lands on:
 
 ```bash
 python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); [print('scene', s['id'], ' '.join(str(w['i'])+':'+w['text']+'@'+format(w['start'],'.2f') for w in s['words'])) for s in d['scenes']]" "<run_dir>/02-voice/words.json"
 ```
 
 **Must-fix if:**
-- [ ] **`shots validate` reports any problem or `warning:`** — copy each line into a must-fix
-  item (e.g. a cue word that does not exist, an unknown anchor, a camera that ends after the scene).
+- [ ] **`shots validate` reports any problem** — copy each line into a must-fix item (e.g. a
+  move naming an anchor the place does not have, a beat with no moves, 3 step-ins).
+- [ ] **A kit `warning:` is not explained**: every warning line (a `use` strike that **slips**
+  past its word, the frame cutting an actor's **head** where the camera lands, a camera that
+  ends late) is a must-fix unless the storyboard's `Kit warnings` line for that scene quotes it
+  and explains why it is kept (a deliberate close-up). Give the fix (start the walk earlier, a
+  lower zoom…).
 - [ ] **A scene has no plan**: a script scene missing from `shots.json` or the storyboard, the
-  two files disagree, or a storyboard scene lacks its Kind, Duration, Camera, Cues, Presenter,
-  Transition or SFX line (heroes also: Why a hero, Illustration brief, Facts; kit scenes: Props).
+  two files disagree, or a storyboard scene lacks its Place, Duration, Idea, Host, Beats, Text
+  on screen, Scale, Facts, Kit warnings, Transition or SFX line (a new place also its Place
+  brief; a `custom` move its Custom brief).
 - [ ] A scene's duration is not the manifest's `duration_s` (frames ≠ `ceil(duration_s × 30)`).
-- [ ] **Hero scenes**: not 2–4 heroes; or badly chosen — a hero spent on a title, recap or list
-  while a scene carrying the key mechanism or process stays a kit scene; or a new drawing
-  (`new_prop: true`) asked for when a library prop in `hf-kit/props/README.md` already shows the
-  idea (as is or with its params) — say which prop to reuse.
-- [ ] **A hero's brief or facts are missing or unusable**: no illustration brief (layers, what
-  moves), no facts list, a brief too vague to draw, or a new prop without `anchors` covering
-  every anchor its camera and cues use (and `phases` for its `phase` cues).
-- [ ] **An illustration fact is wrong**: check every item in every hero's facts list and what
-  the brief draws. Web-search anything non-obvious with WebSearch (WebFetch when the snippet is
-  not enough; reliable sources as at gate 1). Wrong or unsupported → must-fix with the correct
-  fact and its source URL.
-- [ ] **The camera is not calm and purposeful**: more than 4 keys in a scene, keys less than
-  about 2 s apart (use the word times), a zoom above 2.5, a move with no reason in the narration,
-  or a focus/follow on a part the narration is not talking about.
-- [ ] **A cue is on the wrong word**: a label, highlight or step lands on a word that does not
-  say that thing (the label "Magma chamber" belongs on "magma", not on "the"), a label's text
-  disagrees with the narration, or a kit scene's items are not cued on the words that say them.
+- [ ] **The settings disagree with the script**: `type`, `audience` or the host's `outfit` in
+  `cast` differ from the script header (`**Type:**`, `**Audience:**`, `**Host outfit:**`), or
+  the outfit is clearly mismatched to the topic (a lab coat on a history video).
+- [ ] **The type's recipe is not followed on screen**: an `explainer` whose hook scene is a
+  title card, whose idea scenes do not each show their idea, or whose recap is a list; a
+  `what-if` whose consequences are not shown changing the world step by step, or whose
+  imagined part is not signposted on screen (or by the narration) — viewers must not take it
+  as fact.
+- [ ] **A beat's moves do not show the sentence** (show, don't tell): read every beat's
+  narration words, its `action` and its `moves`. A beat whose `action` is vague ("explains",
+  "talks about"), or whose moves only make the host talk or put a label up while the sentence
+  describes something happening, or whose moves show something else, is a must-fix: say what
+  should be seen and which moves would show it. Every beat needs an `action` and `moves`.
+- [ ] **More than one idea per shot**: a scene shows two ideas, jumps between places, or piles
+  up unrelated effects so the one idea of its "Viewer should understand" line is lost.
+- [ ] **A slide in disguise**: a scene that is text, a title card, a list, a chart or a big
+  number on its own; an abstract idea with no metaphor scene; more than one `title`, a title
+  outside scene 1, a tag or label over 4 words, or a sentence on screen.
+- [ ] **Library not used first**: a `new_place` asked for when a place in
+  `hf-kit/places/README.md` (or one of its variants) can show the idea — say which to reuse;
+  more than one new place; a `custom` move for something the moves in `hf-kit/MOVES.md` already
+  do; a custom drawing that ignores a fitting prop in `hf-kit/props/README.md`.
+- [ ] **Facts and scale**: check every item in every scene's `facts`, every number on a tag or
+  label and what the beats show. Web-search anything non-obvious with WebSearch (WebFetch when
+  the snippet is not enough; reliable sources as at gate 1). Wrong or unsupported → must-fix
+  with the correct fact and its source URL. A size, speed, distance or ratio shown that is not
+  true to scale needs a `"not to scale"` tag or label in that scene; a number floating alone
+  instead of on the thing it measures is a must-fix.
+- [ ] **A `what-if` is not plausible**: the consequences shown break known science.
+- [ ] **The host**: no step-in or more than 2 (a step-in = the host placed in the world or
+  walking out of the side slot); step-ins spent where his action shows nothing; or a scene
+  where he is on screen but never does anything (no `say`, `gesture`, `react` or `point`) —
+  the host must be lively; or he points away from what the narration names.
+- [ ] **Not suitable for the audience**: anything on screen unsuitable for the `audience`
+  (for `all-ages`: nothing gory, cruel or frightening).
+- [ ] **The camera is not calm and purposeful**: a move with no reason in the narration, a
+  push-in on a part the narration is not talking about, a zoom beyond what the beat needs, or
+  moves piled so close the eye cannot follow (MOVES.md: zoom 0.6–5, at most 2.5× per second).
+- [ ] **A move is on the wrong word**: a tag, label, strike or effect that lands on a word
+  that does not say that thing (the tag "≈5,960 m/s" belongs on the pulse as it races, not on
+  "the"), or a label's text disagrees with the narration.
 - [ ] **On-screen text is too long to read in the scene's time**: more than 2 words per
-  second of the scene (`words > 2 × duration_s`, labels included), or a text over its limit.
-- [ ] **The style is inconsistent**: `style.json` missing a field, not hex colours, a font
-  outside `Inter Poppins`, sizes outside the ranges (title 40–200, heading 28–140, body 20–90,
-  caption 20–80), low contrast between text and background, or the storyboard asks for
+  second of the scene (`words > 2 × duration_s`, tags, labels and title included).
+- [ ] **The style is inconsistent**: `style.json` missing `colors` or `fonts`, not hex
+  colours, a font outside `Inter Poppins`, low contrast between text and background, captions
+  smaller than 48 px (unreadable on a phone) or outside 24–120, or the storyboard asks for
   scene-specific colours/fonts.
 - [ ] **A visual contradicts the narration** (a number, label, order or claim on screen that
   differs from what is said).
-- [ ] **The music mood doesn't fit the topic** (or is not one of the six moods).
+- [ ] **The music mood doesn't fit the topic or type** (or is not one of the six moods).
 - [ ] **More sound effects than the limit**: SFX count > number of scenes, or two in one scene,
   or an SFX type not in the list, or `sound.json` disagrees with the storyboard.
 - [ ] **A sound-effect cue lands on a key narration word**: an SFX within 0.6 s of the `start`
   (in `02-voice/words.json`) of a key word (numbers, names, technical terms, key-claim words) is
   a must-fix — give a new `at_s`.
-- [ ] **Presenter (spec §6.6)**: a scene's presenter is missing a pose, expression,
-  position or size, or uses a value not in the lists.
-- [ ] **Presenter**: `large` on a dense scene — `large` is allowed only on `title`, `kinetic`
-  and `recap` scenes; hero scenes and `steps`, `compare`, `chart`, `diagram` must be `small` or `none`.
-- [ ] **Presenter outfit**: `style.json` has no `presenterOutfit`, a value other than `blazer` /
-  `labcoat`, or one clearly mismatched to the topic — `labcoat` is for science, health,
-  medicine, technology and engineering topics; `blazer` for everything else (history, money,
-  society, skills, how-to). A lab coat on a history video, or a blazer on a clearly medical
-  one, is a must-fix.
-- [ ] **Presenter** points away from the content (`point-left` while `position: left`, or
-  `point-right` while `position: right`).
 
-**Suggestions only:** kit scene variety, nicer drawing or camera ideas, icon choices, a
-different (but fitting) mood or transition.
+**Suggestions only:** a livelier gesture, a nicer place variant or camera idea, a different
+(but fitting) mood or transition.
 
 ---
 
 ## Gate 4 — Final video
 
 Inputs: `04-video/out/video.mp4`, `04-video/render.log` (the render's output),
-`04-video/hf/data.json` (what the composition plays: each scene's start, frames, cues,
-presenter and mouth), `04-video/hf/snapshots/`, `04-video/hf/scenes/` (the new hero modules),
-`04-video/credits.md`, `04-video/notes.md`, `03-design/storyboard.md`, `03-design/shots.json`,
-`03-design/sound.json`, `02-voice/manifest.json`, `02-voice/words.json`.
+`04-video/hf/data.json` (what the composition plays: each scene's start, frames, its world
+scene and the host's mouth), `04-video/hf/snapshots/`, `04-video/hf/overlap.json`,
+`04-video/hf/scenes/` (new place modules and custom pieces), `04-video/credits.md`,
+`04-video/notes.md`, `03-design/storyboard.md`, `03-design/shots.json`, `03-design/sound.json`,
+`02-voice/manifest.json`, `02-voice/words.json`.
 
 **1. Watch it.** If the Skill tool offers the **watch-video** skill, use it on
 `04-video/out/video.mp4` (keyframes + transcript). Otherwise (or if it fails), fall back to
@@ -239,29 +284,62 @@ Frame `frame-0001.png` is at 0 s, `frame-0002.png` at 2 s, and so on (`frame-k` 
 
 **2. `hyperframes check` and the build.** Read `04-video/render.log` (the Animator saves the
 render output there). The render rebuilds the composition and runs `hyperframes check` first;
-the log must end with `video written: <path>` and contain no `error:` and no `warning:` line.
-Also `04-video/hf/data.json` → `warnings` must be an empty list. A warning containing
-`camera timing NOT checked` (a hero module without `anchorsFor`) is always a must-fix.
+the log must end with `video written: <path>` and contain no `error:` line. Every `warning:`
+line (also listed in `04-video/hf/data.json` → `warnings`) must be a kit warning on the plan
+that the storyboard's `Kit warnings` line explains (gate 3 accepted it); any other warning is
+a must-fix. A warning containing `camera timing NOT checked` (an older run's hero module
+without `anchorsFor`) is always a must-fix.
 
-**3. Know what should be on screen when, where each cue must land, and where the mouth must
-be closed/open** (from the built composition; times are seconds in the video):
+**3. The overlap report.** Run it yourself (it re-samples the built composition and rewrites
+only the generated `04-video/hf/overlap.json`):
+
+```bash
+python -m tools.hf.snapshot "<run_dir>" --overlap
+```
+
+It prints `no overlaps: …` (exit 0) or each overlap — a tag or label covering a face or another
+tag or label — with its scene and time (`t`, seconds into the scene), one entry per continuous
+overlap (exit 1). Every entry is a must-fix: name the scene, the time, the two boxes and the
+fix (another `side`, another target, a later `at`, the camera). Grab a frame at that moment
+(below) to describe it.
+
+**4. Know what should be on screen when, where each beat and move must land, and where the
+mouth must be closed/open** (from the built composition; times are seconds in the video):
 
 ```bash
 python - "<run_dir>" <<'PY'
 import json, sys, pathlib
+from tools.hf.shots import steps_in
 run = pathlib.Path(sys.argv[1])
 d = json.loads((run / "04-video" / "hf" / "data.json").read_text(encoding="utf-8"))
 for s in d["scenes"]:
-    start, n, p, m = s["start"], s["frames"], s["presenter"], s.get("mouth", [])
-    what = s.get("prop") if s["kind"] == "hero" else s.get("scene")
-    print(f"scene {s['id']}: {start:.1f}-{start + s['duration']:.1f} s  {s['kind']} {what}  presenter {p.get('position')}/{p.get('size')}  mouth frames: {len(m)}")
+    start, n, m = s["start"], s["frames"], s.get("mouth", [])
     words = {w["i"]: w for w in s["words"]}
-    for c in s["cues"]:
-        at = c.get("at", {})
-        t = at["t"] if "t" in at else words[at["word"]]["start"]
-        said = words[at["word"]]["text"] if "word" in at else "-"
-        print(f"   cue {c['show']} {c.get('target', c.get('index', ''))} {c.get('text', '')!r} on {said!r}: expected at {start + t:.2f} s")
-    if p.get("position", "none") != "none" and m:
+    when = lambda at: start + (at["t"] if "t" in at else words[at["word"]]["start"])
+    said = lambda at: words[at["word"]]["text"] if "word" in at else "-"
+    if s["kind"] == "world":
+        w = s["world"]
+        host = any(a.get("id") == "host" for a in w.get("actors", []))
+        where = "host step-in" if steps_in({"cast": d.get("cast", [])}, w) else ("host in the side slot" if host else "no host")
+        print(f"scene {s['id']}: {start:.1f}-{start + s['duration']:.1f} s  world {w['place']}/{w.get('variant', '')}  {where}  mouth frames: {len(m)}")
+        for k, b in enumerate(w["beats"]):
+            print(f"   beat {k} on {said(b['at'])!r}: expected at {when(b['at']):.2f} s  {b['action']}")
+            pulses = [mv.get("at", bb["at"]) for bb in w["beats"][k:] for mv in bb["moves"] if mv["do"] == "pulse_along"]
+            for mv in b["moves"]:
+                at = mv.get("at", pulses[0] if mv.get("target") == "pulse" and pulses else b["at"])
+                text = f" {mv['text']!r}" if "text" in mv else ""
+                what = mv.get("who") or mv.get("target") or mv.get("path") or mv.get("name", "")
+                print(f"      {mv['do']} {what}{text} on {said(at)!r}: expected at {when(at):.2f} s")
+        talking = host
+    else:  # an older run (schema 1): kit and hero scenes with a side presenter
+        p = s["presenter"]
+        what = s.get("prop") if s["kind"] == "hero" else s.get("scene")
+        print(f"scene {s['id']}: {start:.1f}-{start + s['duration']:.1f} s  {s['kind']} {what}  presenter {p.get('position')}/{p.get('size')}  mouth frames: {len(m)}")
+        for c in s["cues"]:
+            at = c.get("at", {})
+            print(f"   cue {c['show']} {c.get('target', c.get('index', ''))} {c.get('text', '')!r} on {said(at)!r}: expected at {when(at):.2f} s")
+        talking = p.get("position", "none") != "none"
+    if talking and m:
         inner = range(15, max(15, n - 15))
         quiet = [i for i in inner if m[i] < 0.15]
         loud = [i for i in inner if m[i] >= 0.7] or sorted(inner, key=lambda i: -m[i])[:1]
@@ -270,31 +348,42 @@ for s in d["scenes"]:
 PY
 ```
 
+A move's time is its word's start. The kit may shift some, as `hf-kit/MOVES.md` says: a tag
+on the `pulse` appears with the pulse (the script uses the pulse's time); a `use` strike waits
+for its actor to arrive (a slip the build warned about); `push_in` and `pull_out` **land** on
+their word. Allow for these; anything else is judged on its word.
+
 (Only if `04-video/notes.md` says `Engine: remotion` — the owner asked for the old engine:
 read the timeline from `04-video/scenes.json` instead, each scene `durationInFrames` long, and
-skip the HyperFrames-only items: render log check, hero snapshots, labels.)
+skip the HyperFrames-only items: render log check, overlap report, snapshots, tags.)
 
-Grab any single frame (e.g. those cue and mouth times) and look at it with Read:
+Grab any single frame (e.g. those beat, move and mouth times) and look at it with Read:
 
 ```bash
 ffmpeg -v error -y -ss <seconds> -i "<run_dir>/04-video/out/video.mp4" -frames:v 1 "<run_dir>/review/frames-gate4-round-<m>/at-<seconds>s.png"
 ```
 
-**Labels on their words (±0.3 s):** for every `label` and `highlight` cue (and a sample of kit
-step/point cues), grab a frame 0.3 s **before** and 0.3 s **after** its expected time: before,
-it is not there yet; after, it is fully shown on the right part. (A label fades in over its
-first 0.25 s from the word's `start` in `02-voice/words.json`.) Also compare the snapshots in
-`04-video/hf/snapshots/` (`scene-<id>-start|mid|end.png`, taken just after the scene starts,
-at its middle and just before it ends) with the cue times: a label whose word is spoken before
-a snapshot's moment must be visible in it.
+**Tags and moves on their words (±0.3 s):** for every `tag_follow` and `label` (and a sample of
+strikes, effects and gestures), grab a frame 0.3 s **before** and 0.3 s **after** its expected
+time: before, it is not there yet; after, it is shown on the right thing. Also compare the
+snapshots in `04-video/hf/snapshots/` (`scene-<id>-start|mid|end.png`, taken just after the
+scene starts, at its middle and just before it ends) with those times.
 
-**Illustrations:** look at every hero scene's snapshots and keyframes against its
-illustration brief and facts list in the storyboard.
+**Show, don't tell:** for every beat, the frames at and after its time show its `action`
+happening (the strike, the pulse racing, the friend jumping). Look at every new place and
+custom piece against its brief in the storyboard and the scene's facts.
 
-**Motion:** during each camera move (the storyboard's Camera line), grab frames 0.5 s apart
-and check the motion is calm (no dizzying moves).
+**The host:** in every scene he is in, he moves and reacts (talks, gestures, points, walks) —
+lively, never a statue; the 1–2 step-ins of the plan are there (the timeline above marks them);
+he is never cut off at the head by the frame unless the storyboard explains it.
 
-**4. Transcript of the final MP4** (always run it, even after watch-video — it also compares
+**Captions:** readable on a phone (big enough, strong contrast, never cut off), in sync with
+the voice, and not covering the action or a tag.
+
+**Motion:** during each camera move (the storyboard's beats), grab frames 0.5 s apart and
+check the motion is calm (no dizzying moves).
+
+**5. Transcript of the final MP4** (always run it, even after watch-video — it also compares
 with the voice-only transcript, reusing `review/voice-transcripts.json` from gate 2 when the
 recordings have not changed). Run it with the Bash tool's `timeout: 600000`:
 
@@ -304,7 +393,7 @@ python -m tools.review.transcript final "<run_dir>"
 
 Prints `{"problems":[...],"missing_vs_voice":[...],"ok":…}`.
 
-**5. Loudness and mix:**
+**6. Loudness and mix:**
 
 ```bash
 python -m tools.audio.measure "<run_dir>"
@@ -312,37 +401,50 @@ python -m tools.audio.measure "<run_dir>"
 
 Prints `{"gap_db":…,"lufs":…,"sfx_count":…,"scenes":…,"problems":[...]}`.
 
-**6. The shared kit is untouched** (this run's new props are saved only after the owner's
-final approval, so at gate 4 the run has changed nothing in `hf-kit/`):
+**7. The shared kit is untouched** (this run's new places and props are saved only after the
+owner's final approval, so at gate 4 the run has changed nothing in `hf-kit/`):
 
 ```bash
 git status --short hf-kit/src templates/
+git status --short hf-kit/places/
 git status --short hf-kit/props/
 ```
 
-The first must print nothing. In the second, a line starting with ` M`, `M `, ` D` or `D ` is a changed **tracked** prop file: none may be
-inside a prop folder that existed before this run (`hf-kit/props/<other>/…`). Lines added to
-`hf-kit/props/README.md` and new untracked prop folders saved by earlier videos are not this
-run's work and are fine. A folder named after one of this run's new props must not exist yet.
+The first must print nothing. In the other two, a line starting with ` M`, `M `, ` D` or `D `
+is a changed **tracked** file: none may be inside a place or prop folder that existed before
+this run (`hf-kit/places/<other>/…`, `hf-kit/props/<other>/…`). Lines added to
+`hf-kit/places/README.md` or `hf-kit/props/README.md` and new untracked folders saved by
+earlier videos are not this run's work and are fine. A folder named after one of this run's new
+places (`hf-kit/places/<name>/`) or props (`hf-kit/props/<name>/`) must not exist yet.
 
 **Must-fix if:**
 - [ ] **`hyperframes check` is not clean**: `04-video/render.log` is missing, has an `error:`
-  or `warning:` line (always for `camera timing NOT checked`), does not end with `video written`,
-  or `04-video/hf/data.json` lists `warnings`.
+  line, a `warning:` line the storyboard's `Kit warnings` do not explain (always for
+  `camera timing NOT checked`), or does not end with `video written`.
+- [ ] **The overlap report is not clean**: `python -m tools.hf.snapshot "<run_dir>" --overlap`
+  lists any entry (a tag or label over a face or another tag or label).
+- [ ] **Text carries what the picture should**: a frame where a tag, label or title says what
+  the scene should be showing happening (the speed written while nothing moves), a slide-like
+  frame, a sentence or list on screen, or a beat whose action is not visible.
 - [ ] **Visuals are out of sync with the voice**: a keyframe shows a different scene than the
   timeline above says for that time, or the video length differs from the manifest `total_s`
   by more than 1 s.
-- [ ] **A label or cue misses its word by more than ±0.3 s**: not visible 0.3 s after its
-  expected time, or already visible 0.3 s before it; or it points at the wrong part.
-- [ ] **An illustration does not match its brief**: a layer or moving part the brief asks for
-  is missing, a fact in its facts list is drawn wrong, or the drawing shows something the
+- [ ] **A tag, label or move misses its word by more than ±0.3 s**: not visible 0.3 s after
+  its expected time, or already visible 0.3 s before it; or it is on the wrong thing.
+- [ ] **A drawing does not match its brief**: a new place or custom piece misses a part its
+  brief asks for, a fact in the scene's facts is drawn wrong, or the picture shows something the
   narration does not say.
+- [ ] **The host is not lively, or the step-ins are missing**: he stands still through a
+  scene he is in, his mouth does not follow the voice, he is cut off, or a planned step-in does
+  not happen.
+- [ ] **Captions are not readable**: too small for a phone, low contrast, cut off, out of sync,
+  or covering the action or a tag.
 - [ ] **Dizzying motion**: the camera whips, spins, shakes or zooms hard, the picture strobes
   or flickers, or several things race at once so the eye cannot follow.
-- [ ] **Text is cut off or overlapping** anywhere (titles, items, labels, captions).
+- [ ] **Text is cut off or overlapping** anywhere (title, tags, labels, captions).
 - [ ] **A scene is missing** (a storyboard scene never appears).
-- [ ] **Rendering glitches**: blank or black frames mid-video, a hero scene empty or frozen,
-  broken layout, flicker, wrong colours vs `style.json`.
+- [ ] **Rendering glitches**: blank or black frames mid-video, an empty or frozen scene, an
+  actor missing or broken, flicker, wrong colours vs `style.json`.
 - [ ] **The voice is not clearly louder than the music**: `measure` reports any problem —
   `gap_db` < 12 dB, `lufs` outside −15…−13 (target −14), or more SFX than scenes.
 - [ ] **The final transcript misses words the voice-only transcript had**:
@@ -351,27 +453,28 @@ run's work and are fine. A folder named after one of this run's new props must n
 - [ ] **A music or sound file isn't in `credits.md`**: `credits.md` must exist and list the
   music track and every SFX type in `sound.json`, each with a source URL and a licence of
   `CC0-1.0` or `Pixabay-Content-License`.
-- [ ] **Presenter overlaps content or captions** (spec §6.6) in any keyframe.
 - [ ] **Mouth moving while the voice is silent (or still while it speaks)**: at the "closed
-  expected" times the mouth is open, or at the "open expected" times it is closed; or a scene
-  with a visible presenter has no `mouth` data (`mouth frames: 0`).
-- [ ] The video does not match the shot list (a different scene, prop, text, camera or
-  presenter position than planned) without a reason in `04-video/notes.md`.
+  expected" times the host's mouth is open, or at the "open expected" times it is closed; or a
+  scene with the host on screen has no `mouth` data (`mouth frames: 0`).
+- [ ] The video does not match the shot list (a different place, actor, move, text or camera
+  than planned) without a reason in `04-video/notes.md`.
 - [ ] **The shared kit was changed**: `git status --short hf-kit/src templates/` prints
-  anything, `git status --short hf-kit/props/` shows a changed or deleted (` M`/` D`) file in an existing prop folder, or
-  one of this run's new props already has a `hf-kit/props/<name>/` folder (the Animator draws new
-  heroes only in `04-video/hf/scenes/` and saves props only after the owner's final approval).
-  Props saved by earlier videos do not count.
+  anything, `git status --short hf-kit/places/` or `git status --short hf-kit/props/` shows a
+  changed or deleted (` M`/` D`) file in an existing place or prop folder, or one of this run's
+  new places or props already has its `hf-kit/places/<name>/` or `hf-kit/props/<name>/` folder
+  (the Animator draws them only in `04-video/hf/scenes/` and saves them only after the owner's
+  final approval). Places and props saved by earlier videos do not count.
 
 **Suggestions only:** motion taste, pacing ideas, drawing details beyond the brief.
 
 ### Prop library check (after the owner's final approval)
 
 When `gate` is `props`, the owner has approved the final video and the Animator has saved this
-run's new hero drawings to the prop library. Review only this and write
-`review/gate-props-round-<m>.md` (first line `# Gate props, round <m>: PASS|FIX`, same format,
-same round rules). This run's new props are the `new_prop: true` heroes in
-`03-design/shots.json` (prop `<name>`). Run:
+run's new places (and, for an older run, new hero props) to the libraries. Review only this and
+write `review/gate-props-round-<m>.md` (first line `# Gate props, round <m>: PASS|FIX`, same
+format, same round rules). This run's new places are the `new_place: true` scenes in
+`03-design/shots.json` (place `<name>`); its new props are the `new_prop: true` heroes (prop
+`<name>`). Run:
 
 ```bash
 git status --short hf-kit/
@@ -379,17 +482,24 @@ git status --short hf-kit/
 ```
 
 **Must-fix if:**
+- [ ] `hf-kit/places/<name>/` is missing or incomplete: it needs `place.js` (registers
+  `HFKit.places["<name>"]` with `meta.name` = `<name>`, its variants, anchors, paths,
+  `actorScale` and `actorLight`, and `anchorsFor`; no run-specific paths or text),
+  `preview.png` (the place itself, default variant, not a frame full of tags and the host) and
+  `README.md` (exactly one line).
+- [ ] `hf-kit/places/README.md` has no ``- `<name>` — …`` line for it.
 - [ ] `hf-kit/props/<name>/` is missing or incomplete: it needs `prop.js` (registers
   `HFKit.props["<name>"]` with `meta.name` = `<name>`, `anchorsFor`, no run-specific paths or
   text), `preview.png` (a real snapshot of the drawing, with few labels and no presenter over
   it) and `README.md` (exactly one line).
 - [ ] `hf-kit/props/README.md` has no ``- `<name>` — …`` line for it.
-- [ ] `npm test` (the props contract test) fails.
+- [ ] `npm test` (the places and props contract tests) fails.
 - [ ] This round changed something else in `hf-kit/`: the new or changed entries from this run
-  may only be this run's own `hf-kit/props/<name>/` folders and their lines in
-  `hf-kit/props/README.md`. Any change under `hf-kit/src`, or to a tracked file of another prop
-  (an ` M`/` D` line in `git status --short hf-kit/props/`), is a must-fix. Untracked prop folders and README
-  lines of other names were saved by earlier videos: ignore them.
+  may only be this run's own `hf-kit/places/<name>/` and `hf-kit/props/<name>/` folders and
+  their lines in `hf-kit/places/README.md` and `hf-kit/props/README.md`. Any change under
+  `hf-kit/src`, or to a tracked file of another place or prop (an ` M`/` D` line in
+  `git status --short hf-kit/`), is a must-fix. Untracked place or prop folders and README lines
+  of other names were saved by earlier videos: ignore them.
 
 ---
 

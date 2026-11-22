@@ -39,6 +39,16 @@ never edit it), and on a fix round the `feedback_file`, `02-voice/manifest.json`
   You never write or edit it; re-recording a scene rewrites it.
 - `02-voice/notes.md` — written by you (format below). This is the main output.
 
+## One narrator, words per scene
+
+- In this phase every video has **one narrator** (the host's voice) reading every scene;
+  dialogue with several voices comes in a later phase. One voice, one speed, as below.
+- `02-voice/words.json` **stays per scene**: one entry per manifest scene, as the synth tool
+  writes it (no speaker lines). The host's mouth in the world scenes and the captions follow it.
+- The script header lines under the title (`**Type:**`, `**Audience:**`, `**Host outfit:**`)
+  are not narration: the synth tool reads only the `**Narration:**` lines, so the header is
+  never read aloud. Copy it unchanged into your copy.
+
 ## Settings
 
 - **Default: voice `am_adam` (male, chosen by the owner to match the presenter), speed `1.0`**, unless the

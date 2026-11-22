@@ -327,3 +327,84 @@ def test_final_approval_saves_new_props_before_done():
     # the prop step is resumable
     resume = text.split("## 8. Resume", 1)[1]
     assert "saving props" in resume and "gate props" in resume
+
+
+# ---- video types and audience (world kit, phase 1) ----
+
+def test_make_video_takes_type_and_audience():
+    meta, body = front_matter(MAKE_VIDEO)
+    hint = meta["argument-hint"]
+    for needle in ["--type explainer|what-if", "--audience all-ages|teens|adults", "--resume <run_dir>"]:
+        assert needle in hint, needle
+    section1 = body.split("## 1. Start or resume", 1)[1].split("## 2.", 1)[0]
+    for needle in ["`--type`", "`--audience`", "`explainer`", "`what-if`", "`all-ages`", "`teens`",
+                   "`adults`", "Quill proposes", "type: propose"]:
+        assert needle in section1, needle
+
+
+def test_make_video_refuses_later_types_before_any_agent_starts():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    section1 = text.split("## 1. Start or resume", 1)[1].split("## 2.", 1)[0]
+    refuse = section1.index("later phase")
+    for t in ["`story`", "`action`", "`other`"]:
+        assert t in section1[refuse - 400:refuse + 400], t
+    assert "--type story" in section1
+    # refused before the run folder exists and before any agent is started
+    assert refuse < section1.index("tools.pipeline.status init")
+    assert "start no agent" in section1[refuse:refuse + 700].lower()
+    assert "stop" in section1[refuse:refuse + 700].lower()
+    assert refuse < text.index("subagent_type")
+    # unknown values are refused the same way
+    assert "Unknown video type" in section1 and "Unknown audience" in section1
+
+
+def test_type_and_audience_are_stored_and_shown_at_script_approval():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    section1 = text.split("## 1. Start or resume", 1)[1].split("## 2.", 1)[0]
+    assert "brief.md" in section1 and "type: <type>" in section1 and "audience: <audience>" in section1
+    assert any("--event \"video settings\"" in c and "<type>" in c and "<audience>" in c
+               for c in status_update_commands())
+    gate1 = text.split("### 4.1", 1)[1].split("### 4.2", 1)[0]
+    req = [c for c in answers_commands() if "--checkpoint gate-1 " in c][0]
+    for needle in ["<type>", "<audience>", "<outfit>"]:
+        assert needle in req, needle
+    for needle in ["**Type:**", "**Audience:**", "**Host outfit:**", "proposed by Quill", "later phase"]:
+        assert needle in gate1, needle
+
+
+def _save_list_command() -> str:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    cmds = [ln.strip() for ln in final.splitlines() if ln.strip().startswith("python -c") and "shots.json" in ln]
+    assert len(cmds) == 1, cmds
+    return cmds[0]
+
+
+@pytest.mark.parametrize("scenes,expected", [
+    ([{"id": 1, "kind": "world", "place": "countryside", "new_place": False}], "none"),
+    ([{"id": 1, "kind": "world", "place": "volcano-island", "new_place": True},
+      {"id": 2, "kind": "world", "place": "volcano-island", "new_place": True},
+      {"id": 3, "kind": "world", "place": "lab", "new_place": False}], "place volcano-island"),
+    ([{"id": 1, "kind": "hero", "prop": "solar-cell", "new_prop": True},
+      {"id": 2, "kind": "kit", "scene": "title"}], "prop solar-cell"),
+])
+def test_final_approval_lists_new_props_and_places(tmp_path, scenes, expected):
+    import subprocess
+    import sys
+    (tmp_path / "03-design").mkdir()
+    (tmp_path / "03-design" / "shots.json").write_text(json.dumps({"scenes": scenes}), encoding="utf-8")
+    cmd = _save_list_command()
+    assert '"<run_dir>/03-design/shots.json"' in cmd
+    argv = shlex.split(cmd.replace('"<run_dir>/', '"' + tmp_path.as_posix() + "/"))
+    assert argv[0] == "python"
+    out = subprocess.run([sys.executable] + argv[1:], capture_output=True, text=True, cwd=ROOT)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == expected
+
+
+def test_final_approval_saves_new_places_with_the_props():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    for needle in ["new_place", "note: owner approved the final video — save the new props and places",
+                   "hf-kit/places/", "prop and place library"]:
+        assert needle in final, needle
