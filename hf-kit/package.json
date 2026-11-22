@@ -13,7 +13,8 @@
     "sheet": "node scripts/sheet.mjs",
     "test": "node --test \"test/*.test.js\"",
     "kit-sheet": "node scripts/kit-sheet.mjs",
-    "world-sheet": "node scripts/world-sheet.mjs"
+    "world-sheet": "node scripts/world-sheet.mjs",
+    "moves-doc": "node scripts/moves-doc.mjs"
   },
   "dependencies": {
     "hyperframes": "0.9.72"

@@ -7,17 +7,19 @@
 //                                          and paths marked, plus two in-camera shots with the host
 //   sample/world-sheet/effects.png         every effect over time (frames after its start), box(t) dashed
 //   sample/world-sheet/overlays.png        the tag clamp demo: a tag / label whose point leaves the frame
+//   sample/world-sheet/world-railway.png   a world scene through HFKit.mountWorld: the plan's pinned railway
+//                                          beat (sample/railway-beat.json) at 9 times, plus every inside view
 //
 //   npm run world-sheet                          -> sample/world-sheet/*.png
 //   npm run world-sheet -- --out=<dir>           write the sheets there instead
 //   npm run world-sheet -- --frames=<dir>        also save every place shot full size (1920 x 1080)
 //   npm run world-sheet -- --preview             also refresh places/<name>/preview.png
-//   npm run world-sheet -- --only=effects,lab    render only those sheets (host, effects, overlays, <place>)
+//   npm run world-sheet -- --only=effects,lab    render only those sheets (host, effects, overlays, world, <place>)
 //
 // Each PNG must stay <= 1.5 MB: a sheet over that is quantized to 256 colours (ffmpeg on PATH) or
 // captured smaller; the script fails if it still does not fit.
 import { createRequire } from "node:module";
-import { mkdirSync, mkdtempSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -172,6 +174,38 @@ function pageBuild(spec) {
     return wrap;
   }
 
+  if (spec.kind === "world" || spec.kind === "world-frame") { // a world scene through mountWorld
+    const fix = spec.fix, ctx = { words: fix.words, mouth: fix.mouth, duration: fix.duration, cast: fix.cast };
+    const shot = (parent, t, S, caption) => {
+      n += 1;
+      const wrap = el(parent, "div", "frame");
+      wrap.style.width = 1920 * S + "px"; wrap.style.height = 1080 * S + "px";
+      const inner = el(wrap, "div", "inner");
+      inner.style.transform = "scale(" + S + ")";
+      const w = K.mountWorld(inner, fix.scene, Object.assign({ idPrefix: "sheet-w" + n }, ctx));
+      w.update(t);
+      if (caption) el(wrap, "div", "cap", caption);
+      return w;
+    };
+    if (spec.kind === "world-frame") { sheet.style.padding = "0"; shot(sheet, spec.t, 1, null).el.parentNode.parentNode.style.borderRadius = "0"; return; }
+    el(sheet, "h1", "", "World scene: the railway beat");
+    el(sheet, "div", "sub", "The plan's pinned schema-2 example through HFKit.compileMoves + mountWorld (made-up narration timings, captions on). Beat 0 (word 0): host waves from the side slot, the camera pulls out. Beat 1 (word 9): host walks in to rail-near, strikes the rail, the pulse races to rail-far with its tag, the camera pushes in.");
+    const grid = el(sheet, "div", "row");
+    grid.style.cssText = "display:flex;flex-wrap:wrap;gap:18px;max-width:" + (3 * 1920 * 0.3 + 2 * 18) + "px";
+    for (const [t, label] of spec.times) shot(grid, t, 0.3, "t = " + t.toFixed(1) + " s · " + label);
+    el(sheet, "h2", "", "Inside views (a dive cuts to these): lattice solid / liquid / gas, cells animal / plant / blood");
+    const row = el(sheet, "div", "row");
+    row.style.cssText = "display:flex;flex-wrap:wrap;gap:18px;max-width:" + (3 * 1920 * 0.3 + 2 * 18) + "px";
+    for (const [name, params] of [["lattice", { state: "solid" }], ["lattice", { state: "liquid" }], ["lattice", { state: "gas" }], ["cells", { type: "animal" }], ["cells", { type: "plant" }], ["cells", { type: "blood" }]]) {
+      n += 1;
+      const wrap = el(row, "div", "frame"); wrap.style.width = 1920 * 0.3 + "px"; wrap.style.height = 1080 * 0.3 + "px";
+      const inner = el(wrap, "div", "inner"); inner.style.transform = "scale(0.3)";
+      K.insides[name].mount(inner, { params, idPrefix: "sheet-in-" + n, seed: n }).update(1.7);
+      el(wrap, "div", "cap", name + " · " + Object.values(params)[0]);
+    }
+    return;
+  }
+
   if (spec.kind === "frame") {
     sheet.style.padding = "0";
     frame(sheet, Object.assign({ scale: spec.scale || 1 }, spec)).style.borderRadius = "0";
@@ -321,7 +355,15 @@ async function render(spec, out, viewport) {
   }
 }
 
+const RAILWAY = JSON.parse(readFileSync(join(KIT, "sample", "railway-beat.json"), "utf8"));
+const RAILWAY_TIMES = [[0.3, "opens tight, waving"], [2.6, "pulling out"], [5.0, "revealed"], [7.0, "steps out of the slot"], [9.4, "walking in"],
+  [11.39, "the hammer strikes"], [12.0, "pulse and tag race"], [15.5, "pushing in"], [19.6, "landed on rail-far"]];
+
 try {
+  if (wants("world")) {
+    await render({ kind: "world", fix: RAILWAY, times: RAILWAY_TIMES }, join(outDir, "world-railway.png"));
+    if (framesDir) for (const [i, [t]] of RAILWAY_TIMES.entries()) await render({ kind: "world-frame", fix: RAILWAY, t }, join(framesDir, `world-railway-${i}.png`), { width: 1920, height: 1080 });
+  }
   if (wants("host")) await render({
     kind: "host", outfits: ["blazer", "lab-coat", "casual", "explorer"],
     poses: [["idle", "neutral"], ["talk", "happy"], ["point-right", "curious"], ["wave", "happy"], ["think", "thinking"], ["celebrate", "happy"]],

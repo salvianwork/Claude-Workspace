@@ -504,5 +504,8 @@
     return { update: update, box: box };
   }
 
+  /* The pulse path maths, for the moves compiler (pure): sampled(path) -> [{x, y, s}], pointAt(S, len).
+   * Kept off K.effects so Object.keys(HFKit.effects) stays the list of effects. */
+  K.effectPath = { sampled: sampled, pointAt: pointAt, length: function (path) { var S = sampled(path); return S[S.length - 1].s; } };
   K.effects = { burst: burst, rings: rings, pulse_along: pulse_along, speed_lines: speed_lines, splash: splash, sparkle: sparkle, smoke: smoke, glow: glow };
 })(typeof globalThis !== "undefined" ? globalThis : window);

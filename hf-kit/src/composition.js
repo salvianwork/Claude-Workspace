@@ -2,8 +2,12 @@
  * (04-video/hf/data.json, also inlined in index.html) and registers window.__timelines.main.
  *
  *   HFKit.mountComposition(data)   // data = {fps, total, style, presenterOutfit, scenes: [...]}
- *   scene = {id, kind: "hero"|"kit", start, duration, frames, prop?, params?, scene?, props?,
- *            words, cues, camera, presenter, transition, next, mouth}
+ *   scene = {id, kind: "hero"|"kit"|"world", start, duration, frames, prop?, params?, scene?, props?,
+ *            world?, words, cues, camera, presenter, transition, next, mouth}
+ *   kind "world" (shots.json schema 2): world = the shots.json scene ({id, place, variant, actors,
+ *   beats, ...}); data.cast = the top-level cast. HFKit.mountWorld draws it (src/world/world.js);
+ *   the host's mouth is the scene's mouth (the narration). Captions are mounted here as for every
+ *   scene; world scenes have no side presenter (the host is an actor).
  *
  * Scenes run back to back in their own clip elements (#scene-<id> > .hf-scene). A scene's
  * `transition` is how it enters (first 0.5 s of its own time); it leaves with the next scene's
@@ -50,7 +54,9 @@
       var parts;
       try {
         var common = { words: s.words, cues: s.cues, camera: s.camera, duration: s.duration, presenter: s.presenter, style: style, sceneId: s.id };
-        var api = s.kind === "hero"
+        var api = s.kind === "world"
+          ? K.mountWorld(el, s.world, Object.assign({}, common, { mouth: s.mouth || [], cast: data.cast, captions: false }))
+          : s.kind === "hero"
           ? K.mountHero(el, Object.assign({ prop: s.prop, params: s.params }, common))
           : (function () {
             if (!K.scenes[s.scene]) throw new Error("unknown kit scene " + s.scene);

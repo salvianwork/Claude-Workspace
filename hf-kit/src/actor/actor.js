@@ -10,9 +10,11 @@
  *   meta.actorLight[variant]); see rig.js.
  * spec.start: {slot: "left" | "right"} (narrator slot, feet below the frame edge) or {x, y}
  *   (feet at that screen point, for an actor in the world). spec.scale multiplies the slot / world
- *   size. ctx: {sceneId, mouth (the scene's mouth array, 30 fps), seed?, offset? (frames)}.
- * Every SVG id is "s<sceneId>-<spec.id>-<n>-..." (n counts mounts of that id in that scene), so
- * two actors, or two scenes, never share a clip or mask. Breathing and blinks are automatic;
+ *   size. ctx: {sceneId, mouth (the scene's mouth array, 30 fps), seed?, offset? (frames), idPrefix?}.
+ * Every SVG id is ctx.idPrefix + "-...", or "s<sceneId>-<spec.id>-<n>-..." (n counts mounts of that
+ * id in that scene), so two actors, or two scenes, never share a clip or mask. The blink seed is
+ * ctx.seed, else a hash of "s<sceneId>-<spec.id>" (never the mount count), so remounting gives the
+ * same frames. Breathing and blinks are automatic;
  * state fields override them. Everything is a pure function of (t, state): seeking works. */
 (function (root) {
   "use strict";
@@ -40,11 +42,14 @@
     var outfit = spec.outfit || character.defaultOutfit || "blazer";
     if (!rig.OUTFITS[outfit]) throw new Error("mountActor: unknown outfit " + outfit);
     var scene = ctx.sceneId === undefined ? 0 : ctx.sceneId;
+    if (ctx.idPrefix !== undefined && !/^[A-Za-z0-9_-]+$/.test(String(ctx.idPrefix))) throw new Error("mountActor: ctx.idPrefix must be a plain name, got " + ctx.idPrefix);
     var key = scene + "|" + spec.id;
     var n = counts[key] || 0;
     counts[key] = n + 1;
-    var prefix = "s" + scene + "-" + spec.id + "-" + n;
-    var seed = ctx.seed === undefined ? hash(prefix) : ctx.seed;
+    var prefix = ctx.idPrefix !== undefined ? String(ctx.idPrefix) : "s" + scene + "-" + spec.id + "-" + n;
+    // the blink seed comes from {scene, actor} only (not the mount count): a remount, or rebuilding
+    // the same composition, draws identical frames
+    var seed = ctx.seed === undefined ? hash("s" + scene + "-" + spec.id) : ctx.seed;
     var mouth = ctx.mouth || [];
     var start = spec.start || { slot: "right" };
     var slot = start.slot === "left" || start.slot === "right" ? start.slot : null;
