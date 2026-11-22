@@ -34,6 +34,10 @@ const EXPECT = {
 };
 // night-time variants: the actor is clearly darker and cooler, with a rim from the moon or a lamp
 const NIGHT = new Set(["night", "dim", "clear", "rain"]);
+// every place folder: the library above plus any place saved after an owner-approved video
+// (the animator's step 7); those load here and meet the same contract
+const DIRS = readdirSync(new URL("places/", KIT)).filter((d) => statSync(new URL("places/" + d, KIT)).isDirectory()).sort();
+for (const d of DIRS) if (!(d in EXPECT)) await import(new URL(`places/${d}/place.js`, KIT));
 
 test("place.js is a kit script after draw.js and exposes the contract helpers", () => {
   const s = K.SCRIPTS;
@@ -46,8 +50,9 @@ test("place.js is a kit script after draw.js and exposes the contract helpers", 
 });
 
 test("the places library folder matches the registered places", () => {
-  const dirs = readdirSync(new URL("places/", KIT)).filter((d) => statSync(new URL("places/" + d, KIT)).isDirectory()).sort();
-  assert.deepEqual(dirs, Object.keys(EXPECT).sort());
+  const dirs = DIRS;
+  for (const name of Object.keys(EXPECT)) assert.ok(dirs.includes(name), "places/" + name + " is in the library");
+  for (const d of dirs) assert.ok(K.places[d] && K.places[d].meta.name === d, `places/${d}/place.js registers HFKit.places["${d}"]`);
   const readme = readFileSync(new URL("places/README.md", KIT), "utf8");
   for (const d of dirs) {
     for (const f of ["place.js", "preview.png", "README.md"]) assert.ok(statSync(new URL(`places/${d}/${f}`, KIT)).size > 0, `${d}/${f}`);
@@ -55,7 +60,8 @@ test("the places library folder matches the registered places", () => {
   }
 });
 
-for (const [name, want] of Object.entries(EXPECT)) {
+for (const name of DIRS) {
+  const want = EXPECT[name]; // undefined for a place saved after an approved video: the contract only
   test(`${name}: meta.actorLight lights an actor in every variant`, () => {
     const p = K.places[name];
     for (const variant of p.meta.variants) {
@@ -79,6 +85,7 @@ for (const [name, want] of Object.entries(EXPECT)) {
     assert.equal(p.meta.name, name);
     assert.ok(p.meta.description.length > 10);
     assert.ok(p.meta.variants.length >= 1);
+    if (!want) return;
     assert.deepEqual(p.meta.variants, want.variants);
     for (const a of want.anchors) assert.ok(p.meta.anchors.includes(a), "anchor " + a);
     for (const a of want.paths) assert.ok(p.meta.paths.includes(a), "path " + a);
@@ -133,7 +140,7 @@ test("parallax: the ground layer maps world to screen with the camera; other lay
 });
 
 test("places are offline and deterministic (no network, Math.random, Date.now or timers)", () => {
-  for (const f of ["src/world/place.js", ...Object.keys(EXPECT).map((n) => `places/${n}/place.js`)]) {
+  for (const f of ["src/world/place.js", ...DIRS.map((n) => `places/${n}/place.js`)]) {
     const src = readFileSync(new URL(f, KIT), "utf8");
     assert.doesNotMatch(src, /https?:\/\/(?!www\.w3\.org)/, f);
     assert.doesNotMatch(src, /Math\.random|Date\.now|setTimeout|setInterval|requestAnimationFrame/, f);
