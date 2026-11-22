@@ -39,6 +39,10 @@
  *    the beat's word).
  *  - The automatic camera: while an actor walks or runs and no camera move is running, the camera
  *    follows him; stepping out of the side slot he is framed at least 45 % of the frame height tall.
+ *  - The host in the side slot talks while the narration speaks: his track carries the narration's
+ *    spans ({type: "narration", spans}, from the words), and whenever no other pose runs he rests in
+ *    the talk pose, gently varied (actorAt sets state.rest = {pose: "talk", k}; rig.js blends idle
+ *    that far toward talk), instead of standing idle. Deterministic: a pure function of the words and t.
  *
  * Camera units (WORLD_LIMITS, confirmed): the camera works in normalised world units, world px
  * divided by 3840 on BOTH axes (so distances are isotropic and y runs 0 .. 0.5625). The pan limit
@@ -58,6 +62,10 @@
   var PULSE_SPEED = { slow: 600, medium: 1100, fast: 1800 }; // world px/s
   var GESTURE = 2.0, POINT = 2.2, JUMP = 1.0, POSE_IN = 0.25, POSE_OUT = 0.3, EXPR_IN = 0.3;
   var TITLE_WORDS = 6;
+  // the side-slot host talks while the narration speaks: spans of words closer than TALK_GAP merge;
+  // the talk rest eases in over TALK_IN before a span and out over TALK_OUT after it, at
+  // TALK_K +- TALK_VARY (a slow, gentle swell, so a long talk never looks frozen)
+  var TALK_GAP = 0.7, TALK_IN = 0.35, TALK_OUT = 0.45, TALK_K = 0.82, TALK_VARY = 0.18;
   var BODY = 700, TOP = 1270; // body units above the feet: the chest (camera, effects) and the head top (tags)
 
   // ---- the vocabulary -------------------------------------------------------------------------
@@ -145,6 +153,24 @@
     if (tau < R) return ramp(tau / R);
     if (tau > T - R) return D - ramp((T - tau) / R);
     return v * R / 2 + v * (tau - R);
+  }
+
+  /* The narration's speaking spans [[start, end], ...] from a scene's words: words closer than
+   * TALK_GAP s join one span. */
+  function narrationSpans(words) {
+    var spans = [];
+    (words || []).filter(function (w) { return w && num(w.start); }).sort(function (a, b) { return a.start - b.start; }).forEach(function (w) {
+      var end = num(w.end) ? Math.max(w.end, w.start) : w.start + 0.2, last = spans[spans.length - 1];
+      if (last && w.start - last[1] < TALK_GAP) last[1] = Math.max(last[1], end);
+      else spans.push([w.start, end]);
+    });
+    return spans;
+  }
+  /* How much the side-slot host talks at t (0..1): eased in before a span, out after it. */
+  function talkWeight(spans, t) {
+    var w = 0;
+    for (var i = 0; i < spans.length; i++) w = Math.max(w, Math.min(sm((t - spans[i][0] + 0.1) / TALK_IN), sm((spans[i][1] + TALK_OUT - t) / TALK_OUT)));
+    return w;
   }
 
   // ---- the world a scene compiles against ------------------------------------------------------
@@ -292,7 +318,7 @@
     var R = rig(), SLOT = R.SLOT, WK = worldK();
     var r = { visible: true, mode: "world", x: 0, y: 0, scale: 1, side: null, screen: null, u: 1 };
     var st = { pose: "idle", expression: "happy", facing: 0, turn: 0, cycleAmount: 0 };
-    var poses = [], exprs = [], held, speaking = null, move = null, jump = null;
+    var poses = [], exprs = [], held, speaking = null, move = null, jump = null, narration = null;
     for (var i = 0; i < track.length; i++) {
       var ev = track[i];
       if (ev.t > t + 1e-12) break;
@@ -312,6 +338,7 @@
         case "held": held = ev.held; break;
         case "jump": jump = ev; break;
         case "say": speaking = ev; break;
+        case "narration": narration = ev; break;
       }
     }
     if (move) {
@@ -357,6 +384,12 @@
     st.pose = pose; st.expression = expr;
     var k = Math.min(kp, ke);
     if (k < 1) st.blend = { pose: kp < 1 ? fromPose : pose, expression: ke < 1 ? fromExpr : expr, k: k };
+    // the side-slot host talks while the narration speaks: with no other pose running he rests in
+    // the talk pose (gently varied) instead of idle; moves.js gives him the spans (see compileMoves)
+    if (narration && r.mode === "slot" && r.visible && !st.cycle) {
+      var tw = talkWeight(narration.spans, t);
+      if (tw > 0) st.rest = { pose: "talk", k: Math.round(tw * (TALK_K + TALK_VARY * Math.sin(t * 2.1 + 0.7)) * 1000) / 1000 };
+    }
     if (held) st.held = held;
     st.speaking = !!(speaking && t < speaking.t1);
     r.state = st;
@@ -365,7 +398,7 @@
 
   /* Build every actor's track. camFn(t) -> {x, y, zoom} (world px) places frame edges and the side
    * slot in the world. Returns {tracks, errors}. */
-  function buildTracks(world, actorMoves, camFn) {
+  function buildTracks(world, actorMoves, camFn, narration) {
     var R = rig(), SLOT = R.SLOT, WK = worldK(), tracks = {}, busy = {}, errors = [];
     Object.keys(world.actors).forEach(function (id) {
       var a = world.actors[id], st = a.start;
@@ -375,6 +408,7 @@
       if (st.slot) { ev.mode = "slot"; ev.side = st.slot; ev.scale = a.scale; }
       else { var p = world.anchors[st.anchor](0); ev.mode = "world"; ev.x = p.x; ev.y = p.y; ev.scale = a.scale * (p.scale || 1); }
       tracks[id] = [ev];
+      if (a.host && narration && narration.length) tracks[id].push({ t: 0, type: "narration", spans: narration });
       busy[id] = 0;
     });
     function sortTrack(tr) { return tr.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return a[0].t - b[0].t || a[1] - b[1]; }).map(function (x) { return x[0]; }); }
@@ -447,8 +481,11 @@
           tr.push({ t: t0, t1: t0 + JUMP, type: "jump" }); busy[id] = t0 + JUMP; p.done = t0 + JUMP;
           return;
         case "point": {
-          var tp = p.targetPoint(p.t, "body"), me = cur.mode === "slot" ? cur.screen : toScreen(cur, cam);
-          var ts = tp.screen ? tp : toScreen(tp, cam);
+          // another actor as the target: the first pass has no tracks yet, so use where he starts
+          var tp = p.targetPoint(p.t, "body"), ta = world.actors[mv.target];
+          if (!tp && ta && ta.start.anchor) tp = world.anchors[ta.start.anchor](p.t);
+          var me = cur.mode === "slot" ? cur.screen : toScreen(cur, cam);
+          var ts = !tp ? { x: me.x + 1 } : tp.screen ? tp : toScreen(tp, cam);
           tr.push({ t: p.t, t1: p.until || p.t + POINT, type: "pose", pose: ts.x >= me.x ? "point-right" : "point-left" });
           return;
         }
@@ -801,10 +838,11 @@
       centre = { x: (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2, y: (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2 };
     }
     var opening = { x: centre.x, y: centre.y, zoom: 1 }; // a ground point (buildCamera frames it)
+    var narration = narrationSpans(words);
     var pass = function (camFn, tracksForPoints) {
       var pts = makePoints(world, tracksForPoints || {}, pulses);
       actorMoves.forEach(function (p) { p.targetPoint = function (t, part) { return pts(p.mv.target, t, part); }; });
-      return buildTracks(world, actorMoves, camFn);
+      return buildTracks(world, actorMoves, camFn, narration);
     };
     // pass 1: tracks with a still camera (for target positions), then the camera, then tracks again
     // with that camera (frame edges, the side slot in the world), then the final camera
@@ -936,6 +974,9 @@
       "  cut and dive start at `at` (default: the beat). While an actor walks or runs and no camera move",
       "  runs, the camera follows him; stepping out of the side slot he is framed at least 45 % of the",
       "  frame tall. A camera that finishes more than 0.25 s after the scene ends fails validation.",
+      "- The host in the side slot talks while the narration speaks: whenever no other pose (`gesture`,",
+      "  `point`, `say`, ...) runs, he uses the talk pose, gently varied, instead of standing idle. Give",
+      "  him `gesture` / `point` / `react` on key words as well, so he moves on most beats.",
       "- Warnings (allowed, worth a look): the frame edge cuts an actor's head where the camera lands;",
       "  a `use` strike slips more than 0.5 s past its word because its actor is still on the way.",
       "- Text: tags and labels at most " + K.overlays.MAX_WORDS + " words (a number and its unit count as one: `343 m/s`), the title at most " + TITLE_WORDS + ".",
@@ -972,5 +1013,6 @@
   K.worldCamera = worldCamera;
   K.validateWorld = validateWorld;
   K.movesMarkdown = movesMarkdown;
+  K.narrationSpans = narrationSpans;
   K.worldMath = { toScreen: toScreen, unproject: unproject, clampFocus: clampFocus, NORM: NORM, BODY: BODY, TOP: TOP };
 })(typeof globalThis !== "undefined" ? globalThis : window);

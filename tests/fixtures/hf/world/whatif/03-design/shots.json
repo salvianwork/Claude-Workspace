@@ -50,10 +50,14 @@
       },
       {
        "do": "label",
-       "target": "open",
+       "target": "moon",
        "text": "not to scale",
        "at": {
         "word": 0
+       },
+       "side": "above",
+       "until": {
+        "word": 8
        }
       },
       {
@@ -113,6 +117,14 @@
        "at": {
         "word": 8
        }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "surprised",
+       "at": {
+        "word": 9
+       }
       }
      ]
     }
@@ -127,7 +139,7 @@
    "new_place": false,
    "facts": [
     "the Sun also raises tides",
-    "with no Moon, tides would be roughly a third of today's size",
+    "with no Moon, tides would be a third to a half of today's size (the Sun's tide is about 0.46 of the Moon's, so a third of today's spring tides and about half of an average tide)",
     "time is sped up: each rise and fall of the float stands for a tide of about 12 hours"
    ],
    "actors": [
@@ -163,7 +175,11 @@
        "params": {
         "period": 2.0,
         "range": 150,
-        "ratio": 0.333
+        "ratio": 0.42,
+        "band": [
+         0.333,
+         0.5
+        ]
        },
        "at": {
         "word": 3
@@ -184,7 +200,7 @@
      "at": {
       "word": 4
      },
-     "action": "the rise and fall shrinks to a small bob between new orange marks, a third of the old range; the host points at it",
+     "action": "the rise and fall shrinks to a smaller bob inside the new orange bands, a third to a half of the old range; the host points at it",
      "moves": [
       {
        "do": "point",
@@ -197,10 +213,18 @@
       {
        "do": "label",
        "target": "surface",
-       "text": "Tides: a third",
+       "text": "Tides: 1/3 to 1/2",
        "side": "right",
        "at": {
         "word": 10
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 15
        }
       }
      ]
@@ -212,10 +236,10 @@
    "id": 3,
    "kind": "world",
    "place": "forest",
-   "variant": "night",
+   "variant": "moonless",
    "new_place": false,
    "facts": [
-    "without the Moon there is no moonlight; nights are lit only by the stars (and are darker)"
+    "without the Moon there is no moonlight; nights are lit only by the stars (and are darker): a moonless night with the stars and the Milky Way"
    ],
    "actors": [
     {
@@ -230,12 +254,12 @@
      "at": {
       "word": 0
      },
-     "action": "the host walks the dark forest trail at night: no moon in the sky, only the dim blue starlight",
+     "action": "the host walks the dark forest trail on a moonless night: no Moon in the sky, only the stars and the faint Milky Way",
      "moves": [
       {
        "do": "cut",
-       "target": "trail",
-       "zoom": 1.25,
+       "target": "log",
+       "zoom": 0.75,
        "at": {
         "t": 0
        }
@@ -266,8 +290,16 @@
      "at": {
       "word": 8
      },
-     "action": "the host stops and peers up at the faint stars, the only light on the trail",
+     "action": "the host stops and points up at the stars, the only light on the trail; the camera eases back to show the starry sky",
      "moves": [
+      {
+       "do": "pull_out",
+       "target": "log",
+       "zoom": 0.62,
+       "at": {
+        "word": 10
+       }
+      },
       {
        "do": "point",
        "who": "host",
@@ -282,6 +314,14 @@
        "expression": "curious",
        "at": {
         "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 12
        }
       }
      ]
@@ -298,7 +338,8 @@
    "facts": [
     "the Moon helps keep Earth's axial tilt (about 23.4 degrees) steady",
     "without it the tilt could vary much more over millions of years (the size of the swing drawn is illustrative)",
-    "not to scale"
+    "not to scale",
+    "imagined: still the world without the Moon, so no Moon is drawn (moon-vanish with gone: true covers the place's Moon)"
    ],
    "actors": [
     {
@@ -318,8 +359,8 @@
       {
        "do": "pull_out",
        "target": "planet",
-       "zoom": 0.72,
-       "from": 0.85,
+       "zoom": 0.6,
+       "from": 0.72,
        "at": {
         "word": 9
        }
@@ -336,6 +377,24 @@
        "at": {
         "word": 0
        }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "planet",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "custom",
+       "name": "moon-vanish",
+       "params": {
+        "gone": true
+       },
+       "at": {
+        "t": 0
+       }
       }
      ]
     },
@@ -349,8 +408,8 @@
        "do": "custom",
        "name": "axis-wobble",
        "params": {
-        "swing": 12,
-        "base": -3
+        "swing": 6,
+        "base": -9
        },
        "at": {
         "word": 6
@@ -371,6 +430,14 @@
        "expression": "surprised",
        "at": {
         "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "surprised",
+       "at": {
+        "word": 10
        }
       }
      ]
@@ -415,6 +482,14 @@
        "do": "point",
        "who": "host",
        "target": "sky",
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
        "at": {
         "word": 1
        }

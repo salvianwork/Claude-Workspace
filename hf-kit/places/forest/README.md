@@ -1,1 +1,1 @@
-Woodland: misty layers of trees, light shafts, a deer, a winding trail, a mossy log, a stream with a plank bridge, a huge oak; variants day, night; anchors trail, clearing, log, stream, tree, canopy; path trail.
+Woodland: misty layers of trees, light shafts, a deer, a winding trail, a mossy log, a stream with a plank bridge, a huge oak; variants day, night (moonlit), moonless (no Moon: a starry sky, starlight only); anchors trail, clearing, log, stream, tree, canopy; path trail.

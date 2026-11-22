@@ -144,6 +144,10 @@ gas; `cells`: animal, plant or blood cells) — use it to show what something is
 - **Lively, never a statue:** in every scene he is in, he does something on the words —
   `say` while he talks, a `gesture` (`wave` to open, `think` on a question, `celebrate` at the
   end), a `react` on a surprise, a `point` at what the narration names. Point toward the thing.
+  Aim for a `gesture`, `point` or `react` on a key word in **most beats** (one every 2–3 s), in
+  the side slot as much as in the world. Between them the kit keeps him talking: while the
+  narration speaks and no other pose runs, the side-slot host uses the talk pose (gently varied)
+  instead of standing with his hands clasped — that is the floor, not the plan.
 
 ## On-screen text and numbers
 

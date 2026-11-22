@@ -226,6 +226,14 @@ def test_design_example_is_a_valid_world_shot_list():
     assert errs == [] and warns == [], (errs, warns)
 
 
+def test_design_keeps_the_host_moving():
+    """The host moves on most beats (gesture / point / react on key words); the kit's talk pose in
+    the side slot is only the floor."""
+    _, body = parse("design")
+    for t in ["Lively, never a statue", "most beats", "`gesture`, `point` or `react`", "talk pose"]:
+        assert t in body, f"design.md must mention {t!r}"
+
+
 def test_design_picks_host_outfit():
     _, body = parse("design")
     for s in ["`cast`", "**Host outfit:**", "science", "health", "technology", "history"]:
@@ -270,6 +278,31 @@ def test_animator_builds_world_scenes():
     assert 'python -m tools.render.render "<run_dir>" --engine hyperframes' in body
     # the step-ins rule is the plan's, never switched off by the Animator
     assert "--allow-step-ins" not in body
+
+
+def test_animator_runs_build_and_snapshots_in_the_background():
+    """A build with `hyperframes check` or a snapshot of a long video can pass 10 minutes on a slow
+    PC: they run in the background with a 1-hour limit, like the render (2 hours)."""
+    _, body = parse("animator")
+    head = body[:body.index("## Step 1")]
+    for s in ["run_in_background: true", "timeout: 3600000", "the build (step 2)", "the snapshots (steps 3 and 4)"]:
+        assert s in head, f"animator.md must say {s!r} before step 1"
+    for cmd in ['python -m tools.hf.build "<run_dir>"\n```', 'python -m tools.hf.snapshot "<run_dir>"\n```',
+                'python -m tools.hf.snapshot "<run_dir>" --overlap\n```']:
+        after = body[body.index(cmd):][:200]
+        assert "run_in_background: true" in after and "timeout: 3600000" in after, f"{cmd!r} must run in the background"
+    render = section(body, "## Step 6", "## Step 7")
+    assert "run_in_background: true" in render and "timeout: 7200000" in render
+
+
+def test_animator_place_sheet_path_works_when_run_dir_is_absolute():
+    """`--out="../<run_dir>/..."` broke for an absolute run_dir (C:\\...): the sheet script runs
+    from the workspace root with the run_dir as given."""
+    _, body = parse("animator")
+    save = section(body, "## Step 7", "## Fix rounds")
+    assert '--out="<run_dir>/04-video/hf/place-sheet"' in save
+    assert "../<run_dir>" not in body
+    assert "node hf-kit/scripts/world-sheet.mjs" in save
 
 
 def test_animator_saves_new_props_after_pass():

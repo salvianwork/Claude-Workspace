@@ -77,6 +77,22 @@
        }
       },
       {
+       "do": "react",
+       "who": "host",
+       "expression": "curious",
+       "at": {
+        "word": 14
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 16
+       }
+      },
+      {
        "do": "smoke",
        "target": "surface",
        "at": {
@@ -118,18 +134,18 @@
   {
    "id": 2,
    "kind": "world",
-   "place": "sky-fantasy",
-   "variant": "day",
+   "place": "ocean",
+   "variant": "surface",
    "new_place": false,
    "facts": [
     "warm, moist air rises",
-    "air is colder higher up, so rising air cools"
+    "as it rises the air pressure around it drops, so the air expands (spreads out) and cools; the drawing swells and turns from orange to blue as it climbs"
    ],
    "actors": [
     {
      "id": "host",
      "start": {
-      "anchor": "island"
+      "slot": "right"
      }
     }
    ],
@@ -138,49 +154,46 @@
      "at": {
       "word": 0
      },
-     "action": "a glowing bubble of warm, moist air lifts off the island beside the host and rises into the sky",
+     "action": "over the sea beside the boat, a bubble of warm, moist air lifts off the water and starts to climb",
      "moves": [
       {
        "do": "cut",
-       "target": "island",
-       "zoom": 0.85,
+       "target": "sky",
+       "zoom": 0.75,
        "at": {
         "t": 0
        }
       },
       {
-       "do": "say",
+       "do": "point",
        "who": "host",
-       "until": {
-        "word": 4
-       }
-      },
-      {
-       "do": "pulse_along",
-       "path": "flight",
-       "from": "island",
-       "to": "sky",
-       "speed": 380,
-       "ease": "inOut",
-       "color": "#FFB86B",
+       "target": "surface",
        "at": {
         "word": 1
        }
       },
       {
-       "do": "tag_follow",
-       "target": "pulse",
-       "text": "Warm, moist air",
-       "until": {
-        "word": 9
+       "do": "custom",
+       "name": "air-parcel",
+       "params": {
+        "rise": 2.7,
+        "r0": 80,
+        "r1": 190
+       },
+       "at": {
+        "word": 3
        }
       },
       {
-       "do": "point",
-       "who": "host",
+       "do": "label",
        "target": "sky",
+       "text": "Warm, moist air",
+       "side": "below",
        "at": {
-        "word": 4
+        "word": 1
+       },
+       "until": {
+        "word": 6
        }
       }
      ]
@@ -189,33 +202,14 @@
      "at": {
       "word": 5
      },
-     "action": "high in the sky a cold blue glow surrounds the air as it climbs; the camera rises after it",
+     "action": "as it rises the bubble swells (little arrows point outward) and turns from warm orange to cool blue",
      "moves": [
       {
-       "do": "pull_out",
-       "target": "sky",
-       "zoom": 0.7,
-       "at": {
-        "word": 10
-       }
-      },
-      {
-       "do": "glow",
+       "do": "point",
+       "who": "host",
        "target": "sky",
        "at": {
-        "word": 8
-       },
-       "radius": 420,
-       "color": "#BFE6FF",
-       "duration": 3.5
-      },
-      {
-       "do": "label",
-       "target": "sky",
-       "text": "Colder up here",
-       "side": "right",
-       "at": {
-        "word": 10
+        "word": 6
        }
       },
       {
@@ -225,27 +219,37 @@
        "at": {
         "word": 10
        }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Spreads out, cools",
+       "side": "above",
+       "at": {
+        "word": 10
+       }
       }
      ]
     }
    ],
-   "transition": "slide"
+   "transition": "fade"
   },
   {
    "id": 3,
    "kind": "world",
-   "place": "sky-fantasy",
-   "variant": "day",
+   "place": "ocean",
+   "variant": "surface",
    "new_place": false,
    "facts": [
     "cooled water vapour condenses into tiny droplets",
-    "a cloud is made of a huge number of droplets"
+    "a cloud is made of a huge number of droplets",
+    "a cumulus cloud has a flat base, where rising air has cooled enough for vapour to condense, and a puffy, heaped top"
    ],
    "actors": [
     {
      "id": "host",
      "start": {
-      "slot": "left"
+      "slot": "right"
      }
     }
    ],
@@ -254,34 +258,33 @@
      "at": {
       "word": 0
      },
-     "action": "where the air cooled, tiny droplets sparkle into being",
+     "action": "where the air cooled, tiny water droplets appear in the sky over the sea",
      "moves": [
       {
        "do": "cut",
        "target": "sky",
-       "zoom": 1.0,
+       "zoom": 0.9,
        "at": {
         "t": 0
        }
       },
       {
-       "do": "gesture",
+       "do": "point",
        "who": "host",
-       "name": "point-right",
-       "at": {
-        "word": 1
-       }
-      },
-      {
-       "do": "sparkle",
        "target": "sky",
        "at": {
         "word": 2
+       }
+      },
+      {
+       "do": "custom",
+       "name": "droplets",
+       "at": {
+        "word": 2
        },
-       "radius": 320,
-       "count": 22,
-       "color": "#E6F6FF",
-       "duration": 2.4
+       "until": {
+        "word": 6
+       }
       },
       {
        "do": "label",
@@ -292,7 +295,7 @@
         "word": 5
        },
        "until": {
-        "word": 8
+        "word": 9
        }
       }
      ]
@@ -301,34 +304,39 @@
      "at": {
       "word": 6
      },
-     "action": "billions of droplets gather and a big white cloud billows up from them",
+     "action": "billions of droplets build a real cumulus cloud: a flat base and a puffy top billowing up",
      "moves": [
       {
-       "do": "smoke",
-       "target": "sky",
+       "do": "custom",
+       "name": "cumulus",
+       "params": {
+        "grow": 1.6
+       },
        "at": {
         "word": 6
-       },
-       "color": "#FFFFFF",
-       "size": 3,
-       "rise": 40,
-       "wind": 15,
-       "life": 3.2,
-       "duration": 3
+       }
       },
       {
        "do": "react",
        "who": "host",
-       "expression": "happy",
+       "expression": "surprised",
        "at": {
-        "word": 9
+        "word": 6
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 12
        }
       },
       {
        "do": "label",
        "target": "sky",
        "text": "Cloud",
-       "side": "below",
+       "side": "left",
        "at": {
         "word": 12
        }
@@ -341,18 +349,18 @@
   {
    "id": 4,
    "kind": "world",
-   "place": "sky-fantasy",
-   "variant": "day",
+   "place": "ocean",
+   "variant": "surface",
    "new_place": false,
    "facts": [
-    "droplets collide and grow",
-    "drops too heavy to stay up fall as rain"
+    "droplets collide and grow; the cloud turns grey and heavy",
+    "drops too heavy to stay up fall as rain, back into the sea"
    ],
    "actors": [
     {
      "id": "host",
      "start": {
-      "anchor": "island"
+      "anchor": "boat"
      }
     }
    ],
@@ -361,28 +369,26 @@
      "at": {
       "word": 0
      },
-     "action": "the cloud swells and darkens over the island as its droplets bump together and grow",
+     "action": "back on the boat: the cloud beside it turns grey and heavy as its droplets bump together and grow",
      "moves": [
       {
        "do": "cut",
-       "target": "island",
-       "zoom": 0.62,
+       "target": "sky",
+       "zoom": 0.7,
        "at": {
         "t": 0
        }
       },
       {
-       "do": "smoke",
-       "target": "sky",
-       "at": {
-        "t": 0
+       "do": "custom",
+       "name": "cumulus",
+       "params": {
+        "grown": true,
+        "dark": 1
        },
-       "color": "#7E8A9A",
-       "size": 3.2,
-       "rise": 30,
-       "wind": 10,
-       "life": 3.5,
-       "duration": 5.5
+       "at": {
+        "word": 2
+       }
       },
       {
        "do": "gesture",
@@ -398,29 +404,22 @@
      "at": {
       "word": 6
      },
-     "action": "heavy drops fall as rain onto the island and splash around the host, who shrugs and laughs",
+     "action": "rain falls from the cloud's base back into the sea beside the boat; the host is surprised and shrugs",
      "moves": [
       {
-       "do": "speed_lines",
+       "do": "point",
+       "who": "host",
        "target": "sky",
        "at": {
-        "word": 14
-       },
-       "angle": -90,
-       "count": 34,
-       "length": 520,
-       "spread": 820,
-       "color": "#5FA8E8",
-       "edge": "#2F5F8C",
-       "duration": 2
+        "word": 6
+       }
       },
       {
-       "do": "splash",
-       "target": "island",
+       "do": "custom",
+       "name": "rain",
        "at": {
-        "word": 16
-       },
-       "color": "#A9DBFF"
+        "word": 14
+       }
       },
       {
        "do": "react",
@@ -442,7 +441,7 @@
        "do": "label",
        "target": "sky",
        "text": "Rain",
-       "side": "right",
+       "side": "below",
        "at": {
         "word": 16
        }

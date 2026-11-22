@@ -10,14 +10,14 @@
 **Visual idea:** space: Earth from orbit with the Moon beside it; the host wonders, and the Moon twinkles away.
 
 ## Scene 2: Smaller tides
-**Narration:** The tides would shrink. Only the Sun's tides would remain, roughly a third as big as today's.
+**Narration:** The tides would shrink. Only the Sun's tides would remain, a third to a half as big as today's.
 **Viewer should understand:** Without the Moon, only the Sun's much smaller tides remain.
-**Visual idea:** ocean surface: a tide pole in the sea; the water's rise and fall shrinks to a small bob.
+**Visual idea:** ocean surface: a tide pole in the sea; the water's rise and fall shrinks to a much smaller bob.
 
 ## Scene 3: Darker nights
 **Narration:** Nights would be darker, too. With no moonlight, only the stars would light the way.
 **Viewer should understand:** No Moon means no moonlight, so nights are darker.
-**Visual idea:** a forest at night: the host walks the dark trail under nothing but twinkling stars.
+**Visual idea:** a forest on a moonless night: the host walks the dark trail under a sky full of stars and the Milky Way, and looks up at them.
 
 ## Scene 4: A wobblier Earth
 **Narration:** And over millions of years, Earth's tilt could become far less steady.
@@ -31,7 +31,7 @@
 
 ## Key claims
 - [S1] (Imagined) The Moon vanishing is a thought experiment, signposted as imagined.
-- [S2] The Sun also raises tides; without the Moon, tides would be roughly a third of their present size.
+- [S2] The Sun also raises tides (about 0.46 of the Moon's tide); without the Moon, tides would be a third to a half of their present size.
 - [S3] Moonlight is the brightest natural light in the night sky; without it, nights would be darker, lit by stars.
 - [S4] The Moon stabilises Earth's axial tilt; without it the tilt could vary much more over millions of years.
 - [S5] The Moon drives most of Earth's tides and helps keep the tilt, and so the seasons, steady.

@@ -11,6 +11,8 @@
  *   deep     open water in mid depth (a diver, a fish, a sound travelling through water)
  *   reef     on top of the coral reef
  *   seabed   the sand on the sea floor
+ *   sky      open sky above the sea, right of the boat's mast (a cloud, rising air, rain; just above the
+ *            waterline in the underwater view)
  * Path: current (a swim line through the open water, left to right).
  *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
@@ -25,7 +27,7 @@
     name: "ocean",
     description: "The sea: a sailing boat on rolling waves cut away to the reef below (surface), or down among the coral, seagrass and fish (underwater).",
     variants: ["surface", "underwater"],
-    anchors: ["surface", "boat", "deep", "reef", "seabed"],
+    anchors: ["surface", "boat", "deep", "reef", "seabed", "sky"],
     paths: ["current"],
     actorScale: 1,
     actorLight: {
@@ -54,6 +56,7 @@
         deep: fixed(1480, G.deep),
         reef: fixed(rx, v === "surface" ? G.bed - 250 : G.bed - 380),
         seabed: fixed(1900, r2(bedY(1900, G))),
+        sky: v === "surface" ? fixed(2450, 560) : fixed(2450, 140), // clear of the mast and the sail
       },
       paths: { current: cur },
     };

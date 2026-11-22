@@ -87,8 +87,8 @@ set and contact sheet myself and fixed what I saw (below).
 |---|---|---|---|---|---|---|
 | sound | `tests/fixtures/hf/world/sound/` | explainer; countryside (rings, ripples, pulse, two dives into lattice gas and solid) | 2 (scenes 1, 3) | none (kit only) | `world-sound-sheet.png` | `world-sound.mp4` |
 | volcano | `tests/fixtures/hf/world/volcano/` | explainer; new place `volcano` (adapted from the prop) | 1 (scene 1) | place `volcano` + customs `magma-rise`, `eruption` | `world-volcano-sheet.png` | `world-volcano.mp4` |
-| process | `tests/fixtures/hf/world/process/` | explainer; ocean surface, sky-fantasy | 2 (scenes 2, 4) | none (kit only) | `world-process-sheet.png` | `world-process.mp4` |
-| whatif | `tests/fixtures/hf/world/whatif/` | what-if; space, ocean, forest night, rooftop-night | 1 (scene 3) | customs `moon-vanish`, `tide-gauge`, `axis-wobble` | `world-whatif-sheet.png` | `world-whatif.mp4` |
+| process | `tests/fixtures/hf/world/process/` | explainer; ocean surface, then the sky over the same sea (cloud, rain back into the sea) | 1 (scene 4, on the boat) | customs `air-parcel`, `droplets`, `cumulus`, `rain` | `world-process-sheet.png` | `world-process.mp4` |
+| whatif | `tests/fixtures/hf/world/whatif/` | what-if; space, ocean, forest `moonless` (stars), rooftop-night | 1 (scene 3) | customs `moon-vanish`, `tide-gauge`, `axis-wobble` | `world-whatif-sheet.png` | `world-whatif.mp4` |
 
 All four: `shots validate` OK with no warnings, `hyperframes check` clean, overlap report `[]`,
 `tools.audio.measure` no problems, render log ends with `video written` and has no warning or
@@ -116,6 +116,18 @@ The render column is `hyperframes render took … s` from `render.log`; the full
 
 Snapshots (start/mid/end per scene) took 9–12 s per video, the overlap report about 1.5 s, the
 mix a few seconds. Storyboards, notes and the final checks took about 8 minutes for all four.
+
+**After the final-review fix wave** (all four re-rendered; same machine, one render at a time):
+
+| Video | Length | Voice re-synth | Build + check (first build after a change) | Render (`hyperframes render`) | Full render call | Render ÷ length |
+|---|---|---|---|---|---|---|
+| sound | 22.7 s | – (unchanged) | ≈ 25–30 s | 183.4 s | 223 s | 8.1× |
+| volcano | 21.3 s | – (unchanged) | ≈ 25–30 s | 250.9 s | 272 s | 11.8× |
+| process | 24.6 s (was 25.2) | scene 2: 107 s (first call: model load) | 24 s | 78.1 s | 104 s | 3.2× |
+| whatif | 26.5 s (was 26.3) | scene 2: 8 s | 31 s | 71.0 s / 73.7 s (two runs) | 104 s / 105 s | 2.7× / 2.8× |
+
+Snapshots took about 7–10 s per video, the overlap report about 2 s, the mix about 2 s. A
+build with nothing changed reuses `hyperframes check`'s cache and takes under a second.
 
 ### Against the target (3–4 h per 2-minute video at first, falling toward 1–1.5 h)
 
@@ -159,13 +171,34 @@ real number.
   with the real Moon in frame; after the Moon vanished a dark disc showed on the Milky Way →
   soft-edged cover with a few faint stars (second render).
 
+### Final review fixes (one fix wave)
+
+- **process, physics:** "Higher up, the air is colder, so it cools as it climbs" was wrong
+  (rising air cools mainly because it expands as the pressure drops) → scene 2 now says "As it
+  rises, the air spreads out and cools." (script, voice copy, key claim, facts; scene 2
+  re-recorded and re-timed).
+- **process, look:** out of the fairy-tale `sky-fantasy` into one natural setting: the sea by the
+  boat, then the sky over the same sea (the `ocean` place has a new `sky` anchor, right of the
+  mast). New customs in the fixture: `air-parcel` (a bubble of warm air that swells and turns
+  from orange to blue as it climbs), `droplets`, `cumulus` (a real cumulus: flat base, puffy
+  heaped top, billowing up; later grey and heavy) and `rain` (from the cloud base back into the
+  sea beside the boat, with rings where it lands). No rainbow. The host steps onto the boat in
+  scene 4 (1 step-in).
+- **whatif:** the tide claim is now "a third to a half" (the Sun's tide is about 0.46 of the
+  Moon's; scene 2 re-recorded and re-timed; the gauge shows two orange bands for the new range,
+  label "Tides: 1/3 to 1/2"); scene 3 uses the forest's new `moonless` variant (no Moon, many
+  stars and the Milky Way, lower far woods, darker starlit actor) and pulls back to show the
+  starry sky; scene 4's axis leans left so it never crosses the space station, and the place's
+  Moon stays covered (`moon-vanish` with `gone: true`) because it is still the Moon-free world.
+- **All four, livelier host:** `gesture` / `point` / `react` on key words in most beats, and a
+  kit default: while the narration speaks and the side-slot host has no other pose, he uses
+  the talk pose, gently varied, instead of standing with his hands clasped.
+- **Kit bug found on the way:** `point` at another actor crashed the compile (no tracks yet in
+  the first pass) → it uses where that actor starts; tested.
+
 ### Known limits (not fixed)
 
-- whatif scene 3 says "only the stars would light the way", but the forest framing (chosen to
-  keep the place's drawn Moon out of view) shows the dark trees, fireflies and the dimmed host,
-  not the starry sky; a forest night variant without a Moon (or a `stars` effect) would fix it.
-  The rooftop-night `clear` variant has a Moon, so it could not be used for "darker nights".
-- whatif: the axis swing (12° each way) and its drawn tilt are illustrative; the narration
+- whatif: the axis swing (6° each way around a 9° lean) and its drawn tilt are illustrative; the narration
   says only "far less steady" (studies differ on how large the swing would be).
 - volcano: the eruption's sub-timings (`flow`, `cool`, `grow`) are seconds after the burst
   word, taken from the word times; a re-recorded voice would need them updated.

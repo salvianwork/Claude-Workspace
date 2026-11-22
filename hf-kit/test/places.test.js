@@ -25,15 +25,15 @@ const EXPECT = {
   "city-street": { variants: ["day", "night"], anchors: ["sidewalk", "crosswalk", "shop-door", "bus-stop", "road", "sky"], paths: ["sidewalk", "road"] },
   home: { variants: ["day", "evening"], anchors: ["sofa", "table", "kitchen", "window", "door", "floor"], paths: ["floor"] },
   classroom: { variants: ["day", "afternoon"], anchors: ["board", "desk", "front", "window", "seats"], paths: ["aisle"] },
-  forest: { variants: ["day", "night"], anchors: ["trail", "clearing", "log", "stream", "tree", "canopy"], paths: ["trail"] },
-  ocean: { variants: ["surface", "underwater"], anchors: ["surface", "boat", "deep", "reef", "seabed"], paths: ["current"] },
+  forest: { variants: ["day", "night", "moonless"], anchors: ["trail", "clearing", "log", "stream", "tree", "canopy"], paths: ["trail"] },
+  ocean: { variants: ["surface", "underwater"], anchors: ["surface", "boat", "deep", "reef", "seabed", "sky"], paths: ["current"] },
   space: { variants: ["earth-orbit", "deep-space"], anchors: ["planet", "moon", "craft", "star", "open"], paths: ["orbit"] },
   "inside-body": { variants: ["organs", "scan"], anchors: ["heart", "lungs", "vessel", "stomach", "liver", "trachea"], paths: ["bloodstream"] },
   "sky-fantasy": { variants: ["day", "twilight"], anchors: ["island", "waterfall", "tower", "balloon", "sky", "cloud-sea"], paths: ["flight"] },
   "rooftop-night": { variants: ["clear", "rain"], anchors: ["ledge", "telescope", "door", "tank", "skyline", "sky"], paths: ["roof"] },
 };
 // night-time variants: the actor is clearly darker and cooler, with a rim from the moon or a lamp
-const NIGHT = new Set(["night", "dim", "clear", "rain"]);
+const NIGHT = new Set(["night", "dim", "clear", "rain", "moonless"]);
 // every place folder: the library above plus any place saved after an owner-approved video
 // (the animator's step 7); those load here and meet the same contract
 const DIRS = readdirSync(new URL("places/", KIT)).filter((d) => statSync(new URL("places/" + d, KIT)).isDirectory()).sort();
@@ -175,7 +175,13 @@ test("ocean: surface above the deep water, the reef and the seabed in both varia
   for (const variant of ["surface", "underwater"]) {
     const a = Object.fromEntries(Object.entries(p.anchorsFor({ variant }).anchors).map(([k, f]) => [k, f(0)]));
     assert.ok(a.boat.y <= a.surface.y + 40 && a.surface.y < a.deep.y && a.deep.y < a.reef.y && a.reef.y <= a.seabed.y, variant);
+    assert.ok(a.sky.y < a.boat.y - 100 && a.sky.y < a.surface.y, variant + ": the sky is above the sea");
   }
+});
+
+test("forest: an actor is darker on the moonless night than under the Moon (the sky: test/browser/places.mjs)", () => {
+  const lit = K.places.forest.meta.actorLight;
+  assert.ok(lit.moonless.amount > lit.night.amount, "an actor is darker without the Moon");
 });
 
 test("package.json has the world-sheet script", () => {

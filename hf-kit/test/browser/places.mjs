@@ -3,7 +3,8 @@
 // shared between mounts (two countrysides with different prefixes included: Review Focus 1), every
 // url(#...) resolves, the live anchors and paths equal anchorsFor, the frame is fully covered at the
 // camera limits (zoom 0.6 at the world's corners, zoom 5 at its edges), seeking back gives the same
-// DOM, and there are no page errors or network requests.
+// DOM, there are no page errors or network requests, and the forest's moonless night draws no
+// Moon and many more stars than its moonlit night.
 //
 //   node test/browser/places.mjs            -> prints a JSON report, exit 1 on any failure
 import { createRequire } from "node:module";
@@ -89,6 +90,14 @@ function pageChecks() {
     mt.m.update(0, PL.REF);
     if (mt.frame.innerHTML !== a) fails.push(`${mt.name}/${mt.variant}: DOM differs after seeking back`);
     mt.frame.style.visibility = "hidden";
+  }
+  // forest: the moonless night has no Moon disc and many more stars than the moonlit night
+  const skyOf = (variant) => mounts.find((mt) => mt.name === "forest" && mt.variant === variant).layers.sky.innerHTML;
+  if (K.places.forest) {
+    const moonlit = skyOf("night"), moonless = skyOf("moonless"), stars = (h) => (h.match(/data-star=/g) || []).length;
+    if (!/#F6F2DC/i.test(moonlit)) fails.push("forest/night: no Moon drawn");
+    if (/#F6F2DC/i.test(moonless)) fails.push("forest/moonless: a Moon is drawn");
+    if (!(stars(moonless) > 2 * stars(moonlit))) fails.push(`forest/moonless: ${stars(moonless)} stars, not many more than the moonlit ${stars(moonlit)}`);
   }
   return fails;
 }

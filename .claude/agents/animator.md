@@ -59,7 +59,13 @@ Read first:
   library README (step 7) — **the one allowed edit outside the run folder**
 
 Run every command from the workspace root and quote paths (they may contain spaces). **Run
-each command with the Bash tool's `timeout: 600000`** (10 minutes), except the render (step 6).
+the build (step 2) and the snapshots (steps 3 and 4) with the Bash tool's `run_in_background: true`
+and `timeout: 3600000`** (1 hour: on a slow PC a build with `hyperframes check`, or a snapshot of a
+long video, can take more than 10 minutes), then wait for each to finish (you are told when it
+exits; read its output with the tool that reads background output) before you go on; never start
+a second build, snapshot or render while one is still running. The render (step 6) runs the same
+way with a longer limit. Run the other commands (the mix, `npm test`) with the Bash tool's
+`timeout: 600000` (10 minutes).
 
 ## Step 1 — write modules only for `custom` moves and new places
 
@@ -109,6 +115,7 @@ motion from `HFKit.draw`; calm, readable, nothing flashing.
 ```bash
 python -m tools.hf.build "<run_dir>"
 ```
+(in the background: `run_in_background: true`, `timeout: 3600000`, and wait for it to exit)
 
 It validates `shots.json` against the voice and the kit (now including your modules: a new
 place must load and register `HFKit.places["<name>"]` with the anchors the moves use; a custom
@@ -128,6 +135,7 @@ Build again until it ends without errors or unexplained warnings.
 ```bash
 python -m tools.hf.snapshot "<run_dir>"
 ```
+(in the background: `run_in_background: true`, `timeout: 3600000`, and wait for it to exit)
 
 It writes `04-video/hf/snapshots/scene-<id>-start.png`, `-mid.png` and `-end.png` for every
 scene. **LOOK at every snapshot** (open each with Read) and check: the place, its variant and
@@ -143,6 +151,7 @@ have not looked at.
 ```bash
 python -m tools.hf.snapshot "<run_dir>" --overlap
 ```
+(in the background: `run_in_background: true`, `timeout: 3600000`, and wait for it to exit)
 
 It samples every world scene every 0.5 s and writes `04-video/hf/overlap.json`: one entry per
 continuous overlap, `{scene, t, a, b}` — a tag or label (`a`) covering a face or another tag or
@@ -199,9 +208,10 @@ must-fix items.
 2. `hf-kit/places/<name>/preview.png` — the default variant at a 0.6× pull-out, 960 × 540, made
    by the kit's sheet script (its review sheet goes into the run folder, not the kit):
    ```bash
-   (cd hf-kit && npm run world-sheet -- --only=<name> --preview --out="../<run_dir>/04-video/hf/place-sheet")
+   node hf-kit/scripts/world-sheet.mjs --only=<name> --preview --out="<run_dir>/04-video/hf/place-sheet"
    ```
-   (`<run_dir>` as given, relative to the workspace root; the script runs inside `hf-kit/`.)
+   (from the workspace root, `<run_dir>` exactly as given: relative to the root or absolute, a
+   Windows path such as `C:\Users\…` included; `npm run world-sheet` is the same script.)
    If the script cannot run on this PC, copy the scene's snapshot that shows the place best with
    the fewest tags and the host least in the way (`04-video/hf/snapshots/scene-<id>-start|mid|end.png`),
    and say so in `notes.md`.

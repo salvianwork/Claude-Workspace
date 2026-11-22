@@ -107,98 +107,112 @@
           "text": "shrink",
           "display": "shrink.",
           "start": 0.887,
-          "end": 1.525
+          "end": 1.55
         },
         {
           "i": 4,
           "text": "Only",
           "display": "Only",
-          "start": 1.663,
-          "end": 1.962
+          "start": 1.688,
+          "end": 1.988
         },
         {
           "i": 5,
           "text": "the",
           "display": "the",
-          "start": 1.962,
-          "end": 2.062
+          "start": 1.988,
+          "end": 2.112
         },
         {
           "i": 6,
           "text": "Sun's",
           "display": "Sun's",
-          "start": 2.062,
-          "end": 2.425
+          "start": 2.112,
+          "end": 2.475
         },
         {
           "i": 7,
           "text": "tides",
           "display": "tides",
-          "start": 2.425,
-          "end": 2.788
+          "start": 2.475,
+          "end": 2.837
         },
         {
           "i": 8,
           "text": "would",
           "display": "would",
-          "start": 2.788,
-          "end": 2.9
+          "start": 2.837,
+          "end": 2.95
         },
         {
           "i": 9,
           "text": "remain",
           "display": "remain,",
-          "start": 2.9,
-          "end": 3.4
+          "start": 2.95,
+          "end": 3.475
         },
         {
           "i": 10,
-          "text": "roughly",
-          "display": "roughly",
-          "start": 3.475,
-          "end": 3.85
+          "text": "a",
+          "display": "a",
+          "start": 3.55,
+          "end": 3.663
         },
         {
           "i": 11,
-          "text": "a",
-          "display": "a",
-          "start": 3.85,
-          "end": 3.962
+          "text": "third",
+          "display": "third",
+          "start": 3.663,
+          "end": 4.0
         },
         {
           "i": 12,
-          "text": "third",
-          "display": "third",
-          "start": 3.962,
-          "end": 4.263
+          "text": "to",
+          "display": "to",
+          "start": 4.0,
+          "end": 4.1
         },
         {
           "i": 13,
-          "text": "as",
-          "display": "as",
-          "start": 4.263,
-          "end": 4.412
+          "text": "a",
+          "display": "a",
+          "start": 4.1,
+          "end": 4.175
         },
         {
           "i": 14,
-          "text": "big",
-          "display": "big",
-          "start": 4.412,
-          "end": 4.612
+          "text": "half",
+          "display": "half",
+          "start": 4.175,
+          "end": 4.463
         },
         {
           "i": 15,
           "text": "as",
           "display": "as",
-          "start": 4.612,
-          "end": 4.75
+          "start": 4.463,
+          "end": 4.612
         },
         {
           "i": 16,
+          "text": "big",
+          "display": "big",
+          "start": 4.612,
+          "end": 4.812
+        },
+        {
+          "i": 17,
+          "text": "as",
+          "display": "as",
+          "start": 4.812,
+          "end": 4.95
+        },
+        {
+          "i": 18,
           "text": "today's",
           "display": "today's.",
-          "start": 4.75,
-          "end": 5.725
+          "start": 4.95,
+          "end": 5.925
         }
       ]
     },

@@ -93,6 +93,22 @@
        "radius": 520,
        "color": "#FFB347",
        "duration": 3
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious",
+       "at": {
+        "word": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "talk",
+       "at": {
+        "word": 8
+       }
       }
      ]
     },
@@ -148,6 +164,14 @@
        "side": "left",
        "at": {
         "word": 22
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 13
        }
       }
      ]
@@ -245,6 +269,14 @@
        "until": {
         "word": 14
        }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "surprised",
+       "at": {
+        "word": 4
+       }
       }
      ]
     },
@@ -267,7 +299,7 @@
        "who": "host",
        "target": "slope",
        "at": {
-        "word": 14
+        "word": 10
        }
       },
       {
@@ -285,6 +317,14 @@
        "side": "left",
        "at": {
         "word": 21
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "raise",
+       "at": {
+        "word": 19
        }
       }
      ]

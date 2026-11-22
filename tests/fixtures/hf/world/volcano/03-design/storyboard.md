@@ -11,8 +11,8 @@ Total: 21.3 s, 3 scenes, host step-ins: scenes 1; new place: volcano; custom mov
 - **Host:** step-in — stands at `foot` in the world
 - **Cast:** none
 - **Beats:**
-  1. "Deep…" (0) — the whole volcano, cut away: the host at its foot points down at the chamber; the camera pushes down to the glowing pool of molten rock. Moves: camera cut `chamber` ×0.6 at the start; label "not to scale" on `sky` on "Deep" (0); point host on "volcano" (3); camera push_in `chamber` ×1.2 on "chamber" (7); label "Magma chamber" on `chamber` on "chamber" (7); glow chamber on "molten" (11)
-  2. "As…" (13) — pressure pulses through the chamber, then magma climbs the vent toward the crater as the camera rises with it. Moves: rings chamber on "pressure" (14); custom `magma-rise` on "magma" (17); gesture host on "magma" (17); camera pull_out `vent` ×0.7 on "vent" (23); label "Vent" on `vent` on "narrow" (22)
+  1. "Deep…" (0) — the whole volcano, cut away: the host at its foot points down at the chamber; the camera pushes down to the glowing pool of molten rock. Moves: camera cut `chamber` ×0.6 at the start; label "not to scale" on `sky` on "Deep" (0); point host on "volcano" (3); camera push_in `chamber` ×1.2 on "chamber" (7); label "Magma chamber" on `chamber` on "chamber" (7); glow chamber on "molten" (11); react curious host on "Deep" (0); gesture talk host on "a" (8)
+  2. "As…" (13) — pressure pulses through the chamber, then magma climbs the vent toward the crater as the camera rises with it. Moves: rings chamber on "pressure" (14); custom `magma-rise` on "magma" (17); gesture host on "magma" (17); gesture think host on "As" (13); camera pull_out `vent` ×0.7 on "vent" (23); label "Vent" on `vent` on "narrow" (22)
 - **Text on screen:** "not to scale", "Magma chamber", "Vent" (6 words in 8.925 s)
 - **Scale:** not to scale — label "not to scale"
 - **Facts:** the magma chamber lies deep beneath the volcano; magma is molten rock; pressure pushes magma up through a narrow vent; not to scale: a real volcano is thousands of times taller than a person
@@ -29,8 +29,8 @@ Total: 21.3 s, 3 scenes, host step-ins: scenes 1; new place: volcano; custom mov
 - **Host:** talks from the right slot
 - **Cast:** none
 - **Beats:**
-  1. "At…" (0) — at the crater the magma bursts out: a fountain of glowing lava and a column of ash; the host is startled. Moves: camera cut `crater` ×0.9 at the start; say host; custom `eruption` on "bursts" (4); burst crater on "bursts" (4); react host on "bursts" (4); pulse_along lava-flow on "lava" (7); tag_follow "Lava" on `pulse`
-  2. "The…" (8) — lava runs down both slopes as the camera pulls back, then darkens as it cools and hardens; the cone grows a new dark layer. Moves: camera pull_out `vent` ×0.65 on "slopes" (13); point host on "cools" (14); label "not to scale" on `sky` on "cools" (14); label "New layer" on `slope` on "a" (21)
+  1. "At…" (0) — at the crater the magma bursts out: a fountain of glowing lava and a column of ash; the host is startled. Moves: camera cut `crater` ×0.9 at the start; say host; custom `eruption` on "bursts" (4); burst crater on "bursts" (4); react host on "bursts" (4); gesture surprised host on "bursts" (4); pulse_along lava-flow on "lava" (7); tag_follow "Lava" on `pulse`
+  2. "The…" (8) — lava runs down both slopes as the camera pulls back, then darkens as it cools and hardens; the cone grows a new dark layer. Moves: camera pull_out `vent` ×0.65 on "slopes" (13); point host on "flows" (10); label "not to scale" on `sky` on "cools" (14); label "New layer" on `slope` on "a" (21); gesture raise host on "cone" (19)
 - **Text on screen:** "Lava", "not to scale", "New layer" (6 words in 7.8 s)
 - **Scale:** not to scale — label "not to scale"
 - **Facts:** magma that bursts out at the surface is called lava; lava flows down the slopes, cools and hardens; each eruption adds a new layer to the cone; not to scale

@@ -11,7 +11,7 @@
  *
  *   HFKit.rig.svg(state, idPrefix) -> "<svg ...>"   every id starts with idPrefix + "-"
  *   state = {pose, cycle?, phase?, outfit, held?, expression, mouth, blink, breath, facing,
- *            character?, frame?, track?, blend?, gazeBias?}
+ *            character?, frame?, track?, blend?, rest?, gazeBias?}
  *     pose        name in POSES, or an arm-pose object {left, right, tilt, gazeX, gazeY}
  *     cycle/phase "walk" | "run" | "jump" and its phase 0..1 (legs; arms too while pose is idle)
  *     outfit      name in OUTFITS (character.defaultOutfit when missing)
@@ -23,6 +23,8 @@
  *     frame       frame number: adds the pose's living motion, hair sway and head tilt
  *     track       the scene's mouth array (talk gestures follow the voice)
  *     blend       {pose, expression, k}: blend from that pose/expression to this one (k 0..1)
+ *     rest        {pose, k}: "idle" rests k (0..1) of the way to that pose (the side-slot host
+ *                 talks while the narration speaks: moves.js sets {pose: "talk", k})
  *     turn        -1..1 three-quarter turn (default: facing; +-1 while walking / running)
  *     cycleAmount 0..1 blend of the cycle toward standing (smooth starts and stops)
  *     light       {tint, amount 0..1, rim?, rimSide?}: take on the place's light
@@ -266,14 +268,23 @@
     return Object.assign({}, base, { left: mv(base.left, w, 1.5 * w), right: mv(base.right, -w, -1.5 * w) });
   }
 
+  /* A named pose; "idle" with st.rest = {pose, k} rests partly in that pose instead (the side-slot
+   * host talking while the narration speaks: idle blended k of the way to talk). */
+  function namedPose(name, st) {
+    if (!POSES[name]) throw new Error("rig: unknown pose " + name);
+    var p = st.frame === undefined ? POSES[name] : animatedPose(name, st.frame, st.track);
+    if (name === "idle" && st.rest && st.rest.k > 0) {
+      if (!POSES[st.rest.pose]) throw new Error("rig: unknown pose " + st.rest.pose);
+      var q = st.frame === undefined ? POSES[st.rest.pose] : animatedPose(st.rest.pose, st.frame, st.track);
+      p = P.blendPoses(p, q, clamp(st.rest.k, 0, 1));
+    }
+    return p;
+  }
   function poseOf(st) {
     var p = st.pose === undefined ? "idle" : st.pose;
-    if (typeof p === "string") {
-      if (!POSES[p]) throw new Error("rig: unknown pose " + p);
-      p = st.frame === undefined ? POSES[p] : animatedPose(p, st.frame, st.track);
-    }
+    if (typeof p === "string") p = namedPose(p, st);
     if (st.blend && st.blend.pose !== undefined && st.blend.k < 1) {
-      var from = poseOf({ pose: st.blend.pose, frame: st.frame, track: st.track });
+      var from = poseOf({ pose: st.blend.pose, frame: st.frame, track: st.track, rest: st.rest });
       p = P.blendPoses(from, p, st.blend.k);
     }
     return p;

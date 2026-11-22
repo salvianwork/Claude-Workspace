@@ -13,7 +13,7 @@
     {
       "id": 2,
       "file": "scene-02.wav",
-      "duration_s": 6.425
+      "duration_s": 6.625
     },
     {
       "id": 3,
@@ -31,5 +31,5 @@
       "duration_s": 4.75
     }
   ],
-  "total_s": 26.225
+  "total_s": 26.425
 }

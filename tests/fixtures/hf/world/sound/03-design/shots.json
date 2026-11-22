@@ -112,6 +112,14 @@
        "do": "push_in",
        "target": "rail-near",
        "zoom": 1.1
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 11
+       }
       }
      ]
     },
@@ -153,6 +161,14 @@
        },
        "until": {
         "word": 19
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "lake",
+       "at": {
+        "word": 16
        }
       }
      ]
@@ -213,6 +229,14 @@
        "at": {
         "word": 23
        }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "friend",
+       "at": {
+        "word": 23
+       }
       }
      ]
     }
@@ -256,6 +280,14 @@
        "params": {
         "state": "gas"
        }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious",
+       "at": {
+        "word": 0
+       }
       }
      ]
     },
@@ -284,6 +316,14 @@
        },
        "at": {
         "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-across",
+       "at": {
+        "word": 17
        }
       }
      ]

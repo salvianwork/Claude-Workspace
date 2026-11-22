@@ -4,7 +4,9 @@
  * big roots. Ferns, mushrooms, mossy rocks and wildflowers everywhere; butterflies by day, fireflies
  * and an owl at night. A big trunk, ferns and hanging leaves frame the foreground.
  *
- * Variants: day (default), night (moonlight, fireflies, the owl's eyes). Anchors (ground-layer
+ * Variants: day (default), night (moonlight, fireflies, the owl's eyes), moonless (a night with no
+ * Moon: a darker wood under a sky full of stars and a faint Milky Way, lit only by starlight, with
+ * the fireflies and the owl). Anchors (ground-layer
  * world px, 3840 x 2160 world):
  *   trail     on the trail, left: where an actor walks in and stops
  *   clearing  the sunlit open ground in the middle
@@ -25,13 +27,14 @@
   var meta = {
     name: "forest",
     description: "Woodland: misty layers of trees, light shafts, a deer, a winding trail, a mossy log, a stream with a plank bridge, a huge oak.",
-    variants: ["day", "night"],
+    variants: ["day", "night", "moonless"],
     anchors: ["trail", "clearing", "log", "stream", "tree", "canopy"],
     paths: ["trail"],
     actorScale: 1,
     actorLight: {
       day: { tint: "#EAF6D2", amount: 0.14, rim: "#FFF3C4", rimSide: 1 }, // dappled green, sun from the right
       night: { tint: "#3E5A8E", amount: 0.68, rim: "#C4D8FF", rimSide: 1 },
+      moonless: { tint: "#2C4174", amount: 0.74, rim: "#A9BDF0", rimSide: 1 }, // starlight only: darker, a faint cool rim
     },
   };
 
@@ -62,6 +65,7 @@
   var LOOK = {
     day: { sky: [[0, "#6FB6E6"], [0.55, "#BFE3EF"], [1, "#F4F1D2"]], tone: function (c) { return c; }, far: ["#9CC6B8", "#7DB09A", "#5F9A7E"], mist: "#E8F4EC" },
     night: { sky: [[0, "#050B1E"], [0.55, "#0F1E40"], [1, "#22355E"]], tone: A.toner(0.45, "#13284E", 0.45), far: ["#1E3350", "#1A2C46", "#16253C"], mist: "#3A5480" },
+    moonless: { sky: [[0, "#02040C"], [0.55, "#070F24"], [1, "#121D3A"]], tone: A.toner(0.52, "#0E1C3C", 0.5), far: ["#16263E", "#132136", "#101B2E"], mist: "#283A5E" },
   };
 
   function pine(x, y, h, c) { var w = h * 0.34; return tag("path", { d: "M" + r2(x) + " " + r2(y - h) + " L" + r2(x + w * 0.55) + " " + r2(y - h * 0.62) + " L" + r2(x + w * 0.35) + " " + r2(y - h * 0.62) + " L" + r2(x + w * 0.8) + " " + r2(y - h * 0.3) + " L" + r2(x + w * 0.5) + " " + r2(y - h * 0.3) + " L" + r2(x + w) + " " + r2(y) + " L" + r2(x - w) + " " + r2(y) + " L" + r2(x - w * 0.5) + " " + r2(y - h * 0.3) + " L" + r2(x - w * 0.8) + " " + r2(y - h * 0.3) + " L" + r2(x - w * 0.35) + " " + r2(y - h * 0.62) + " L" + r2(x - w * 0.55) + " " + r2(y - h * 0.62) + " Z", fill: c }); }
@@ -89,7 +93,11 @@
     var defs = S.lin(P + "-sky", L.sky) + S.rad(P + "-sun", [[0, "#FFF8DA", 1], [0.25, "#FFEBA8", 0.6], [1, "#FFEBA8", 0]]);
     var s = tag("rect", { x: -2600, y: -1600, width: 9040, height: 5400, fill: L.sky[L.sky.length - 1][1] }) + tag("rect", { x: -2600, y: -1600, width: 9040, height: 1900, fill: L.sky[0][1] });
     s += tag("rect", { x: -2600, y: 300, width: 9040, height: 1100, fill: "url(#" + P + "-sky)" });
-    if (v === "night") s += A.stars(R, 120, 400, 300, 3000, 700) + tag("circle", { cx: 2500, cy: 560, r: 280, fill: "#8FA6E0", opacity: 0.18 }) + tag("circle", { cx: 2500, cy: 560, r: 80, fill: "#F6F2DC" }) + tag("circle", { cx: 2478, cy: 546, r: 16, fill: "#DCD6BC" });
+    if (v === "moonless") { // no Moon: many more stars, a few bright ones, and the Milky Way
+      defs += S.lin(P + "-mw", [[0, "#B8C4F0", 0], [0.45, "#C8D0F4", 0.16], [0.5, "#E6E2F6", 0.24], [0.55, "#C8D0F4", 0.16], [1, "#B8C4F0", 0]]);
+      s += tag("g", { transform: "rotate(-24 1920 760)" }, tag("rect", { x: -400, y: 520, width: 4700, height: 480, fill: "url(#" + P + "-mw)" }) + A.stars(R, 160, -200, 600, 4300, 320, { scale: 0.7 }));
+      s += A.stars(R, 320, 300, 200, 3240, 1000, { bright: 0.12 }) + A.stars(R, 70, 500, 220, 2800, 800, { bright: 0.6, scale: 1.5 });
+    } else if (v === "night") s += A.stars(R, 120, 400, 300, 3000, 700) + tag("circle", { cx: 2500, cy: 560, r: 280, fill: "#8FA6E0", opacity: 0.18 }) + tag("circle", { cx: 2500, cy: 560, r: 80, fill: "#F6F2DC" }) + tag("circle", { cx: 2478, cy: 546, r: 16, fill: "#DCD6BC" });
     else s += tag("circle", { cx: 2500, cy: 640, r: 600, fill: "url(#" + P + "-sun)" }) + tag("circle", { cx: 2500, cy: 640, r: 96, fill: "#FFF8DA" });
     return { defs: defs, body: s };
   }
@@ -100,7 +108,7 @@
       var base = 1060 + k * 70;
       s += tag("rect", { x: -1600, y: base - 10, width: 7040, height: 2000, fill: c });
       for (var i = 0; i < 46; i++) {
-        var x = -1500 + i * 150 + R() * 70, h = 200 + R() * 220 + k * 40;
+        var x = -1500 + i * 150 + R() * 70, h = (200 + R() * 220 + k * 40) * (v === "moonless" ? 0.6 : 1); // moonless: lower woods, more starry sky
         s += R() < 0.6 ? pine(x, base, h, c) : tag("ellipse", { cx: x, cy: base - h * 0.45, rx: h * 0.32, ry: h * 0.5, fill: c });
       }
       s += tag("rect", { x: -1600, y: base - 160, width: 7040, height: 220, fill: "url(#" + P + "-mist)" });
@@ -108,8 +116,8 @@
     return { defs: defs, body: s };
   }
   function drawMid(P, v, L, R) {
-    var night = v === "night", tone = L.tone;
-    var defs = S.lin(P + "-ray", [[0, night ? "#C4D8FF" : "#FFF6C8", night ? 0.22 : 0.42], [1, night ? "#C4D8FF" : "#FFF6C8", 0]]);
+    var night = v !== "day", tone = L.tone, rayOp = v === "moonless" ? 0.07 : night ? 0.22 : 0.42; // no Moon: only a trace of starlight
+    var defs = S.lin(P + "-ray", [[0, night ? "#C4D8FF" : "#FFF6C8", rayOp], [1, night ? "#C4D8FF" : "#FFF6C8", 0]]);
     var s = tag("path", { d: smooth([[-1400, 1300], [-400, 1250], [600, 1290], [1600, 1240], [2600, 1280], [3600, 1250], [5200, 1280]], false) + " L5200 2600 L-1400 2600 Z", fill: tone("#5E9A4A") });
     // mid trunks with leafy crowns
     for (var i = 0; i < 16; i++) {
@@ -135,10 +143,10 @@
   }
 
   function drawGround(P, v, L, R) {
-    var night = v === "night", tone = L.tone;
+    var night = v !== "day", tone = L.tone, spotOp = v === "moonless" ? 0.1 : night ? 0.25 : 0.5;
     var defs = S.lin(P + "-floor", [[0, tone("#6FA84E")], [0.4, tone("#5E9A42")], [1, tone("#4A8236")]]) + S.lin(P + "-path", [[0, tone("#D8B98A")], [1, tone("#BE9A68")]]) +
       S.lin(P + "-water", [[0, tone("#7FD3F0")], [1, tone("#3E9AC6")]]) + S.lin(P + "-bark", [[0, tone("#7A5A3C")], [0.5, tone("#8C6A48")], [1, tone("#5E4430")]], [0, 0, 1, 0]) +
-      S.rad(P + "-sunspot", [[0, night ? "#C4D8FF" : "#FFF3B0", night ? 0.25 : 0.5], [1, night ? "#C4D8FF" : "#FFF3B0", 0]]);
+      S.rad(P + "-sunspot", [[0, night ? "#C4D8FF" : "#FFF3B0", spotOp], [1, night ? "#C4D8FF" : "#FFF3B0", 0]]);
     var s = "", O = G.oak;
     s += tag("path", { d: smooth([[-400, G.back + 20], [400, G.back - 10], [1200, G.back + 14], [2000, G.back - 6], [2800, G.back + 10], [3600, G.back - 12], [4240, G.back]], false) + " L4240 2500 L-400 2500 Z", fill: "url(#" + P + "-floor)" });
     s += tag("ellipse", { cx: 1820, cy: 1560, rx: 520, ry: 120, fill: "url(#" + P + "-sunspot)" });
@@ -220,7 +228,7 @@
     if (!layers || !layers.sky) throw new Error("place forest: mount needs the layers from HFKit.placeLayers");
     var P = opts.idPrefix || "place-forest";
     var seed = opts.seed === undefined ? 8 : opts.seed | 0;
-    var L = LOOK[v], night = v === "night";
+    var L = LOOK[v], night = v !== "day";
     var parts = {
       sky: drawSky(P, v, L, D.rng(seed + 1)), far: drawFar(P, v, L, D.rng(seed + 2)), mid: drawMid(P, v, L, D.rng(seed + 3)),
       ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)),

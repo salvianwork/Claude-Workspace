@@ -19,6 +19,9 @@ names any problem as `scene <id> beat <b> move <m> (<do>): <what>`, counting fro
   cut and dive start at `at` (default: the beat). While an actor walks or runs and no camera move
   runs, the camera follows him; stepping out of the side slot he is framed at least 45 % of the
   frame tall. A camera that finishes more than 0.25 s after the scene ends fails validation.
+- The host in the side slot talks while the narration speaks: whenever no other pose (`gesture`,
+  `point`, `say`, ...) runs, he uses the talk pose, gently varied, instead of standing idle. Give
+  him `gesture` / `point` / `react` on key words as well, so he moves on most beats.
 - Warnings (allowed, worth a look): the frame edge cuts an actor's head where the camera lands;
   a `use` strike slips more than 0.5 s past its word because its actor is still on the way.
 - Text: tags and labels at most 4 words (a number and its unit count as one: `343 m/s`), the title at most 6.

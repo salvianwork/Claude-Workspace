@@ -1,7 +1,8 @@
 /* Scene 1 custom "moon-vanish": the imagined moment the Moon disappears. From the move's `at` the
  * Moon (the space place's `moon` anchor, earth-orbit: radius 120 world px) flashes softly, a ring
  * of light spreads, and a disc of empty space fades over it within about 0.9 s, so the Moon is
- * gone for the rest of the scene. params.radius (default 120) is the Moon's radius.
+ * gone for the rest of the scene. params.radius (default 120) is the Moon's radius. params.gone:
+ * true covers it from the start, with no flash (a later scene of the imagined, Moon-free world).
  * Contract: HFKit.customs[name] = {mount(layer, ctx) -> {update(t), box(t)}}; world px on the
  * effects layer; update is a pure function of t. */
 (function (root) {
@@ -24,7 +25,7 @@
       var ring = D.el(g, "circle", { cx: m.x, cy: m.y, r: R, fill: "none", stroke: "#F6F2DC", "stroke-width": 10, opacity: 0 });
       var flash = D.el(g, "circle", { cx: m.x, cy: m.y, r: R * 2.4, fill: "url(#" + id + "-fl)", opacity: 0 });
       function update(t) {
-        var a = t - at;
+        var a = p.gone ? 99 : t - at;
         cover.setAttribute("opacity", r2(E.inOut(prog(a, 0.15, 0.9))));
         holeStars.setAttribute("opacity", r2(0.7 * prog(a, 0.6, 1.2)));
         var f = a < 0 ? 0 : Math.sin(Math.PI * Math.min(1, a / 0.7));
@@ -35,7 +36,7 @@
         ring.setAttribute("opacity", r2(a < 0.1 ? 0 : 0.8 * (1 - u)));
         ring.setAttribute("stroke-width", r2(10 * (1 - 0.7 * u)));
       }
-      function box(t) { var a = t - at; return a < 0 || a > 1.4 ? { x: m.x, y: m.y, width: 0, height: 0 } : { x: m.x - R * 3.5, y: m.y - R * 3.5, width: R * 7, height: R * 7 }; }
+      function box(t) { var a = p.gone ? 99 : t - at; return a < 0 || a > 1.4 ? { x: m.x, y: m.y, width: 0, height: 0 } : { x: m.x - R * 3.5, y: m.y - R * 3.5, width: R * 7, height: R * 7 }; }
       update(at - 1);
       return { update: update, box: box };
     },

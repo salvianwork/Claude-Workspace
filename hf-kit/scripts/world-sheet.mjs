@@ -11,7 +11,8 @@
 //                                          beat (sample/railway-beat.json) at 9 times, plus every inside view
 //
 //   npm run world-sheet                          -> sample/world-sheet/*.png
-//   npm run world-sheet -- --out=<dir>           write the sheets there instead
+//   npm run world-sheet -- --out=<dir>           write the sheets there instead (absolute, or relative to
+//                                                the current folder; also: node hf-kit/scripts/world-sheet.mjs ...)
 //   npm run world-sheet -- --frames=<dir>        also save every place shot full size (1920 x 1080)
 //   npm run world-sheet -- --preview             also refresh places/<name>/preview.png
 //   npm run world-sheet -- --only=effects,lab    render only those sheets (host, effects, overlays, world, <place>)
@@ -30,7 +31,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const KIT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const arg = (name) => { const a = process.argv.find((x) => x.startsWith(`--${name}`)); return a === undefined ? undefined : a.split("=")[1] ?? true; };
+// --name=value (the value may itself hold "=" or a drive letter, e.g. --out=C:\runs\a=b)
+const arg = (name) => { const a = process.argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); if (a === undefined) return undefined; const i = a.indexOf("="); return i < 0 ? true : a.slice(i + 1); };
+// --out / --frames: an absolute path (Windows or POSIX) is used as is; a relative one is from the
+// current folder (from the workspace root: node hf-kit/scripts/world-sheet.mjs --out="<run_dir>/...")
 const outDir = resolve(arg("out") || join(KIT, "sample", "world-sheet"));
 const framesDir = arg("frames") ? resolve(arg("frames")) : null;
 const MAX_BYTES = 1.5 * 1024 * 1024;

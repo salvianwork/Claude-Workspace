@@ -332,3 +332,70 @@ test("a frame edge cutting an actor's head where the camera lands is a warning",
   assert.ok(c.warnings.some((x) => /^scene 2 beat 1 move 0 \(cut\): the frame edge cuts "friend"'s head where the camera lands \(\d+\.\d\d s\)/.test(x)), c.warnings.join("\n"));
   assert.deepEqual(compile(oneBeat([{ do: "cut", target: "rail-far", zoom: 1 }])).warnings, []);
 });
+
+test("the side-slot host talks while the narration speaks (talk rest, gently varied, deterministic)", () => {
+  // narration spans: words closer than 0.7 s join one span
+  assert.deepEqual(K.narrationSpans(WORDS), [[0.3, 12.25]]);
+  const gap = [{ i: 0, start: 0.2, end: 0.6 }, { i: 1, start: 0.9, end: 1.2 }, { i: 2, start: 3, end: 3.4 }];
+  assert.deepEqual(K.narrationSpans(gap), [[0.2, 1.2], [3, 3.4]]);
+  const scene = railway({ id: 3, beats: [
+    { at: { word: 0 }, moves: [{ do: "react", who: "host", expression: "happy" }] },
+    { at: { word: 10 }, moves: [{ do: "gesture", who: "host", name: "think" }] },
+  ] });
+  const c = compile(scene), host = c.actors.host;
+  assert.ok(host.some((e) => e.type === "narration"), "the host's track carries the narration spans");
+  assert.ok(!c.actors.friend.some((e) => e.type === "narration"), "an extra does not narrate");
+  // speaking, no other pose: idle rests most of the way to talk, and the amount varies gently
+  const ks = [1, 1.8, 2.6, 3.4, 4.1].map((t) => K.actorAt(host, t).state);
+  for (const st of ks) {
+    assert.equal(st.pose, "idle");
+    assert.equal(st.rest.pose, "talk");
+    assert.ok(st.rest.k >= 0.6 && st.rest.k <= 1, String(st.rest.k));
+  }
+  assert.ok(new Set(ks.map((st) => st.rest.k)).size > 1, "the talk rest varies");
+  // eased in at the start (before the first word), gone well after the narration
+  assert.equal(K.actorAt(host, 0).state.rest, undefined);
+  assert.equal(K.actorAt(host, 13.5).state.rest, undefined);
+  // a gesture still wins while it runs (blending from and back to the talk rest)
+  const g = K.actorAt(host, WORDS[10].start + 1).state;
+  assert.equal(g.pose, "think");
+  // deterministic: the same scene compiles to the same states
+  const again = compile(scene).actors.host;
+  for (const t of [0.5, 2.2, 4.4, 6.6]) assert.deepEqual(K.actorAt(again, t).state, K.actorAt(host, t).state);
+});
+
+test("the talk rest is for the side slot only: a host in the world, or walking, rests idle", () => {
+  const inWorld = railway({ id: 4, actors: [{ id: "host", start: { anchor: "rail-near" } }],
+    beats: [{ at: { word: 0 }, moves: [{ do: "react", who: "host", expression: "happy" }] }] });
+  const c = compile(inWorld);
+  assert.equal(K.actorAt(c.actors.host, 3).state.rest, undefined);
+  const walks = compile(railway({ id: 5 }));
+  const walk = walks.actors.host.find((e) => e.type === "move");
+  assert.equal(K.actorAt(walks.actors.host, walk.t + 0.5).state.rest, undefined);
+  assert.equal(K.actorAt(walks.actors.host, walk.t1 + 0.5).state.rest, undefined);
+});
+
+test("rig: state.rest blends idle toward its pose (k 0 = idle, more k = closer to that pose)", () => {
+  const R = K.rig, base = { outfit: "explorer", expression: "happy", mouth: 0, blink: 0, breath: 0 };
+  const idle = R.svg(Object.assign({ pose: "idle" }, base), "p");
+  const talk = R.svg(Object.assign({ pose: "talk" }, base), "p");
+  assert.equal(R.svg(Object.assign({ pose: "idle", rest: { pose: "talk", k: 0 } }, base), "p"), idle);
+  assert.notEqual(R.svg(Object.assign({ pose: "idle", rest: { pose: "talk", k: 1 } }, base), "p"), idle);
+  const half = R.svg(Object.assign({ pose: "idle", rest: { pose: "talk", k: 0.5 } }, base), "p");
+  assert.notEqual(half, idle); assert.notEqual(half, talk);
+  // another pose ignores the rest; blending out of it lands on the rest
+  assert.equal(R.svg(Object.assign({ pose: "wave", rest: { pose: "talk", k: 1 } }, base), "p"), R.svg(Object.assign({ pose: "wave" }, base), "p"));
+  assert.throws(() => R.svg(Object.assign({ pose: "idle", rest: { pose: "nope", k: 1 } }, base), "p"), /unknown pose nope/);
+});
+
+test("point at another actor: he points toward that actor (no crash before the tracks exist)", () => {
+  // host at rail-near, the friend at rail-far (to his right)
+  const scene = railway({ id: 6, actors: [{ id: "host", start: { anchor: "rail-near" } }, { id: "friend", character: "extra-1", outfit: "casual", start: { anchor: "rail-far" } }],
+    beats: [{ at: { word: 0 }, moves: [{ do: "point", who: "host", target: "friend", at: { word: 2 } }, { do: "point", who: "friend", target: "host", at: { word: 2 } }] }] });
+  const c = compile(scene);
+  assert.deepEqual(c.errors, []);
+  const near = K.places.countryside.anchorsFor({ variant: "day" }).anchors;
+  const right = near["rail-far"](0).x > near["rail-near"](0).x;
+  assert.equal(K.actorAt(c.actors.host, WORDS[2].start + 0.5).state.pose, right ? "point-right" : "point-left");
+  assert.equal(K.actorAt(c.actors.friend, WORDS[2].start + 0.5).state.pose, right ? "point-left" : "point-right");
+});

@@ -1,1 +1,1 @@
-The sea: a sailing boat on rolling waves cut away to the reef below (surface), or down among the coral, seagrass and fish (underwater); variants surface, underwater; anchors surface, boat, deep, reef, seabed; path current.
+The sea: a sailing boat on rolling waves cut away to the reef below (surface), or down among the coral, seagrass and fish (underwater); variants surface, underwater; anchors surface, boat, deep, reef, seabed, sky; path current.
