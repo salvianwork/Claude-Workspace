@@ -157,6 +157,7 @@
 
   /* One stride (two steps) per phase 0..1. Contact at phase 0.25 / 0.75 (legs apart, hips
    * low), passing at 0 / 0.5 (swing knee bent, hips high): the bob comes from the legs. */
+  var WALK_SWING = 39, RUN_SWING = 48; // thigh swing amplitude (degrees): sets STRIDE and the cadence
   function walk(phase) {
     var th = 2 * Math.PI * phase;
     var s = Math.sin(th), c = Math.cos(th);
@@ -171,7 +172,8 @@
     var sl = Math.sin(th + 0.45); // the thigh leads the knee: at passing the swing knee is already forward
     var sw = 18 * sl; // arms opposite to the legs: left arm back while the left leg is forward
     return {
-      legs: { left: legPose(20 * sl, kneeL, footL), right: legPose(-20 * sl, kneeR, footR), spread: 1.2 },
+      // a full stride (about 0.8 body heights a cycle): 420 world px/s walks at about 1.35 cycles/s
+      legs: { left: legPose(WALK_SWING * sl, kneeL, footL), right: legPose(-WALK_SWING * sl, kneeR, footR), spread: 1.2 },
       arms: {
         left: arm(3 + sw, 3 + sw - 14 - 12 * pos(-sl, 1), "relaxed", -8, 0.96, 0.93),
         right: arm(3 + sw, 3 + sw + 14 + 12 * pos(sl, 1), "relaxed", -8, 0.96, 0.93),
@@ -193,7 +195,7 @@
     var footR = -0.4 * (kneeR - 16) + 8 * pos(-sl, 3);
     var sw = 30 * sl;
     return {
-      legs: { left: legPose(34 * sl, kneeL, footL), right: legPose(-34 * sl, kneeR, footR), spread: 0.8 },
+      legs: { left: legPose(RUN_SWING * sl, kneeL, footL), right: legPose(-RUN_SWING * sl, kneeR, footR), spread: 0.8 },
       arms: { left: arm(4 + sw, 4 + sw - 96, "fist", 0, 0.93, 0.82), right: arm(4 + sw, 4 + sw + 96, "fist", 0, 0.93, 0.82) },
       lean: 10,
       lift: 30 * pos(-Math.cos(2 * th + 1.94), 1.5), // flight just before each contact

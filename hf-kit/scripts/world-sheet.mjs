@@ -189,7 +189,7 @@ function pageBuild(spec) {
     };
     if (spec.kind === "world-frame") { sheet.style.padding = "0"; shot(sheet, spec.t, 1, null).el.parentNode.parentNode.style.borderRadius = "0"; return; }
     el(sheet, "h1", "", "World scene: the railway beat");
-    el(sheet, "div", "sub", "The plan's pinned schema-2 example through HFKit.compileMoves + mountWorld (made-up narration timings, captions on). Beat 0 (word 0): host waves from the side slot, the camera pulls out. Beat 1 (word 9): host walks in to rail-near, strikes the rail, the pulse races to rail-far with its tag, the camera pushes in.");
+    el(sheet, "div", "sub", "The plan's pinned railway beat through HFKit.compileMoves + mountWorld (made-up narration timings, captions on). Re-authored at a natural pace (~13 s): beat 0, the host waves from the side slot, steps into the world and walks to rail-near (the camera follows him, readable); beat 1, the strike lands on 'rail', the pulse races to rail-far with its tag (the camera follows it), the listener is surprised, the camera pushes in on him.");
     const grid = el(sheet, "div", "row");
     grid.style.cssText = "display:flex;flex-wrap:wrap;gap:18px;max-width:" + (3 * 1920 * 0.3 + 2 * 18) + "px";
     for (const [t, label] of spec.times) shot(grid, t, 0.3, "t = " + t.toFixed(1) + " s · " + label);
@@ -356,8 +356,8 @@ async function render(spec, out, viewport) {
 }
 
 const RAILWAY = JSON.parse(readFileSync(join(KIT, "sample", "railway-beat.json"), "utf8"));
-const RAILWAY_TIMES = [[0.3, "opens tight, waving"], [2.6, "pulling out"], [5.0, "revealed"], [7.0, "steps out of the slot"], [9.4, "walking in"],
-  [11.39, "the hammer strikes"], [12.0, "pulse and tag race"], [15.5, "pushing in"], [19.6, "landed on rail-far"]];
+const RAILWAY_TIMES = [[0.6, "host waves from the slot"], [1.9, "steps out, camera follows"], [3.4, "walking to the rail"], [5.6, "arrives"],
+  [6.2, "hammer raised"], [6.4, "the strike on 'rail'"], [6.9, "pulse and tag race, camera follows"], [8.4, "the listener, surprised"], [11.0, "pushed in on him"]];
 
 try {
   if (wants("world")) {

@@ -163,8 +163,8 @@ test("custom without a registered HFKit.customs[name] is an error", () => {
     ['scene 2 beat 1 move 0 (custom): no HFKit.customs["volcano-blast"] (register it in 04-video/hf/scenes/scene-2.js)']);
 });
 
-test("walk_to and run_to durations come from the distance (420 world px/s walking)", () => {
-  assert.deepEqual(K.MOTION, { walk: 420, run: 900, ramp: 0.3, turn: 0.25 });
+test("walk_to and run_to durations come from the distance (420 / 640 world px/s)", () => {
+  assert.deepEqual(K.MOTION, { walk: 420, run: 640, ramp: 0.3, turn: 0.25 });
   const c = compile(oneBeat([{ do: "walk_to", who: "friend", to: "rail-near" }, { do: "run_to", who: "friend", to: "barn", at: { word: 20 } }]));
   assert.deepEqual(c.errors, []);
   const A = K.places.countryside.anchorsFor({ variant: "day" }).anchors;
@@ -174,7 +174,7 @@ test("walk_to and run_to durations come from the distance (420 world px/s walkin
   assert.equal(walk.gait, "walk");
   assert.ok(Math.abs(walk.t - WORDS[3].start) < 1e-9);
   assert.ok(Math.abs(walk.t1 - walk.t - (d1 / 420 + 0.3)) < 1e-6, `walk ${walk.t1 - walk.t} vs ${d1 / 420 + 0.3}`);
-  assert.ok(Math.abs(run.t1 - run.t - (d2 / 900 + 0.3)) < 1e-6);
+  assert.ok(Math.abs(run.t1 - run.t - (d2 / 640 + 0.3)) < 1e-6);
   // feet never slide: the cycle phase advances by distance / (STRIDE * px per body unit)
   const k = K.mountActor.WORLD_K || 0.3;
   const a = K.actorAt(c.actors.friend, walk.t + 1.2), b = K.actorAt(c.actors.friend, walk.t + 2.2);
@@ -203,9 +203,9 @@ test("camera: push-ins land on their word, within the limits; a dive pushes to z
   const sp = K.worldMath.toScreen(far, at);
   assert.ok(Math.abs(sp.x - 960) < 1 && Math.abs(sp.y - 594) < 1, JSON.stringify(sp));
   assert.ok(cam(land - 1.5).zoom < 1.98, "still moving before the word");
-  for (let t = 0; t < land; t += 1 / 30) { // multiplicative zoom rate <= 1.6x/s
+  for (let t = 0; t < land; t += 1 / 30) { // multiplicative zoom rate <= 2.5x/s
     const r = Math.abs(Math.log(cam(t + 1 / 30).zoom / cam(t).zoom)) * 30;
-    assert.ok(r <= Math.log(1.6) * 1.02, `zoom rate ${r} at ${t}`);
+    assert.ok(r <= Math.log(2.5) * 1.02, `zoom rate ${r} at ${t}`);
   }
   // dive
   const dv = compile(oneBeat([{ do: "dive", target: "lake", into: "lattice", params: { state: "solid" } }]));
@@ -218,7 +218,7 @@ test("camera: push-ins land on their word, within the limits; a dive pushes to z
   assert.equal(after.inside, "lattice");
   for (let t = d.t0; t < d.t1 - 1 / 30; t += 1 / 30) {
     const r = Math.abs(Math.log(K.worldCamera(dv, t + 1 / 30).zoom / K.worldCamera(dv, t).zoom)) * 30;
-    assert.ok(r <= Math.log(3) * 1.02, `dive zoom rate ${r}`);
+    assert.ok(r <= Math.log(4) * 1.02, `dive zoom rate ${r}`);
   }
   // overrun is reported against the scene duration
   // (a camera move never starts before its beat: a big push-in in a late beat runs past the end)
@@ -227,12 +227,20 @@ test("camera: push-ins land on their word, within the limits; a dive pushes to z
   assert.ok(late.overrun > 0.25, "overrun " + late.overrun);
   assert.ok(K.validateWorld(lateScene, WORDS, { cast: CAST }).some((e) => /^scene 2: camera finishes/.test(e)));
   assert.ok(compile(scene).overrun <= 0.25);
-  // the pinned beat's 2.2x push-in on rail-far crops the listener standing there: a warning, not an error
+  // the pinned beat (0.4 s words): the 2.2x push-in on rail-far crops the listener standing there, and
+  // the strike slips well past "word 12" while the host is still walking: warnings, not errors
   const pinned = compile(railway(), WORDS, { duration: 20 });
   assert.deepEqual(pinned.errors, []);
-  assert.equal(pinned.warnings.length, 1);
-  assert.match(pinned.warnings[0], /^scene 1 beat 1 move 4 \(push_in\): zoom 2.2 on "rail-far" crops "friend" standing there \(at most 1\.\d\d shows all of them; or push_in on "friend"\)$/);
-  assert.deepEqual(compile(railway({ beats: [railway().beats[0], Object.assign({}, railway().beats[1], { moves: railway().beats[1].moves.slice(0, 4).concat([{ do: "push_in", target: "rail-far", zoom: 1.4 }]) })] }), WORDS, { duration: 20 }).warnings, []);
+  assert.equal(pinned.warnings.length, 2, pinned.warnings.join("\n"));
+  assert.ok(pinned.warnings.some((w) => /^scene 1 beat 1 move 4 \(push_in\): zoom 2.2 on "rail-far" crops "friend" standing there \(at most 1\.\d\d shows all of them; or push_in on "friend"\)$/.test(w)), pinned.warnings.join("\n"));
+  const slip = pinned.warnings.find((w) => w.startsWith("scene 1 beat 1 move 1 (use): the strike lands "));
+  assert.match(slip, /^scene 1 beat 1 move 1 \(use\): the strike lands \d+\.\d\d s after its word \("host" is still on the way\): start the walk_to earlier \(at word \d+\) or use run_to$/);
+  // a zoom that fits him, and a walk started early enough: no warnings
+  const fixed = railway({ beats: [Object.assign({}, railway().beats[0], { moves: railway().beats[0].moves.concat([{ do: "walk_to", who: "host", to: "rail-near", at: { word: 1 } }]) }),
+    Object.assign({}, railway().beats[1], { moves: railway().beats[1].moves.slice(1, 4).concat([{ do: "push_in", target: "rail-far", zoom: 1.4 }]) })] });
+  const fw = compile(fixed, WORDS, { duration: 20 });
+  assert.deepEqual(fw.errors, []);
+  assert.deepEqual(fw.warnings, []);
 });
 
 test("the pulse tag rides the effect's own anchor, and the pulse runs from `from` to `to`", () => {
@@ -262,10 +270,8 @@ test("compileMoves is pure and deterministic; validateWorld checks the scene", (
   assert.deepEqual(s, copy, "the scene is not mutated");
   const src = readFileSync(new URL("src/world/moves.js", KIT), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(src, /document|window\.|Math\.random|Date\.now/);
-  // the pinned beat needs time: a 5 s walk in from the side slot, the strike, then a 6.5 s push-in
-  // (0.8x -> 2.2x at <= 1.6x/s); in a 12 s scene the camera overruns and validation says so
-  assert.deepEqual(K.validateWorld(railway(), WORDS, { cast: CAST, duration: 20 }), []);
-  assert.match(K.validateWorld(railway(), WORDS, { cast: CAST }).join("\n"), /^scene 1: camera finishes \d+\.\d\d s after the scene ends/);
+  // the pinned beat fits a 12 s scene now (its push-in takes under 2 s, alongside the strike)
+  assert.deepEqual(K.validateWorld(railway(), WORDS, { cast: CAST }), []);
   assert.deepEqual(K.validateWorld(railway({ place: "moon-base" }), WORDS, { cast: CAST }), ['scene 1: unknown place "moon-base"']);
   assert.deepEqual(K.validateWorld(railway({ variant: "x" }), WORDS, { cast: CAST }), ['scene 1: place countryside: unknown variant "x"']);
   assert.deepEqual(K.validateWorld(railway({ actors: [{ id: "host", start: { anchor: "attic" } }] }), WORDS, { cast: CAST }).slice(0, 1), ['scene 1 actor host: unknown anchor "attic"']);
@@ -285,4 +291,39 @@ test("MOVES.md is generated from HFKit.MOVES and up to date (npm run moves-doc)"
 test("insides: lattice (solid, liquid, gas) and cells", () => {
   assert.deepEqual(Object.keys(K.insides).sort(), ["cells", "lattice"]);
   assert.deepEqual(K.insides.lattice.meta.params.state, ["solid", "liquid", "gas"]);
+});
+
+test("the camera follows a walker by default, keeps a slot step-in readable, and push-ins run alongside the strike", () => {
+  const A = K.places.countryside.anchorsFor({}).anchors;
+  // no camera moves: the camera follows the friend walking to the bridge
+  const walk = compile(railway({ beats: [{ at: { word: 0 }, moves: [{ do: "walk_to", who: "friend", to: "bridge", at: { word: 2 } }] }] }));
+  assert.deepEqual(walk.errors, []);
+  const w = walk.actors.friend.find((e) => e.type === "move");
+  for (const t of [w.t + 1.2, (w.t + w.t1) / 2, w.t1 + 0.5]) {
+    const a = K.actorAt(walk.actors.friend, t), cam = K.worldCamera(walk, t), sp = K.worldMath.toScreen(a, cam);
+    assert.ok(Math.abs(sp.x - 960) < 160, `friend on screen at ${sp.x.toFixed(0)} (t ${t.toFixed(2)})`);
+  }
+  // the host stepping out of the side slot stays at least ~45 % of the frame height on screen
+  const step = compile(railway({ beats: [{ at: { word: 0 }, moves: [{ do: "walk_to", who: "host", to: "rail-near", at: { word: 1 } }] }] }));
+  const sm = step.actors.host.find((e) => e.type === "move");
+  for (let t = sm.t; t <= sm.t1; t += 0.05) {
+    const a = K.actorAt(step.actors.host, t), cam = K.worldCamera(step, t);
+    const blend = Math.min(1, a.u / 0.25), slotH = K.rig.SLOT.k * K.worldMath.TOP, worldH = 0.3 * a.scale * cam.zoom * K.worldMath.TOP;
+    const h = slotH + (worldH - slotH) * blend * blend * (3 - 2 * blend); // as world.js blends it
+    assert.ok(h >= 0.45 * 1080 * 0.97, `host ${h.toFixed(0)} px tall at ${t.toFixed(2)}`);
+  }
+  // a push-in without `at` starts on the beat's strike, not after the beat's walk
+  const c = compile(railway(), WORDS, { duration: 20 });
+  const strike = c.actors.host.find((e) => e.pose === "strike").t;
+  const hold = c.camera.filter((k) => k.t <= strike + 1e-6).pop(), next = c.camera.find((k) => k.t > strike + 1e-6);
+  assert.ok(Math.abs(hold.t - strike) < 1e-6, `the push-in starts on the strike (${hold.t} vs ${strike})`);
+  assert.ok(next.frame.zoom === 2.2 && next.t - strike < 2.2, `and lands ${(next.t - strike).toFixed(2)} s later`);
+  void A;
+});
+
+test("a frame edge cutting an actor's head where the camera lands is a warning", () => {
+  const c = compile(oneBeat([{ do: "cut", target: "rail-far", zoom: 2.2 }]));
+  assert.deepEqual(c.errors, []);
+  assert.ok(c.warnings.some((x) => /^scene 2 beat 1 move 0 \(cut\): the frame edge cuts "friend"'s head where the camera lands \(\d+\.\d\d s\)/.test(x)), c.warnings.join("\n"));
+  assert.deepEqual(compile(oneBeat([{ do: "cut", target: "rail-far", zoom: 1 }])).warnings, []);
 });

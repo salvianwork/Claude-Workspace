@@ -23,8 +23,8 @@
  * layer, the inside views of dives, tags / labels / the title, a cut flash, captions.
  *
  * Camera: HFKit.worldCamera(compiled, t) -> {x, y, zoom} world px (see moves.js for the units:
- * the camera maths runs in world px / 3840 on both axes, so WORLD_LIMITS' pan limit of 0.35 is
- * 1344 screen px/s at the eased peak, 0.7 frame widths a second, at every zoom). Places get the
+ * the camera maths runs in world px / 3840 on both axes, so WORLD_LIMITS' pan limit of 0.6 is
+ * 2304 screen px/s at the eased peak, 1.2 frame widths a second, at every zoom). Places get the
  * camera as is (place.update(t, cam)); effects sit on a world layer with the ground transform.
  *
  * Actors: in the side slot an actor is drawn at the slot (feet below the frame, about 1.35x the old
@@ -43,6 +43,12 @@
   var mounts = {};
   var FLASH = 0.22;
 
+  /* A small number from an id (FNV-1a): seeds an extra's mouth flap, so two extras never talk in step. */
+  function hashId(s) {
+    var x = 2166136261;
+    for (var i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
+    return (x >>> 0) % 1000;
+  }
   function css(e, rules) { for (var k in rules) e.style[k] = rules[k]; return e; }
   function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
   function r2(v) { return Math.round(v * 100) / 100; }
@@ -97,7 +103,7 @@
       actorsEl.appendChild(holder);
       var api = K.mountActor(holder, { id: id, character: a.character, outfit: a.outfit, start: { x: 0, y: 0 }, light: light },
         { sceneId: sid, mouth: a.host ? (ctx.mouth || []) : [], idPrefix: base + "-" + id + "-0" });
-      return { id: id, info: a, api: api, holder: holder, track: c.actors[id], seed: id.length * 7 + 3, on: false };
+      return { id: id, info: a, api: api, holder: holder, track: c.actors[id], seed: hashId(id), on: false };
     });
 
     // effects and customs (world px, on the effects layer)

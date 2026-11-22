@@ -29,7 +29,9 @@ function pageChecks(fix) {
     try { w.update(t); } catch (e) { fails.push("update(" + t + ") threw: " + e.message); continue; }
     const b = w.boxes(t);
     const face = b.find((x) => x.kind === "face" && x.id === "host");
-    if (t < 9 && !face) fails.push("no host face box at " + t + ": " + JSON.stringify(b));
+    // the host until the camera follows the pulse away from him; then the listener
+    if (t < 7 && !face) fails.push("no host face box at " + t + ": " + JSON.stringify(b));
+    if (t > 8 && !b.some((x) => x.kind === "face" && x.id === "friend")) fails.push("no friend face box at " + t + ": " + JSON.stringify(b));
     if (face) { // the box contains the drawn face (the presenter face group inside the host's svg)
       const svg = root.querySelector('[data-actor-id="s1-host-0"] svg');
       const head = svg && svg.querySelector('[id^="s1-host-0-"]');

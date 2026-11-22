@@ -9,8 +9,10 @@
  *                duration, errors: [scene-level errors], fatal}
  *   HFKit.compileMoves(scene, words, world) -> {actors: {id: [{t, type, ...}]}, effects: [...],
  *       overlays: [...], camera: [{t, frame, cut?}], dives: [...], camAnchors, overrun, duration,
- *       errors: [...], warnings: [...] (allowed, but worth a look: a push-in that crops an actor),
- *       point(name, t, part)}
+ *       errors: [...], warnings: [...] (allowed, but worth a look: an actor's head cut by the frame,
+ *       a strike that slips past its word), point(name, t, part)}
+ *       NOT JSON-safe: `point` and the tracking entries of `camAnchors` are functions (JSON drops
+ *       them). Tools should read errors, warnings and overrun; world.js uses the rest.
  *   HFKit.actorAt(track, t) -> {visible, mode, x, y, scale, side, screen, u, state}   (the actor's
  *       position and rig state at t: a pure function of the compiled track)
  *   HFKit.worldCamera(compiled, t) -> {x, y, zoom, inside?, insideT?, params?, dive?}
@@ -21,24 +23,29 @@
  *
  * Timing. A beat starts at its `at` ({word: i} or {t: s}); a move's `at` defaults to its beat's.
  *  - Actor moves start at `at`; moves of one actor never overlap (a move waits for the one before).
- *    walk_to / run_to cruise at MOTION.walk (420) / MOTION.run (900) world px/s times the actor's
+ *    walk_to / run_to cruise at MOTION.walk (420) / MOTION.run (640) world px/s times the actor's
  *    scale, easing in and out over MOTION.ramp (0.3 s): duration = distance / speed + ramp. The
  *    walk cycle's phase advances by distance / (rig.STRIDE x px per body unit), so the feet never
  *    slide; the body turns into the walk and back to front over MOTION.turn (0.25 s).
  *  - `use` lands its action on its word (a hammer is raised 0.45 s before and strikes on it), but
  *    never before the actor has arrived: then it waits, and the beat's effects, tags and camera
  *    moves on the same word wait with it (the pulse leaves when the hammer hits).
- *  - push_in / pull_out LAND on their `at` ("push in on 'fastest'"), or by default on the next
- *    beat's word (the last beat: 0.4 s before the scene ends): the move starts as late as the
- *    limits allow, never before its beat starts (a push_in without `at` also waits for its beat's
- *    walks, runs, jumps and strikes). follow, cut and dive start at `at` (default: the beat's word).
+ *    A strike that lands more than 0.5 s after its word is a warning with a fix ("start the walk_to
+ *    earlier (at word N) or use run_to").
+ *  - push_in / pull_out LAND on their `at` ("push in on 'fastest'"): the move starts as late as the
+ *    limits allow, never before its beat starts. Without `at`, a push_in starts on its beat's strike
+ *    (`use`), else with its beat, and runs alongside the action; a pull_out lands on the next beat's
+ *    word (the last beat: 0.4 s before the scene ends). follow, cut and dive start at `at` (default:
+ *    the beat's word).
+ *  - The automatic camera: while an actor walks or runs and no camera move is running, the camera
+ *    follows him; stepping out of the side slot he is framed at least 45 % of the frame height tall.
  *
  * Camera units (WORLD_LIMITS, confirmed): the camera works in normalised world units, world px
  * divided by 3840 on BOTH axes (so distances are isotropic and y runs 0 .. 0.5625). The pan limit
- * maxPanPerSec 0.35 x zoom is then 0.35 x 3840 = 1344 world px/s at zoom 1, which on screen is
- * 1344 px/s = 0.7 frame widths a second at the eased peak, at every zoom (world px/s = 1344 / zoom).
- * Zoom is multiplicative (<= 1.6x/s); a dive's push-in may zoom at up to 3x/s (DIVE_LIMITS)
- * because it ends in a cut. The view never leaves the 3840 x 2160 world (focus points are clamped
+ * maxPanPerSec 0.6 x zoom is then 0.6 x 3840 = 2304 world px/s at zoom 1, which on screen is
+ * 2304 px/s = 1.2 frame widths a second at the eased (sine) peak, at every zoom (world px/s =
+ * 2304 / zoom). Zoom is multiplicative (<= 2.5x/s at the peak); a dive's push-in may zoom at up to
+ * 4x/s (DIVE_LIMITS) because it ends in a cut. Move times come from timing.js (cameraMoveTime). The view never leaves the 3840 x 2160 world (focus points are clamped
  * for their zoom). */
 (function (root) {
   "use strict";
@@ -46,8 +53,8 @@
   if (!K || !K.effects || !K.overlays || !K.cameraAt) throw new Error("world/moves.js: load the kit scripts first (timing, effects, overlays)");
 
   var WORLD = { width: 3840, height: 2160 }, NORM = 3840, FRAME = { width: 1920, height: 1080 };
-  var MOTION = { walk: 420, run: 900, ramp: 0.3, turn: 0.25 };
-  var DIVE_LIMITS = Object.assign({}, K.WORLD_LIMITS, { maxZoomPerSec: 3 });
+  var MOTION = { walk: 420, run: 640, ramp: 0.3, turn: 0.25 };
+  var DIVE_LIMITS = Object.assign({}, K.WORLD_LIMITS, { maxZoomPerSec: 4 });
   var PULSE_SPEED = { slow: 600, medium: 1100, fast: 1800 }; // world px/s
   var GESTURE = 2.0, POINT = 2.2, JUMP = 1.0, POSE_IN = 0.25, POSE_OUT = 0.3, EXPR_IN = 0.3;
   var TITLE_WORDS = 6;
@@ -80,7 +87,7 @@
     enter: m("actor", ["who"], ["side", "at"], "walk in from the frame edge (`side` left | right) to the actor's start; the actor is off stage until then"),
     exit: m("actor", ["who"], ["side", "at"], "walk out to the frame edge (`side` left | right) and leave"),
     walk_to: m("actor", ["who", "to"], ["at"], "walk to a place anchor (420 world px/s; feet never slide); from the side slot he steps into the world"),
-    run_to: m("actor", ["who", "to"], ["at"], "run to a place anchor (900 world px/s)"),
+    run_to: m("actor", ["who", "to"], ["at"], "run to a place anchor (640 world px/s)"),
     jump: m("actor", ["who"], ["at"], "jump in place (1 s)"),
     point: m("actor", ["who", "target"], ["at", "until"], "point at an anchor, actor or `pulse` (2.2 s)"),
     gesture: m("actor", ["who", "name"], ["at", "until"], "a pose for 2 s: " + "{GESTURES}"),
@@ -91,9 +98,9 @@
     tag_follow: m("overlay", ["target", "text"], ["at", "until"], "a data tag riding a point (an anchor, an actor, `pulse`): at most 4 words, a number and its unit count as one"),
     label: m("overlay", ["target", "text"], ["at", "until", "side"], "a name label on a thing (at most 4 words; `side` center | above | below | left | right)"),
     title: m("overlay", ["text"], ["at", "until"], "the video's one title (scene 1 only, at most 6 words)"),
-    push_in: m("camera", ["target", "zoom"], ["at"], "push in on a target; it LANDS on its `at` word, by default on the next beat's word, starting after the beat's walks and strikes"),
+    push_in: m("camera", ["target", "zoom"], ["at"], "push in on a target; it LANDS on its `at` word; without `at` it starts on the beat's strike (`use`), else with the beat, alongside the action"),
     pull_out: m("camera", ["zoom"], ["target", "from", "at"], "pull out to reveal; lands like push_in (as the scene's first move it opens tight, at `from` or 1.5x the zoom)"),
-    follow: m("camera", ["target"], ["zoom", "at"], "follow a moving actor or `pulse` (slew-limited, never a whip pan)"),
+    follow: m("camera", ["target"], ["zoom", "at"], "follow a moving actor or `pulse` (slew-limited, never a whip pan). Walkers are followed by default while no camera move runs"),
     cut: m("camera", ["target"], ["zoom", "at"], "an instant cut to a target (after a dive: back out of the inside view)"),
     dive: m("camera", ["target", "into"], ["params", "zoom", "at"], "push in to zoom >= 3 (default 3.2, up to 3x/s) on the target, then cut to the inside view HFKit.insides[into]: {INSIDES}"),
     custom: m("custom", ["name"], ["params", "at", "until"], "a scene-specific piece: needs 04-video/hf/scenes/scene-<id>.js registering HFKit.customs[name]"),
@@ -484,7 +491,7 @@
   function makePoints(world, tracks, pulses) {
     var R = rig(), SLOT = R.SLOT, WK = worldK();
     return function (name, t, part) {
-      var off = part === "top" ? TOP : BODY;
+      var off = part === "top" ? TOP : part === "feet" ? 0 : BODY;
       if (world.anchors[name]) { var q = world.anchors[name](t); return { x: q.x, y: q.y }; }
       if (tracks[name]) {
         var a = actorAt(tracks[name], t);
@@ -538,23 +545,31 @@
   // ---- camera ---------------------------------------------------------------------------------
   function camPose(keys, anchors, t, lim) { return denorm(K.cameraAt(keys, t, anchors, lim || K.WORLD_LIMITS)); }
 
-  /* Shortest eased move between two camera poses under the limits (as timing.js counts it). */
+  /* Shortest eased move between two camera poses (world px) under the limits: timing.js's own count. */
   function moveTime(a, b, lim) {
-    var pan = Math.hypot(b.x - a.x, b.y - a.y) / NORM * Math.max(a.zoom, b.zoom);
-    var zt = 3 * Math.abs(Math.log(b.zoom / a.zoom)) / Math.log(lim.maxZoomPerSec);
-    return Math.max(3 * pan / lim.maxPanPerSec, zt);
+    return K.cameraMoveTime({ x: a.x / NORM, y: a.y / NORM, zoom: a.zoom }, { x: b.x / NORM, y: b.y / NORM, zoom: b.zoom }, lim);
   }
+  /* The zoom at which an actor of this scale is READABLE: at least 45 % of the frame height. */
+  function readableZoom(scale) { return Math.min(K.WORLD_LIMITS.maxZoom, 0.45 * FRAME.height / (TOP * worldK() * scale)); }
 
-  /* Where the camera centres to frame a point: an actor is framed by its chest (the point is already
-   * the body point); a ground point (an anchor, the pulse) sits a little below the middle, at 55 % of
-   * the frame height, so what stands there shows and the caption band stays clear of it. */
+  /* Where the camera centres to frame a point: a ground point (an anchor, the pulse) sits a little
+   * below the middle, at 55 % of the frame height, so what stands there shows and the caption band
+   * stays clear of it; actors are framed by actorFocus below. */
   var AIM = 0.05 * FRAME.height;
   function aim(p, zoom, isActor) { return isActor ? { x: p.x, y: p.y } : { x: p.x, y: p.y - AIM / zoom }; }
+  /* Framing an actor: when he fits (head to feet in 660 px), his feet sit at y 700, just above the
+   * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest. */
+  var FEET_Y = 700, FIT_H = 660;
+  function actorFocus(points, name, t, zoom) {
+    var f = points(name, t, "feet"), top = points(name, t, "top");
+    if (!f || f.screen) return null;
+    return (f.y - top.y) * zoom <= FIT_H ? { x: f.x, y: f.y - (FEET_Y - FRAME.height / 2) / zoom } : points(name, t, "body");
+  }
 
-  /* Camera keys from the camera moves. points(name, t, "body") resolves targets. Returns
-   * {keys, anchors, dives, errors, open}. */
-  function buildCamera(camMoves, points, tracks, opening, actorMoves) {
-    var anchors = {}, keys = [], dives = [], errors = [], warnings = [], n = 0;
+  /* Camera keys from the camera moves (plus automatic follows of walkers, `autos`). points(name, t,
+   * "body") resolves targets. Returns {keys, anchors, dives, errors, warnings}. */
+  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos) {
+    var anchors = {}, keys = [], dives = [], errors = [], warnings = [], n = 0, landed = [];
     function isStatic(name) {
       if (tracks[name] || name === "pulse") return false;
       var a = points(name, 0), b = points(name, 1000);
@@ -572,7 +587,7 @@
             var tr = tracks[name], mvs = (tr || []).filter(function (e) { return e.type === "move" && e.space === "world"; });
             var nx = mvs.find(function (e) { return e.t >= t; }) || mvs[mvs.length - 1];
             p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: WORLD.width / 2, y: WORLD.height / 2 };
-          } else p = aim(p, zoom, !!tracks[name]);
+          } else p = tracks[name] ? actorFocus(points, name, t, zoom) : aim(p, zoom, false);
           return norm(clampFocus(p, zoom));
         };
       }
@@ -584,8 +599,13 @@
     var prevLand = 0, inside = null;
     // a copy: timing.js caches per keys array, and this one is still growing
     function poseAt(t) { return camPose(keys.slice(), anchors, t); }
-    camMoves.forEach(function (p) {
+    var stream = camMoves.concat(autos || []).sort(function (a, b) { return a.t - b.t || (a.auto ? 1 : 0) - (b.auto ? 1 : 0) || a.order - b.order; });
+    stream.forEach(function (p) {
       var mv = p.mv;
+      if (p.auto) { // follow a walker while no camera move of the scene is running
+        if (inside || prevLand > p.t + 0.3 || p.t > p.walkEnd - 0.4) return;
+        if (cur.follow && cur.target === mv.target) return;
+      }
       if (inside && mv.do !== "cut") { errors.push([p, "the camera is inside the " + inside + " view: cut back out first"]); return; }
       if (mv.target !== undefined && tracks[mv.target]) {
         var tp = points(mv.target, p.t, "body");
@@ -593,6 +613,7 @@
       }
       var target = mv.target !== undefined ? mv.target : cur.target;
       var zoom = mv.zoom !== undefined ? mv.zoom : cur.zoom;
+      if (p.auto && p.step) zoom = Math.max(cur.zoom, p.readable); // stepping out of the slot: keep him readable
       if (mv.do === "cut") {
         var kc = anchorFor(target, zoom, cur.point);
         keys.push({ t: p.t, frame: { focus: kc, zoom: zoom }, cut: true });
@@ -617,19 +638,20 @@
       // push_in / pull_out / follow: an eased move that lands on `at` when it is given
       var follow = mv.do === "follow" || (mv.do === "pull_out" && cur.follow && mv.target === undefined);
       var start0 = Math.max(prevLand, p.beatStart);
-      // a push-in without `at` waits for its beat's action (walks, runs, jumps, the hammer strike):
-      // the camera never pushes away from an actor mid-action
-      if (mv.do === "push_in" && !p.explicit) (actorMoves || []).forEach(function (q) { if (q.bi === p.bi && q.done > start0) start0 = q.done; });
-      // push_in / pull_out land on their `at`, or by default on the next beat's word (the scene's end
-      // for the last beat, minus a short hold); follow starts with its beat
-      var landOn = p.explicit ? p.t : mv.do === "follow" ? null : p.beatEnd < p.duration - 1e-9 ? p.beatEnd : Math.max(p.beatStart, p.duration - 0.4);
+      // a push-in without `at` starts on its beat's strike (`use`) when there is one, else with the
+      // beat, and runs alongside the action
+      if (mv.do === "push_in" && !p.explicit) (actorMoves || []).forEach(function (q) { if (q.bi === p.bi && q.mv.do === "use" && q.done > start0) start0 = q.done; });
+      // push_in / pull_out land on their `at`; without one, a pull-out lands on the next beat's word
+      // (the scene's end for the last beat, minus a short hold) and a push-in or follow starts at once
+      var landOn = mv.do === "follow" ? null : p.explicit ? p.t : mv.do !== "pull_out" ? null : p.beatEnd < p.duration - 1e-9 ? p.beatEnd : Math.max(p.beatStart, p.duration - 0.4);
       var a = poseAt(start0);
       var tp = target === null ? null : points(target, p.t, "body");
-      var bp = clampFocus(tp && !tp.screen ? aim(tp, zoom, !!tracks[target]) : aim(cur.point, zoom), zoom);
+      var bp = clampFocus(tp && !tp.screen ? (tracks[target] ? actorFocus(points, target, p.t, zoom) : aim(tp, zoom, false)) : aim(cur.point, zoom), zoom);
       var d = Math.max(0.8, moveTime(a, { x: bp.x, y: bp.y, zoom: zoom }, K.WORLD_LIMITS) * 1.04);
       var land, start;
       if (landOn !== null) { start = Math.max(start0, landOn - d); land = Math.max(landOn, start + d); }
       else { start = Math.max(start0, p.t); land = start + d; }
+      if (!p.auto) landed.push({ p: p, t: land });
       var last = keys[keys.length - 1];
       if (start > last.t + 1e-6) keys.push({ t: start, frame: Object.assign({}, last.frame) }); // hold until the move starts
       var kn = anchorFor(target, zoom, cur.point);
@@ -643,7 +665,23 @@
         var a = actorAt(tracks[id], land);
         if (!a.visible || a.mode !== "world" || Math.abs(a.x - tp.x) > 160 || Math.abs(a.y - tp.y) > 120) return;
         var tall = (TOP + 30) * worldK() * a.scale, fit = (FRAME.height * 0.55 - 40) / tall;
-        if (zoom > fit + 1e-9) warnings.push([p, "zoom " + zoom + " on \"" + target + "\" crops \"" + id + "\" standing there (at most " + fit.toFixed(2) + " shows all of them; or push_in on \"" + id + "\")"]);
+        if (zoom > fit + 1e-9) { warnings.push([p, "zoom " + zoom + " on \"" + target + "\" crops \"" + id + "\" standing there (at most " + fit.toFixed(2) + " shows all of them; or push_in on \"" + id + "\")"]); p.cropped = (p.cropped || []).concat([id]); }
+      });
+    });
+    // an actor in view whose head the frame edge cuts (or leaves out) where a camera move lands: warn
+    var final = { camera: keys.slice(), camAnchors: anchors, dives: dives };
+    camMoves.forEach(function (p) { if (p.mv.do === "cut") landed.push({ p: p, t: p.t }); });
+    landed.forEach(function (L) {
+      var cam = worldCamera(final, L.t + 1e-6);
+      if (cam.inside !== undefined) return;
+      Object.keys(tracks).forEach(function (id) {
+        var a = actorAt(tracks[id], L.t);
+        if (!a.visible || a.mode !== "world" || (L.p.cropped || []).indexOf(id) >= 0) return;
+        var k = worldK() * a.scale * cam.zoom, f = toScreen(a, cam), HB = rig().headBox({ pose: "idle", expression: "happy", mouth: 0, blink: 0, breath: 0, outfit: "blazer" });
+        var x0 = f.x + HB.x * k, x1 = x0 + HB.width * k, y0 = f.y + (HB.y - rig().FEET) * k, y1 = y0 + HB.height * k;
+        var inside = x0 >= 0 && x1 <= FRAME.width && y0 >= 0 && y1 <= FRAME.height;
+        var bodyIn = f.x + 160 * k > 0 && f.x - 160 * k < FRAME.width && f.y > 0 && y0 < FRAME.height; // some of him shows
+        if (!inside && bodyIn) warnings.push([L.p, "the frame edge cuts \"" + id + "\"'s head where the camera lands (" + L.t.toFixed(2) + " s): reframe, or zoom out a little"]);
       });
     });
     // the inside view of a dive lasts until the next cut
@@ -652,6 +690,21 @@
       if (c) dv.until = c.t;
     });
     return { keys: keys, anchors: anchors, dives: dives, errors: errors, warnings: warnings };
+  }
+
+  /* The automatic camera: while an actor walks or runs, the camera follows him (unless a camera move
+   * of the scene is running then). Stepping out of the side slot, he is also framed at a readable
+   * size (at least 45 % of the frame height), so the slot-to-world change never reads as a shrink. */
+  function autoFollows(actorMoves, tracks, duration) {
+    var out = [];
+    actorMoves.forEach(function (p) {
+      if (["walk_to", "run_to", "enter"].indexOf(p.mv.do) < 0 || !(p.done > 0)) return;
+      var ev = (tracks[p.mv.who] || []).find(function (e) { return e.type === "move" && Math.abs(e.t1 - p.done) < 1e-9; });
+      if (!ev || ev.space !== "world") return;
+      out.push({ mv: { do: "follow", target: p.mv.who }, t: ev.t + 1e-3, auto: true, step: !!ev.step, readable: readableZoom(ev.to.scale), walkEnd: ev.t1,
+        explicit: false, tag: p.tag, bi: p.bi, beatStart: ev.t, beatEnd: ev.t1, duration: duration, order: 1e6 + p.order });
+    });
+    return out;
   }
 
   function normParams(p) { return typeof p === "string" ? { state: p, type: p } : Object.assign({}, p || {}); }
@@ -763,14 +816,25 @@
       if (of && !of.screen) opening = { x: of.x, y: of.y, zoom: oz };
       first.openedTight = true;
     }
-    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves);
+    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration));
     var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives }, t); };
     var p2 = pass(cam1, p1.tracks);
     sync();
     var points = makePoints(world, p2.tracks, pulses);
-    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves);
+    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration));
     p2.errors.concat(c2.errors).forEach(function (x) { errors.push(x[0].tag + ": " + x[1]); });
     c2.warnings.forEach(function (x) { out.warnings.push(x[0].tag + ": " + x[1]); });
+    // a strike that had to wait for its actor more than 0.5 s after its word: say how to fix it
+    actorMoves.forEach(function (u) {
+      if (u.mv.do !== "use" || !(u.actual > u.t0 + 0.5)) return;
+      var slip = u.actual - u.t0, mvBefore = actorMoves.filter(function (q) { return q.mv.who === u.mv.who && q.done !== undefined && q.done <= u.actual - 0.44 && ["walk_to", "run_to", "enter"].indexOf(q.mv.do) >= 0; }).pop();
+      var hint = "start the actor's move earlier";
+      if (mvBefore) {
+        var want = mvBefore.t - slip, w = (words || []).filter(function (x) { return x.start <= want + 1e-9; }).pop();
+        hint = "start the " + mvBefore.mv.do + " earlier (at word " + (w ? w.i : 0) + ")" + (mvBefore.mv.do === "walk_to" ? " or use run_to" : "");
+      }
+      out.warnings.push(u.tag + ": the strike lands " + slip.toFixed(2) + " s after its word (\"" + u.mv.who + "\" is still on the way): " + hint);
+    });
     out.actors = p2.tracks;
     out.camera = K.resolveCamera(c2.keys, [], sid, c2.anchors);
     out.camAnchors = c2.anchors;
@@ -866,10 +930,14 @@
       "- Actor moves of one actor never overlap: a move waits for the one before it. Walking is " + MOTION.walk + " world px/s,",
       "  running " + MOTION.run + " (times the actor's scale), with " + MOTION.ramp + " s ease in and out; feet never slide.",
       "- Camera: zoom " + K.WORLD_LIMITS.minZoom + " to " + K.WORLD_LIMITS.maxZoom + ", at most " + K.WORLD_LIMITS.maxZoomPerSec + "x zoom per second (a dive up to " + DIVE_LIMITS.maxZoomPerSec + "x), no whip pans.",
-      "  push_in and pull_out LAND on their `at` word, or by default on the next beat's word (the last",
-      "  beat: just before the scene ends), starting as late as the limits allow but never before their",
-      "  beat. follow, cut and dive start at `at` (default: the beat). A camera that finishes more than",
-      "  0.25 s after the scene ends fails validation.",
+      "  Moves ease smoothly (sine). push_in and pull_out LAND on their `at` word, starting as late as the",
+      "  limits allow but never before their beat. Without `at`, a push_in starts on its beat's strike",
+      "  (`use`), else with the beat, alongside the action; a pull_out lands on the next beat's word. follow,",
+      "  cut and dive start at `at` (default: the beat). While an actor walks or runs and no camera move",
+      "  runs, the camera follows him; stepping out of the side slot he is framed at least 45 % of the",
+      "  frame tall. A camera that finishes more than 0.25 s after the scene ends fails validation.",
+      "- Warnings (allowed, worth a look): the frame edge cuts an actor's head where the camera lands;",
+      "  a `use` strike slips more than 0.5 s past its word because its actor is still on the way.",
       "- Text: tags and labels at most " + K.overlays.MAX_WORDS + " words (a number and its unit count as one: `343 m/s`), the title at most " + TITLE_WORDS + ".",
       "",
     ];
@@ -883,13 +951,13 @@
       });
       L.push("");
     });
-    L.push("## Example", "", "```json",
+    L.push("## Example", "", "The plan's pinned railway beat (beat 1 of its scene), as written:", "", "```json",
       "{\"at\": {\"word\": 9}, \"action\": \"host walks in and strikes the rail; a pulse races along it\",",
       " \"moves\": [{\"do\": \"walk_to\", \"who\": \"host\", \"to\": \"rail-near\"},",
       "           {\"do\": \"use\", \"who\": \"host\", \"prop\": \"hammer\", \"at\": {\"word\": 12}},",
       "           {\"do\": \"pulse_along\", \"path\": \"rail\", \"from\": \"rail-near\", \"to\": \"rail-far\", \"speed\": \"fast\", \"at\": {\"word\": 12}},",
       "           {\"do\": \"tag_follow\", \"target\": \"pulse\", \"text\": \"≈5,960 m/s\"},",
-      "           {\"do\": \"push_in\", \"target\": \"rail-far\", \"zoom\": 2.2, \"at\": {\"word\": 16}}]}",
+      "           {\"do\": \"push_in\", \"target\": \"rail-far\", \"zoom\": 2.2}]}",
       "```", "");
     return L.join("\n");
   }

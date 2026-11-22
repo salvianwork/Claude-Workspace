@@ -7,16 +7,16 @@
 
   var FADE = 0.25; // seconds, cue fade in/out
   var DEFAULT_LIMITS = { maxZoom: 2.5, maxPanPerSec: 0.35, maxZoomPerSec: 0.6 };
-  /* World scenes (places, Task 4): a bold but calm camera. Zoom 0.6x (pull-out reveal: the whole
-   * 3840 x 2160 world fills the frame) to 5x (a push-in on one detail). The pan limit is the kit's
-   * (0.35 origin widths x zoom per second at the eased peak: over the 3840-px world at frame scale 1
-   * that is about 0.7 frame widths a second, energetic but never a whip pan). Zoom is a
-   * MULTIPLICATIVE rate here (zoomMode "log"): zoom is eased in log space, and at the eased peak
-   * it changes by at most 1.6x per second, i.e. |d ln z / dt| <= ln 1.6, the same feel at every
-   * zoom. So 1x -> 2x takes 4.4 s, 0.6x -> 1.2x 4.4 s, 1x -> 5x 10.3 s; a cut is instant. minZoom
-   * and zoomMode are only set here: the kit camera (DEFAULT_LIMITS) keeps its additive zoom rate
-   * and never zooms out past 1. */
-  var WORLD_LIMITS = { minZoom: 0.6, maxZoom: 5, maxPanPerSec: 0.35, maxZoomPerSec: 1.6, zoomMode: "log" };
+  /* World scenes (places): a lively camera that never whips. Zoom 0.6x (pull-out reveal: the whole
+   * 3840 x 2160 world fills the frame) to 5x (a push-in on one detail). Units: the world camera runs
+   * in world px / 3840 on both axes, so maxPanPerSec 0.6 x zoom = 2304 screen px/s (1.2 frame widths
+   * a second) at the eased PEAK, at every zoom. Zoom is MULTIPLICATIVE (zoomMode "log"): eased in log
+   * space, at most 2.5x per second at the peak (|d ln z / dt| <= ln 2.5), the same feel at every zoom.
+   * Moves ease with easeInOutSine (ease "sine": peak = pi/2 x the average speed, smooth starts and
+   * stops), so 0.8x -> 2.2x takes 1.73 s and 1x -> 5x 2.8 s; a cut is instant. The no-whip-pan rule
+   * stays a peak-rate rule. minZoom, zoomMode and ease are only set here: the kit camera
+   * (DEFAULT_LIMITS) keeps its cubic ease and additive zoom rate and never zooms out past 1. */
+  var WORLD_LIMITS = { minZoom: 0.6, maxZoom: 5, maxPanPerSec: 0.6, maxZoomPerSec: 2.5, zoomMode: "log", ease: "sine" };
   var LAG_TOL = 0.002; // a follow is "on target" when it lags by less than this (origin widths x zoom)
 
   /* Seconds for `at` = {word:i} (that word's start) or {t:sec}. words = one scene's array. */
@@ -32,6 +32,13 @@
     return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
   }
   var EASE_PEAK = 3; // max slope of easeInOutCubic: peak speed = 3 x average speed
+  /* easeInOutSine: peak slope pi/2 (about 1.57 x the average speed), so a move under the same peak
+   * limit takes about half the time of the cubic ease, still with no jerk at either end. */
+  function easeInOutSine(u) { return -(Math.cos(Math.PI * u) - 1) / 2; }
+  /* The ease a camera uses (limits.ease "sine" for the world camera; the kit camera keeps the cubic)
+   * and its peak slope. */
+  function easeOf(lim) { return lim.ease === "sine" ? easeInOutSine : easeInOutCubic; }
+  function peakOf(lim) { return lim.ease === "sine" ? Math.PI / 2 : EASE_PEAK; }
 
   var STEP = 1 / 60;   // fixed integration step of the pan follower (seconds)
   var RAMP = 0.5;      // seconds a slew move takes to reach its full pan speed
@@ -81,13 +88,13 @@
    * multiplicative (zoomMode "log": eased in log space, peak |d ln z/dt| <= ln maxZoomPerSec). */
   function zoomLerp(z0, z1, e, lim) { return lim.zoomMode === "log" ? z0 * Math.pow(z1 / z0, e) : z0 + (z1 - z0) * e; }
   function zoomTime(z0, z1, lim) {
-    return lim.zoomMode === "log" ? EASE_PEAK * Math.abs(Math.log(z1 / z0)) / Math.log(lim.maxZoomPerSec) : EASE_PEAK * Math.abs(z1 - z0) / lim.maxZoomPerSec;
+    return lim.zoomMode === "log" ? peakOf(lim) * Math.abs(Math.log(z1 / z0)) / Math.log(lim.maxZoomPerSec) : peakOf(lim) * Math.abs(z1 - z0) / lim.maxZoomPerSec;
   }
 
   /* Shortest duration an eased move may take without breaking the limits (peak speed counted). */
   function minDuration(a, b, lim) {
     var pan = Math.hypot(b.x - a.x, b.y - a.y) * Math.max(a.zoom, b.zoom); // screen widths
-    return Math.max(EASE_PEAK * pan / lim.maxPanPerSec, zoomTime(a.zoom, b.zoom, lim));
+    return Math.max(peakOf(lim) * pan / lim.maxPanPerSec, zoomTime(a.zoom, b.zoom, lim));
   }
 
   /* Slew-limited follower: integrates in fixed STEP increments from `S`, moving toward
@@ -163,7 +170,7 @@
         var to = ki.target(S);
         var E = Math.max(nominalEnd, S + minDuration({ x: from.x, y: from.y, zoom: zFrom }, { x: to.x, y: to.y, zoom: zTo }, lim));
         seg = (function (S, E, from, to, zFrom, zTo) {
-          var e = function (t) { return easeInOutCubic(E > S ? Math.min(1, Math.max(0, (t - S) / (E - S))) : 1); };
+          var e = function (t) { return easeOf(lim)(E > S ? Math.min(1, Math.max(0, (t - S) / (E - S))) : 1); };
           return {
             S: S, E: E,
             pos: function (t) { var u = e(t); return { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u }; },
@@ -173,7 +180,7 @@
       } else {
         var zEnd = S + Math.max(nominalEnd - S, zoomTime(zFrom, zTo, lim));
         var zoomAt = (function (S, zEnd, zFrom, zTo) {
-          return function (t) { return zoomLerp(zFrom, zTo, easeInOutCubic(zEnd > S ? Math.min(1, Math.max(0, (t - S) / (zEnd - S))) : 1), lim); };
+          return function (t) { return zoomLerp(zFrom, zTo, easeOf(lim)(zEnd > S ? Math.min(1, Math.max(0, (t - S) / (zEnd - S))) : 1), lim); };
         })(S, zEnd, zFrom, zTo);
         var fol = makeFollower(S, from, ki.target, zoomAt, lim, true);
         var End = zEnd;
@@ -197,7 +204,7 @@
 
   function getBuilt(keys, anchors, limits) {
     var lim = Object.assign({}, DEFAULT_LIMITS, limits || {});
-    var a = anchors || NONE, lk = JSON.stringify([lim.minZoom, lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec, lim.zoomMode]);
+    var a = anchors || NONE, lk = JSON.stringify([lim.minZoom, lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec, lim.zoomMode, lim.ease]);
     var byA = cache.get(keys);
     if (!byA) cache.set(keys, (byA = new WeakMap()));
     var byL = byA.get(a);
@@ -210,7 +217,8 @@
    * frame = "wide" | {focus, zoom} | {follow, zoom?} (follow without zoom keeps the previous
    * key's zoom). anchors[name] = {x,y} or (t)=>({x,y}), normalised world 0..1.
    * Key k is where the move from key k-1 arrives.
-   * - Static to static: easeInOutCubic on position and zoom. Peak speed (3x average) is held
+   * - Static to static: easeInOutCubic (limits.ease "sine": easeInOutSine) on position and zoom.
+   *   Peak speed (3x average; pi/2 x for the sine) is held
    *   to the limits; a move that would be too fast keeps its start and has its end stretched
    *   later, and the next move starts when it ends (chained). Never a jump.
    * - Any move into or out of a follow / time-varying anchor: zoom is eased (and stretched) as
@@ -300,6 +308,10 @@
     cameraSchedule: cameraSchedule,
     cameraOverrun: cameraOverrun,
     easeInOutCubic: easeInOutCubic,
+    easeInOutSine: easeInOutSine,
+    /* Shortest eased move between poses {x, y, zoom} (normalised) under the limits (merged over the
+     * kit defaults), as cameraAt counts it: the moves compiler plans with this. */
+    cameraMoveTime: function (a, b, limits) { return minDuration(a, b, Object.assign({}, DEFAULT_LIMITS, limits || {})); },
     CAMERA_LIMITS: DEFAULT_LIMITS,
     WORLD_LIMITS: WORLD_LIMITS,
   };

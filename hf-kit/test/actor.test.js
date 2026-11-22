@@ -216,6 +216,11 @@ test("cycles turn the body three-quarters toward travel; a turn blend eases back
     assert.ok(Math.abs(still.legs[s].ankle.x - idle.legs[s].ankle.x) < 1e-6 && Math.abs(still.legs[s].ankle.y - idle.legs[s].ankle.y) < 1e-6, s);
   }
   assert.ok(R.STRIDE.walk > 200 && R.STRIDE.run > R.STRIDE.walk, JSON.stringify(R.STRIDE));
+  // a realistic stride: about 0.8 body heights (1260 units) a cycle, so 420 world px/s at scale 1
+  // (0.3 px a unit) walks at 1.3-1.4 cycles a second
+  assert.ok(R.STRIDE.walk / 1260 > 0.72 && R.STRIDE.walk / 1260 < 0.9, "walk stride " + R.STRIDE.walk);
+  const cadence = 420 / (R.STRIDE.walk * 0.3);
+  assert.ok(cadence >= 1.3 && cadence <= 1.45, "walk cadence " + cadence);
 });
 
 test("cycles are smooth: no pops between phases, arms swing opposite to the legs", () => {
@@ -241,7 +246,8 @@ test("cycles are smooth: no pops between phases, arms swing opposite to the legs
   // the walk bobs slightly: hips lower at contact than at passing
   const dys = Array.from({ length: 40 }, (_, i) => R.layout(base({ cycle: "walk", phase: i / 40, facing: 1 })).dy);
   const bob = Math.max(...dys) - Math.min(...dys);
-  assert.ok(bob > 6 && bob < 40, "bob " + bob);
+  // (a full stride, about 0.8 body heights a cycle, bobs about 4.5 % of the height)
+  assert.ok(bob > 6 && bob < 70, "bob " + bob);
   // the jump starts and ends standing
   for (const ph of [0, 1]) assert.ok(Math.abs(R.CYCLES.jump(ph).legs.left.knee) < 1e-6 && R.CYCLES.jump(ph).lift === 0, "jump rest at " + ph);
 });

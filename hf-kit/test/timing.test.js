@@ -269,7 +269,8 @@ test("HFKit re-exports timing in both load orders", async () => {
 
 const WL = globalThis.HFKitTiming.WORLD_LIMITS;
 
-const LN_RATE = Math.log(1.6);
+const LN_RATE = Math.log(2.5);
+const PEAK = Math.PI / 2; // easeInOutSine
 /* peak |d ln z / dt| over a sweep */
 function logZoomRate(keys, anchors, to, dt = 0.002) {
   let prev = cameraAt(keys, 0, anchors, WL), max = 0;
@@ -277,13 +278,19 @@ function logZoomRate(keys, anchors, to, dt = 0.002) {
   return { max, last: prev };
 }
 
-test("WORLD_LIMITS: zoom 0.6x-5x, the kit pan limit, a multiplicative zoom rate of at most 1.6x per second", () => {
+test("WORLD_LIMITS: zoom 0.6x-5x, a livelier pan, a multiplicative zoom rate of at most 2.5x per second, sine ease", () => {
   assert.equal(globalThis.HFKit.WORLD_LIMITS, WL);
   assert.equal(WL.minZoom, 0.6);
   assert.equal(WL.maxZoom, 5);
-  assert.equal(WL.maxPanPerSec, LIM.maxPanPerSec, "keeps the existing pan limit");
+  assert.equal(WL.maxPanPerSec, 0.6);
   assert.equal(WL.zoomMode, "log");
-  assert.ok(WL.maxZoomPerSec > 1 && WL.maxZoomPerSec <= 1.6, `zoom rate ${WL.maxZoomPerSec}`);
+  assert.equal(WL.maxZoomPerSec, 2.5);
+  assert.equal(WL.ease, "sine");
+  // the pinned 0.8x -> 2.2x push-in takes about 2 s or less
+  const t = globalThis.HFKitTiming.cameraMoveTime({ x: 0.5, y: 0.28, zoom: 0.8 }, { x: 0.78, y: 0.37, zoom: 2.2 }, WL);
+  assert.ok(t <= 2 && t > 1.5, "0.8 -> 2.2 takes " + t);
+  // and the kit camera keeps its cubic ease: the same move numbers as before
+  assert.ok(Math.abs(globalThis.HFKitTiming.cameraMoveTime({ x: 0, y: 0, zoom: 1 }, { x: 0, y: 0, zoom: 1.6 }, LIM) - 3 * 0.6 / 0.6) < 1e-9);
   // the kit default is unchanged (schema-1 scenes keep their calm camera)
   assert.deepEqual(globalThis.HFKitTiming.CAMERA_LIMITS, { maxZoom: 2.5, maxPanPerSec: 0.35, maxZoomPerSec: 0.6 });
 });
@@ -302,14 +309,14 @@ test("world camera: zoom 6 is clamped to 5, zoom 0.3 to 0.6; the kit camera stil
   assert.ok(Math.abs(r.last.zoom - 5) < 1e-9);
 });
 
-test("world camera: a 0.6x -> 1.2x move doubles the zoom no faster than 1.6x per second (and the kit rate is still additive)", () => {
+test("world camera: a 0.6x -> 1.2x move doubles the zoom no faster than 2.5x per second (and the kit rate is still additive)", () => {
   const anchors = { a: { x: 0.5, y: 0.5 } };
   const keys = [{ t: 0, frame: { focus: "a", zoom: 0.6 } }, { t: 0.5, frame: { focus: "a", zoom: 1.2 } }];
   const r = logZoomRate(keys, anchors, 8, 0.001);
   assert.ok(r.max <= LN_RATE * 1.01, `|d ln z/dt| ${r.max}`);
   assert.ok(Math.abs(r.last.zoom - 1.2) < 1e-9);
   const end = cameraSchedule(keys, anchors, WL)[0].end;
-  assert.ok(Math.abs(end - 3 * Math.log(2) / LN_RATE) < 1e-9, "stretched to 3 ln 2 / ln 1.6 s: " + end);
+  assert.ok(Math.abs(end - PEAK * Math.log(2) / LN_RATE) < 1e-9, "stretched to (pi/2) ln 2 / ln 2.5 s: " + end);
   // a follow that zooms is held to the same rate
   const mv = { m: (t) => ({ x: 0.4 + 0.005 * t, y: 0.5 }) };
   const f = logZoomRate([{ t: 0, frame: { focus: "m", zoom: 0.6 } }, { t: 1, frame: { follow: "m", zoom: 1.2 } }], mv, 10);
@@ -329,9 +336,9 @@ test("world camera: zoom 5 following a moving anchor stays within the pan limit;
     prev = c;
   }
   assert.ok(maxPan <= WL.maxPanPerSec * 1.01, `pan ${maxPan}`);
-  // the 1x -> 5x push-in takes 3 ln 5 / ln 1.6 = 10.3 s, so a 12 s scene has no overrun
-  assert.ok(cameraOverrun(keys, slow, WL, 12) <= 0.25, "slow target: overrun " + cameraOverrun(keys, slow, WL, 12));
-  assert.ok(cameraOverrun(keys, slow, WL, 6) > 0.25, "a zoom that cannot finish in the scene is reported");
+  // the 1x -> 5x push-in takes (pi/2) ln 5 / ln 2.5 = 2.8 s, so a 6 s scene has no overrun
+  assert.ok(cameraOverrun(keys, slow, WL, 6) <= 0.25, "slow target: overrun " + cameraOverrun(keys, slow, WL, 6));
+  assert.ok(cameraOverrun(keys, slow, WL, 2.5) > 0.25, "a zoom that cannot finish in the scene is reported");
   // a fast target (0.2/s at zoom 5 = 1 frame width per second): the camera lags, and the lag is
   // reported as an overrun (> 0.25 s), never hidden by a pan faster than the limit
   const fast = { run: (t) => ({ x: 0.2 + 0.2 * t, y: 0.5 }) };
