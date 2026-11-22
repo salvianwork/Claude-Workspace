@@ -269,12 +269,21 @@ test("HFKit re-exports timing in both load orders", async () => {
 
 const WL = globalThis.HFKitTiming.WORLD_LIMITS;
 
-test("WORLD_LIMITS: zoom 0.6x-5x, the kit pan limit, zoom rate at most 1.6 per second", () => {
+const LN_RATE = Math.log(1.6);
+/* peak |d ln z / dt| over a sweep */
+function logZoomRate(keys, anchors, to, dt = 0.002) {
+  let prev = cameraAt(keys, 0, anchors, WL), max = 0;
+  for (let t = dt; t < to; t += dt) { const c = cameraAt(keys, t, anchors, WL); max = Math.max(max, Math.abs(Math.log(c.zoom) - Math.log(prev.zoom)) / dt); prev = c; }
+  return { max, last: prev };
+}
+
+test("WORLD_LIMITS: zoom 0.6x-5x, the kit pan limit, a multiplicative zoom rate of at most 1.6x per second", () => {
   assert.equal(globalThis.HFKit.WORLD_LIMITS, WL);
   assert.equal(WL.minZoom, 0.6);
   assert.equal(WL.maxZoom, 5);
   assert.equal(WL.maxPanPerSec, LIM.maxPanPerSec, "keeps the existing pan limit");
-  assert.ok(WL.maxZoomPerSec > LIM.maxZoomPerSec && WL.maxZoomPerSec <= 1.6, `zoom rate ${WL.maxZoomPerSec}`);
+  assert.equal(WL.zoomMode, "log");
+  assert.ok(WL.maxZoomPerSec > 1 && WL.maxZoomPerSec <= 1.6, `zoom rate ${WL.maxZoomPerSec}`);
   // the kit default is unchanged (schema-1 scenes keep their calm camera)
   assert.deepEqual(globalThis.HFKitTiming.CAMERA_LIMITS, { maxZoom: 2.5, maxPanPerSec: 0.35, maxZoomPerSec: 0.6 });
 });
@@ -285,17 +294,26 @@ test("world camera: zoom 6 is clamped to 5, zoom 0.3 to 0.6; the kit camera stil
   assert.equal(cameraAt(k6, 1, anchors, WL).zoom, 5);
   assert.equal(cameraAt([{ t: 0, frame: { focus: "a", zoom: 0.3 } }], 1, anchors, WL).zoom, 0.6);
   assert.equal(cameraAt([{ t: 0, frame: { focus: "a", zoom: 0.3 } }], 1, anchors, LIM).zoom, 1);
-  // a pull-out to 0.6 and a push-in to 5 obey the world limits and never jump
+  // a pull-out to 0.6 and a push-in to 5 obey the multiplicative rate and never jump
   const keys = [{ t: 0, frame: "wide" }, { t: 1, frame: { focus: "a", zoom: 0.6 } }, { t: 2, frame: { focus: "a", zoom: 5 } }];
-  const dt = 0.002;
-  let prev = cameraAt(keys, 0, anchors, WL);
-  for (let t = dt; t < 12; t += dt) {
-    const c = cameraAt(keys, t, anchors, WL);
-    assert.ok(Math.abs(c.zoom - prev.zoom) / dt <= WL.maxZoomPerSec * 1.01, `zoom rate at ${t}`);
-    assert.ok(c.zoom >= 0.6 - 1e-9 && c.zoom <= 5 + 1e-9);
-    prev = c;
-  }
-  assert.ok(Math.abs(prev.zoom - 5) < 1e-9);
+  const r = logZoomRate(keys, anchors, 25);
+  assert.ok(r.max <= LN_RATE * 1.01, `|d ln z/dt| ${r.max}`);
+  assert.ok(r.max > LN_RATE * 0.9, "the rate is the binding limit");
+  assert.ok(Math.abs(r.last.zoom - 5) < 1e-9);
+});
+
+test("world camera: a 0.6x -> 1.2x move doubles the zoom no faster than 1.6x per second (and the kit rate is still additive)", () => {
+  const anchors = { a: { x: 0.5, y: 0.5 } };
+  const keys = [{ t: 0, frame: { focus: "a", zoom: 0.6 } }, { t: 0.5, frame: { focus: "a", zoom: 1.2 } }];
+  const r = logZoomRate(keys, anchors, 8, 0.001);
+  assert.ok(r.max <= LN_RATE * 1.01, `|d ln z/dt| ${r.max}`);
+  assert.ok(Math.abs(r.last.zoom - 1.2) < 1e-9);
+  const end = cameraSchedule(keys, anchors, WL)[0].end;
+  assert.ok(Math.abs(end - 3 * Math.log(2) / LN_RATE) < 1e-9, "stretched to 3 ln 2 / ln 1.6 s: " + end);
+  // a follow that zooms is held to the same rate
+  const mv = { m: (t) => ({ x: 0.4 + 0.005 * t, y: 0.5 }) };
+  const f = logZoomRate([{ t: 0, frame: { focus: "m", zoom: 0.6 } }, { t: 1, frame: { follow: "m", zoom: 1.2 } }], mv, 10);
+  assert.ok(f.max <= LN_RATE * 1.01, `follow |d ln z/dt| ${f.max}`);
 });
 
 test("world camera: zoom 5 following a moving anchor stays within the pan limit; its overrun is reported", () => {
@@ -304,14 +322,16 @@ test("world camera: zoom 5 following a moving anchor stays within the pan limit;
   const keys = [{ t: 0, frame: "wide" }, { t: 1, frame: { follow: "run", zoom: 5 } }];
   let prev = cameraAt(keys, 0, slow, WL), maxPan = 0;
   const dt = 0.002;
-  for (let t = dt; t < 10; t += dt) {
+  for (let t = dt; t < 12; t += dt) {
     const c = cameraAt(keys, t, slow, WL);
     maxPan = Math.max(maxPan, (Math.hypot(c.x - prev.x, c.y - prev.y) * Math.max(c.zoom, prev.zoom)) / dt);
-    assert.ok(Math.abs(c.zoom - prev.zoom) / dt <= WL.maxZoomPerSec * 1.01);
+    assert.ok(Math.abs(Math.log(c.zoom) - Math.log(prev.zoom)) / dt <= LN_RATE * 1.01);
     prev = c;
   }
   assert.ok(maxPan <= WL.maxPanPerSec * 1.01, `pan ${maxPan}`);
-  assert.ok(cameraOverrun(keys, slow, WL, 10) <= 0.25, "slow target: overrun " + cameraOverrun(keys, slow, WL, 10));
+  // the 1x -> 5x push-in takes 3 ln 5 / ln 1.6 = 10.3 s, so a 12 s scene has no overrun
+  assert.ok(cameraOverrun(keys, slow, WL, 12) <= 0.25, "slow target: overrun " + cameraOverrun(keys, slow, WL, 12));
+  assert.ok(cameraOverrun(keys, slow, WL, 6) > 0.25, "a zoom that cannot finish in the scene is reported");
   // a fast target (0.2/s at zoom 5 = 1 frame width per second): the camera lags, and the lag is
   // reported as an overrun (> 0.25 s), never hidden by a pan faster than the limit
   const fast = { run: (t) => ({ x: 0.2 + 0.2 * t, y: 0.5 }) };

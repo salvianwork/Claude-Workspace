@@ -53,14 +53,20 @@
   }
 
   var LOOK = {
-    day: { sky: [[0, "#4A9BE0"], [0.5, "#9FD3F2"], [0.85, "#E6F4F8"], [1, "#FFF0D8"]], tone: function (c) { return c; }, cloud: { cloud: "#FFFFFF", cloudShade: "#D6E6F4", cloudLight: "#FFFDF4" }, sea: ["#FFFFFF", "#DCE8F4"] },
+    day: { sky: [[0, "#4A9BE0"], [0.5, "#9FD3F2"], [0.85, "#E6F4F8"], [1, "#FFF0D8"]], tone: function (c) { return c; }, cloud: { cloud: "#EEF4FB", cloudShade: "#A3BEDC", cloudLight: "#FFFFFF", lightOp: 0.95 }, sea: ["#E9F2FB", "#A9C4E0"] },
     twilight: { sky: [[0, "#2A2466"], [0.45, "#7A4E9E"], [0.75, "#E07A86"], [1, "#FFC07A"]], tone: A.toner(0.18, "#6A3E8A", 0.3), cloud: { cloud: "#F2C2D6", cloudShade: "#A86EA6", cloudLight: "#FFE2D0" }, sea: ["#F6CCDC", "#B07AB6"] },
   };
 
-  function puff(x, y, w, pal) { // a long cloud bank
-    var s = "";
-    for (var i = 0; i < 7; i++) s += tag("circle", { cx: r2(x - w / 2 + w * i / 6), cy: r2(y - (i % 2 ? 30 : 0) - Math.sin(i / 6 * Math.PI) * w * 0.08), r: r2(w * 0.14 + (i % 3) * 14), fill: pal.cloud });
-    return tag("ellipse", { cx: x, cy: y + 20, rx: w * 0.58, ry: w * 0.1, fill: pal.cloudShade }) + s + tag("rect", { x: x - w / 2, y: y, width: w, height: w * 0.12, fill: pal.cloud });
+  function puff(x, y, w, pal) { // a long cloud bank, shaded underneath and lit on top
+    var s = "", light = "", shadow = "", n = 7;
+    for (var i = 0; i < n; i++) {
+      var cx = x - w / 2 + w * i / (n - 1), cy = y - (i % 2 ? 30 : 0) - Math.sin(i / (n - 1) * Math.PI) * w * 0.08, r = w * 0.14 + (i % 3) * 14;
+      shadow += tag("circle", { cx: r2(cx + r * 0.12), cy: r2(cy + r * 0.32), r: r2(r), fill: pal.cloudShade });
+      s += tag("circle", { cx: r2(cx), cy: r2(cy), r: r2(r * 0.94), fill: pal.cloud });
+      light += tag("ellipse", { cx: r2(cx - r * 0.2), cy: r2(cy - r * 0.5), rx: r2(r * 0.5), ry: r2(r * 0.26), fill: pal.cloudLight, opacity: pal.lightOp || 0.45 });
+    }
+    return tag("ellipse", { cx: x, cy: y + w * 0.06, rx: w * 0.6, ry: w * 0.12, fill: pal.cloudShade }) + shadow + s + light +
+      tag("path", { d: "M" + r2(x - w * 0.52) + " " + r2(y + w * 0.02) + " Q" + x + " " + r2(y + w * 0.1) + " " + r2(x + w * 0.52) + " " + r2(y + w * 0.02), stroke: pal.cloudShade, "stroke-width": r2(w * 0.02), fill: "none", opacity: 0.8 });
   }
   function island(x0, x1, top, depth, tone, R, crystals) {
     var w = x1 - x0, cx = (x0 + x1) / 2, s = "";
@@ -90,7 +96,8 @@
       ["#FF6B6B", "#FFA94D", "#FFE066", "#69DB7C", "#4DABF7", "#9775FA"].forEach(function (c, i) { s += tag("path", { d: "M" + (300 + i * 26) + " 1300 A" + (900 - i * 26) + " " + (760 - i * 26) + " 0 0 1 " + (2100 - i * 26) + " 1300", stroke: c, "stroke-width": 26, fill: "none", opacity: 0.4 }); });
     }
     [[700, 950, 260], [2300, 1000, 200], [3200, 900, 300], [1500, 1100, 160]].forEach(function (q, i) { s += tag("g", { opacity: 0.6 }, island(q[0] - q[2], q[0] + q[2], q[1], q[2] * 0.9, function (c) { return D.mix(tone(c), "#9FB8D8", 0.5); }, R, null) + A.tree(q[0], q[1] - q[2] * 0.25, q[2] * 0.18, function (c) { return D.mix(tone(c), "#9FB8D8", 0.5); }, 40 + i, false)); });
-    s += puff(1000, 1360, 1800, { cloud: D.mix(L.cloud.cloud, "#A9C8E8", 0.3), cloudShade: L.cloud.cloudShade }) + puff(3000, 1400, 1800, { cloud: D.mix(L.cloud.cloud, "#A9C8E8", 0.3), cloudShade: L.cloud.cloudShade });
+    var far = { cloud: D.mix(L.cloud.cloud, "#A9C8E8", 0.3), cloudShade: L.cloud.cloudShade, cloudLight: D.mix(L.cloud.cloudLight, "#A9C8E8", 0.2), lightOp: 0.5 };
+    s += puff(1000, 1360, 1800, far) + puff(3000, 1400, 1800, far);
     return { defs: "", body: s };
   }
   function drawMid(P, v, L, R) {
@@ -138,6 +145,7 @@
     if (tw) s += tag("circle", { cx: tx, cy: tb - 375, r: 140, fill: "url(#" + P + "-glow)" });
     // the top of the cloud sea, billowing in front of the islands' roots
     [[300, 1420], [1500, 1300], [2650, 1400], [3750, 1300]].forEach(function (q) { s += puff(q[0], G.sea + 90, q[1], L.cloud); });
+    [[900, 1200], [2100, 1300], [3300, 1100]].forEach(function (q) { s += puff(q[0], G.sea + 250, q[1], L.cloud); });
     // the balloon (moved in update)
     s += tag("g", { "data-part": "balloon" }, balloonMarkup(tone));
     return { defs: defs, body: s };

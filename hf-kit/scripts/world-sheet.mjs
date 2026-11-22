@@ -194,7 +194,7 @@ function pageBuild(spec) {
 
   if (spec.kind === "effects") {
     el(sheet, "h1", "", "Effects over time");
-    el(sheet, "div", "sub", "HFKit.effects in the countryside (day), pushed in (zoom 1.4 to 1.8). Each row: the same effect at increasing times after its start (at = 0.5 s). Dashed: box(t); orange dot: pulse_along's anchor \"pulse\".");
+    el(sheet, "div", "sub", "HFKit.effects in the countryside (day), pushed in (zoom 1.3 to 1.8) except smoke and speed_lines (zoom 1). Each row: the same effect at increasing times after its start (at = 0.5 s). Dashed: box(t); orange dot: pulse_along's anchor \"pulse\".");
     for (const [title, params, cam, times] of spec.rows) {
       const name = title.split(" ")[0];
       el(sheet, "h2", "", title);
@@ -335,10 +335,10 @@ try {
       ["rings (sound from the rail, laid on the ground plane)", { at: 0.5, x: 1500, y: 1500, count: 3, interval: 0.3, squash: 0.45, color: "#7FE3FF" }, { x: 1650, y: 1400, zoom: 1.4 }, T],
       ["rings (directional wavefront)", { at: 0.5, x: 1600, y: 820, arc: { angle: 0, spread: 70 }, count: 4, interval: 0.25, color: "#FFD43B" }, sky, T],
       ["pulse_along (the rail path)", { at: 0.5, path: [{ x: 1300, y: 1500 }, { x: 1900, y: 1500 }, { x: 2600, y: 1500 }], duration: 1.6 }, { x: 1900, y: 1380, zoom: 1.3 }, [0.5, 0.7, 1.0, 1.4, 1.9, 2.3]],
-      ["speed_lines (moving right)", { at: 0.5, x: 2150, y: 820, angle: 0, duration: 1.6, color: "#FFFFFF" }, sky, T],
+      ["speed_lines (moving right, at zoom 1)", { at: 0.5, x: 2150, y: 820, angle: 0, duration: 1.6, color: "#FFFFFF" }, { x: 1920, y: 900, zoom: 1 }, T],
       ["splash (on the lake)", { at: 0.5, x: 2240, y: 1616, color: "#7FD3F5" }, { x: 2240, y: 1480, zoom: 1.6 }, [0.5, 0.6, 0.8, 1.05, 1.4, 1.85]],
       ["sparkle", { at: 0.5, x: 1920, y: 820 }, sky, T],
-      ["smoke", { at: 0.5, x: 1920, y: 1000, duration: 3 }, sky, [0.5, 0.8, 1.3, 2.0, 2.8, 3.8]],
+      ["smoke (at zoom 1)", { at: 0.5, x: 1920, y: 1100, duration: 3 }, { x: 1920, y: 900, zoom: 1 }, [0.5, 0.8, 1.3, 2.0, 2.8, 3.8]],
       ["glow", { at: 0.5, x: 1920, y: 820, rays: 8, duration: 3 }, sky, [0.5, 0.6, 0.8, 1.2, 2.0, 3.3]],
     ] }, join(outDir, "effects.png"));
   }

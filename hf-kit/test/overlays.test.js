@@ -83,6 +83,13 @@ test("tags and labels: at most 4 words (a number and its unit count as one)", ()
   assert.equal(O.countWords("Sound at 343 m/s"), 3);
   assert.equal(O.countWords("1,200 km per hour"), 3);
   assert.equal(O.countWords("  the   magma chamber "), 3);
+  // only real units merge with a number: "2 big dogs ran off" is 5 words
+  assert.equal(O.countWords("2 big dogs ran off"), 5);
+  assert.throws(() => mount("tag", { text: "2 big dogs ran off", target: "a" }), /5 words \(at most 4\)/);
+  assert.equal(O.countWords("≈5,960 m/s fast"), 2);
+  mount("tag", { text: "≈5,960 m/s fast", target: "a" });
+  for (const u of ["m", "km/h", "°C", "%", "kHz", "dB", "ly", "au", "K"]) assert.equal(O.countWords("12 " + u), 1, u);
+  for (const w of ["big", "the", "cat", "M", "kg/day"]) assert.equal(O.countWords("12 " + w), 2, w);
   assert.throws(() => mount("tag", { text: "this is far too long", target: "a" }), /^Error: tag "this is far too long": 5 words \(at most 4\)$/);
   assert.throws(() => mount("label", { text: "one two three four five", target: "a" }), /^Error: label "one two three four five": 5 words \(at most 4\)$/);
   assert.throws(() => mount("tag", { text: "", target: "a" }), /needs text/);

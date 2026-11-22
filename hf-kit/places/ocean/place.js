@@ -1,9 +1,9 @@
 /* Place "ocean": the sea in two views.
  *   surface     the sea from beside a sailing boat, cut away below the waterline: sky, gulls, a
  *               lighthouse on a rocky islet, rolling waves on top; underneath, the water column
- *               darkening with depth, sun rays, fish, a turtle, kelp and a coral reef on the sand.
+ *               darkening with depth, sun rays, fish, a turtle, seagrass and a coral reef on the sand.
  *   underwater  down among the reef: the bright, rippling underside of the surface with the boat's
- *               hull above, light shafts, kelp swaying, a big coral reef with an anemone and its
+ *               hull above, light shafts, seagrass swaying, a big coral reef with an anemone and its
  *               clownfish, a sunken anchor, a jellyfish, a school of fish and a turtle.
  * Anchors (ground-layer world px, 3840 x 2160 world; the same names in both views):
  *   surface  a point on the water surface (the waterline)
@@ -23,7 +23,7 @@
 
   var meta = {
     name: "ocean",
-    description: "The sea: a sailing boat on rolling waves cut away to the reef below (surface), or down among the coral, kelp and fish (underwater).",
+    description: "The sea: a sailing boat on rolling waves cut away to the reef below (surface), or down among the coral, seagrass and fish (underwater).",
     variants: ["surface", "underwater"],
     anchors: ["surface", "boat", "deep", "reef", "seabed"],
     paths: ["current"],
@@ -95,7 +95,16 @@
     for (var k = 0; k < 9; k++) { var a = (-150 + k * 15) * Math.PI / 180; out += tag("path", { d: "M" + x + " " + y + " q" + r2(Math.cos(a) * 60 * s) + " " + r2(Math.sin(a) * 90 * s) + " " + r2(Math.cos(a) * 160 * s) + " " + r2(Math.sin(a) * 200 * s), stroke: c, "stroke-width": 7, fill: "none", "stroke-linecap": "round" }); }
     return out + tag("path", { d: "M" + r2(x - 120 * s) + " " + r2(y - 120 * s) + " Q" + x + " " + r2(y - 260 * s) + " " + r2(x + 120 * s) + " " + r2(y - 120 * s), stroke: c, "stroke-width": 5, fill: "none", opacity: 0.7 });
   }
-  function kelp(x, y, h, tone, k) { return tag("path", { "data-kelp": k, d: "M" + x + " " + y + " C" + (x - 40) + " " + (y - h * 0.3) + " " + (x + 40) + " " + (y - h * 0.6) + " " + x + " " + (y - h), stroke: tone(k % 2 ? "#3E8E41" : "#5A9E3A"), "stroke-width": 22, fill: "none", "stroke-linecap": "round" }); }
+  /* A clump of seagrass (what grows on sand beside a tropical reef): five ribbon blades that sway. */
+  function seagrass(x, y, h, tone, k) {
+    var out = "", H = Math.min(340, 120 + h * 0.25);
+    for (var b = 0; b < 5; b++) {
+      var bx = x + (b - 2) * 16, bh = H * (0.6 + ((b * 37 + k * 11) % 40) / 100), lean = (b - 2) * 22;
+      out += tag("path", { "data-blade": k * 5 + b, d: "M" + bx + " " + y + " C" + (bx - 20 + lean * 0.3) + " " + r2(y - bh * 0.35) + " " + (bx + 20 + lean * 0.7) + " " + r2(y - bh * 0.7) + " " + (bx + lean) + " " + r2(y - bh),
+        stroke: tone(b % 2 ? "#3E9A4E" : "#6AB04C"), "stroke-width": 11, fill: "none", "stroke-linecap": "round" });
+    }
+    return out;
+  }
   function starfish(x, y, r, c) {
     var p = "";
     for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.42 : r; p += (i ? " L" : "M") + r2(x + Math.cos(a) * rr) + " " + r2(y + Math.sin(a) * rr * 0.6); }
@@ -149,7 +158,7 @@
     for (var x = -400; x <= 4240; x += 80) bed.push([x, bedY(x, G)]);
     s += tag("path", { d: smooth(bed, false) + " L4240 2600 L-400 2600 Z", fill: "url(#" + P + "-sand)" });
     for (var r = 0; r < 60; r++) { var rx = -300 + R() * 4400; s += tag("ellipse", { cx: r2(rx), cy: r2(bedY(rx, G) + 20 + R() * 120), rx: 6 + R() * 10, ry: 3 + R() * 5, fill: tone("#B9955E"), opacity: 0.7 }); }
-    for (var k = 0; k < 11; k++) s += kelp(-100 + k * 120 + R() * 60, bedY(-100 + k * 120, G) + 10, 300 + R() * 300, tone, k);
+    for (var k = 0; k < 11; k++) s += seagrass(-100 + k * 120 + R() * 60, bedY(-100 + k * 120, G) + 10, 300 + R() * 300, tone, k);
     var rf = reef(G, tone, R, false);
     s += rf.body + tag("g", { "data-part": "clownfish", "data-x": rf.anemone.x, "data-y": rf.anemone.y }, "");
     s += tag("g", { "data-part": "life" }, "") + tag("g", { "data-part": "bubbles" }, "");
@@ -157,7 +166,7 @@
     s += tag("path", { "data-part": "surface", fill: "#7FD3F5" }) + tag("path", { "data-part": "foam", fill: "none", stroke: "#FFFFFF", "stroke-width": 7, "stroke-linecap": "round", opacity: 0.85 });
     s += tag("g", { "data-part": "boat" }, boatMarkup(P, tone));
     out.ground = { defs: defs, body: s };
-    out.front = { defs: "", body: kelpFront(tone, R) + tag("g", { "data-part": "motes" }, "") };
+    out.front = { defs: "", body: seagrassFront(tone, R) + tag("g", { "data-part": "motes" }, "") };
     return out;
   }
   function boatMarkup(P, tone) {
@@ -169,9 +178,9 @@
     s += tag("path", { d: "M60 -300 Q150 -280 190 -230 M70 -500 Q140 -480 180 -440", stroke: tone("#D8D4CA"), "stroke-width": 4, fill: "none" });
     return s;
   }
-  function kelpFront(tone, R) {
+  function seagrassFront(tone, R) {
     var s = "";
-    for (var k = 0; k < 6; k++) { var x = k < 3 ? -60 + k * 110 : 3600 + (k - 3) * 120; s += tag("path", { d: "M" + x + " 2300 C" + (x - 60) + " 2050 " + (x + 70) + " 1850 " + (x + 10) + " " + (1600 + R() * 120), stroke: tone(k % 2 ? "#2E7A3A" : "#3E8E41"), "stroke-width": 34, fill: "none", "stroke-linecap": "round" }); }
+    for (var k = 0; k < 16; k++) { var x = k < 8 ? -80 + k * 50 : 3560 + (k - 8) * 50, h = 260 + R() * 220; s += tag("path", { d: "M" + x + " 2300 C" + (x - 30) + " " + r2(2300 - h * 0.4) + " " + (x + 40) + " " + r2(2300 - h * 0.7) + " " + r2(x + (R() - 0.5) * 60) + " " + r2(2300 - h), stroke: tone(k % 2 ? "#2E7A3A" : "#4E9A44"), "stroke-width": 18, fill: "none", "stroke-linecap": "round" }); }
     s += tag("path", { d: "M3420 2300 Q3500 2100 3640 2140 Q3760 2160 3840 2300 Z", fill: tone("#5E6E7E"), stroke: tone("#3A4654"), "stroke-width": 6 });
     return s;
   }
@@ -186,7 +195,7 @@
     for (var i = 0; i < 18; i++) { var x = -1200 + i * 380 + R() * 100, h = 200 + R() * 260; far += tag("path", { d: "M" + r2(x - 220) + " 1500 Q" + r2(x - 140) + " " + r2(1500 - h) + " " + r2(x) + " " + r2(1500 - h * 1.1) + " Q" + r2(x + 160) + " " + r2(1500 - h) + " " + r2(x + 240) + " 1500 Z", fill: i % 2 ? "#1A6A9A" : "#1F75A6", opacity: 0.85 }); }
     out.far = { defs: "", body: tag("rect", { x: -1600, y: 1460, width: 7040, height: 1400, fill: "#1A6696" }) + far + tag("g", { "data-part": "school" }, "") };
     var mid = "";
-    for (var k = 0; k < 14; k++) mid += tag("path", { d: "M" + (-400 + k * 380) + " 2300 C" + (-460 + k * 380) + " 1800 " + (-320 + k * 380) + " 1400 " + (-380 + k * 380) + " " + (900 + R() * 300), stroke: "#2E8A6A", "stroke-width": 26, fill: "none", "stroke-linecap": "round", opacity: 0.55 });
+    for (var k = 0; k < 40; k++) { var mx = -400 + k * 140 + R() * 60; mid += tag("path", { d: "M" + r2(mx) + " 1900 q" + r2(-20 + R() * 40) + " -90 " + r2(-10 + R() * 50) + " " + r2(-140 - R() * 140), stroke: "#2E8A6A", "stroke-width": 14, fill: "none", "stroke-linecap": "round", opacity: 0.5 }); }
     out.mid = { defs: "", body: tag("rect", { x: -1400, y: 1640, width: 6640, height: 1000, fill: "#2C7DA8", opacity: 0.6 }) + mid };
     var defs = S.lin(P + "-ray", [[0, "#F2FEFF", 0.38], [1, "#F2FEFF", 0]]) + S.lin(P + "-sand", [[0, tone("#E2CB98")], [1, tone("#C4A672")]]) +
       S.lin(P + "-under", [[0, "#BFF0FF", 0.95], [1, "#7FD8F2", 0.2]]) + S.lin(P + "-fog", [[0, "#0A3C6E", 0], [1, "#0A3C6E", 0.35]]);
@@ -205,10 +214,10 @@
     for (var bx = -400; bx <= 4240; bx += 80) bed.push([bx, bedY(bx, G)]);
     s += tag("path", { d: smooth(bed, false) + " L4240 2600 L-400 2600 Z", fill: "url(#" + P + "-sand)" });
     for (var sr = 0; sr < 90; sr++) { var sx = -300 + R() * 4400; s += tag("ellipse", { cx: r2(sx), cy: r2(bedY(sx, G) + 20 + R() * 300), rx: 6 + R() * 12, ry: 3 + R() * 5, fill: tone("#B9955E"), opacity: 0.7 }); }
-    // sand ripples, kelp forest at the left, rocks, a sunken anchor
+    // sand ripples, seagrass meadow at the left, rocks, a sunken anchor
     for (var cs = 0; cs < 26; cs++) { var csx = -200 + R() * 4200, csy = bedY(csx, G) + 40 + R() * 220; s += tag("path", { d: "M" + r2(csx) + " " + r2(csy) + " q40 -18 80 0 q30 14 60 -6 q-20 30 -70 22 q-40 -6 -70 -16", stroke: "#F2FEFF", "stroke-width": 4, fill: "none", opacity: 0.4 }); }
     for (var rp = 0; rp < 12; rp++) { var rx = -200 + rp * 360; s += tag("path", { d: "M" + rx + " " + r2(bedY(rx, G) + 110) + " q90 -24 180 0 t180 0", stroke: tone("#C9A86E"), "stroke-width": 6, fill: "none", opacity: 0.7 }); }
-    for (var kk = 0; kk < 14; kk++) s += kelp(-60 + kk * 90 + R() * 40, bedY(kk * 90, G) + 20, 700 + R() * 600, tone, kk);
+    for (var kk = 0; kk < 14; kk++) s += seagrass(-60 + kk * 90 + R() * 40, bedY(kk * 90, G) + 20, 700 + R() * 600, tone, kk);
     var ax = 1500, ay = bedY(1500, G) + 30;
     s += tag("g", { transform: "rotate(-18 " + ax + " " + ay + ")" }, tag("path", { d: "M" + ax + " " + (ay - 260) + " V" + ay + " M" + (ax - 120) + " " + (ay - 60) + " Q" + ax + " " + (ay + 60) + " " + (ax + 120) + " " + (ay - 60) + " M" + (ax - 70) + " " + (ay - 200) + " h140", stroke: tone("#5E6870"), "stroke-width": 26, fill: "none", "stroke-linecap": "round" }) +
       tag("circle", { cx: ax, cy: ay - 290, r: 34, fill: "none", stroke: tone("#5E6870"), "stroke-width": 18 }) + tag("path", { d: "M" + (ax - 40) + " " + (ay - 140) + " q30 -20 60 -10", stroke: tone("#6DAA45"), "stroke-width": 14, fill: "none" }));
@@ -218,7 +227,7 @@
     s += tag("rect", { x: -400, y: 1200, width: 4640, height: 1200, fill: "url(#" + P + "-fog)" });
     s += tag("g", { "data-part": "life" }, "") + tag("g", { "data-part": "bubbles" }, "");
     out.ground = { defs: defs, body: s };
-    out.front = { defs: "", body: kelpFront(tone, R) + tag("g", { "data-part": "motes" }, "") };
+    out.front = { defs: "", body: seagrassFront(tone, R) + tag("g", { "data-part": "motes" }, "") };
     return out;
   }
 
@@ -235,7 +244,7 @@
     PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "ocean-" + name, parts[name].defs, parts[name].body); });
     var surf = g.ground.querySelector('[data-part="surface"]'), foam = g.ground.querySelector('[data-part="foam"]'), boat = g.ground.querySelector('[data-part="boat"]');
     var rays = [].slice.call(g.ground.querySelectorAll("[data-ray]"));
-    var kelps = [].slice.call(g.ground.querySelectorAll("[data-kelp]")).concat([].slice.call(g.front.querySelectorAll("[data-kelp]"))).map(function (e) { return { e: e, d: e.getAttribute("d") }; });
+    var grass = [].slice.call(g.ground.querySelectorAll("[data-blade]")).concat([].slice.call(g.front.querySelectorAll("[data-blade]"))).map(function (e) { return { e: e, d: e.getAttribute("d") }; });
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform"), x0: +/translate\(([-\d.]+)/.exec(e.getAttribute("transform"))[1] }; });
     var lifeG = g.ground.querySelector('[data-part="life"]'), R = D.rng(seed + 9);
     var FISH = under ? [[600, 760, "#FFD43B", 1.2], [900, 1180, "#FF8787", 1], [2000, 820, "#74C0FC", 1.3], [2600, 1180, "#FFA94D", 1.1], [3300, 900, "#B197FC", 1], [1300, 1450, "#63E6BE", 0.9]]
@@ -278,7 +287,7 @@
       var bx = G.boat, by = G.water + wave(bx, t, G) - (under ? 0 : 10), tilt = Math.atan2(wave(bx + 200, t, G) - wave(bx - 200, t, G), 400) * 57.3;
       boat.setAttribute("transform", "translate(" + bx + " " + r2(by) + ") rotate(" + r2(tilt * 0.8) + ")");
       rays.forEach(function (e, k) { e.setAttribute("opacity", r2(0.55 + 0.45 * Math.sin(t * 0.7 + k * 1.3))); });
-      kelps.forEach(function (k, i) { var sway = Math.sin(t * 0.8 + i * 0.7) * 40; k.e.setAttribute("d", k.d.replace(/C(-?[\d.]+)/, function (m0, a) { return "C" + r2(+a + sway); })); });
+      grass.forEach(function (k, i) { var sway = Math.sin(t * 0.9 + i * 0.7) * 14; k.e.setAttribute("d", k.d.replace(/C(-?[\d.]+)/, function (m0, a) { return "C" + r2(+a + sway); })); });
       clouds.forEach(function (c, k) { var nx = A.wrap(c.x0 + t * (6 + k * 2), -700, 4500); c.e.setAttribute("transform", "translate(" + r2(nx - c.x0) + " 0) " + c.base); });
       fish.forEach(function (f) {
         var q = f.q, sp = 60 + f.k * 9, dir = f.k % 2 ? -1 : 1, x = A.wrap(q[0] + dir * sp * t, SPAN[0], SPAN[1]);

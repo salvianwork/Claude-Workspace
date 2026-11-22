@@ -266,8 +266,13 @@
     s += tag("rect", { x: -300, y: G.road0, width: 4440, height: G.nearCurb - G.road0, fill: "url(#" + P + "-road)" });
     s += tag("path", { d: "M-300 1388 H4140", stroke: tone("#F2C94C"), "stroke-width": 8, "stroke-dasharray": "90 70", opacity: 0.9 });
     s += tag("path", { d: "M-300 1282 H4140 M-300 1508 H4140", stroke: tone("#E9ECEF"), "stroke-width": 5, opacity: 0.6 });
-    for (var zx = G.zebra[0]; zx < G.zebra[1]; zx += 84) { // zebra stripes in perspective (wider toward us)
-      s += tag("path", { d: "M" + (zx + 8) + " " + (G.road0 + 4) + " L" + (zx + 52) + " " + (G.road0 + 4) + " L" + (zx + 62) + " " + (G.nearCurb - 6) + " L" + (zx - 6) + " " + (G.nearCurb - 6) + " Z", fill: tone("#F8F9FA"), opacity: 0.92 });
+    // zebra crossing: white bands parallel to the kerbs, stacked across the road from the far
+    // kerb to the near one, each a little deeper and wider as it comes toward us
+    var zb = 7, zy0 = G.road0 + 10, zy1 = G.nearCurb - 8;
+    for (var zi = 0; zi < zb; zi++) {
+      var ya = zy0 + (zy1 - zy0) * Math.pow(zi / zb, 1.12), yb = zy0 + (zy1 - zy0) * Math.pow((zi + 0.55) / zb, 1.12), grow = 1 + 0.12 * zi / zb;
+      var cx0 = (G.zebra[0] + G.zebra[1]) / 2, hw = (G.zebra[1] - G.zebra[0]) / 2;
+      s += tag("path", { d: "M" + r2(cx0 - hw * grow) + " " + r2(ya) + " H" + r2(cx0 + hw * grow) + " L" + r2(cx0 + hw * (grow + 0.02)) + " " + r2(yb) + " H" + r2(cx0 - hw * (grow + 0.02)) + " Z", fill: tone("#F8F9FA"), opacity: 0.92 });
     }
     s += tag("ellipse", { cx: 1500, cy: 1440, rx: 90, ry: 22, fill: tone("#2E343B"), stroke: tone("#6C757D"), "stroke-width": 4 }); // manhole
     s += tag("path", { d: "M1430 1440 H1570 M1450 1432 H1550 M1450 1448 H1550", stroke: tone("#6C757D"), "stroke-width": 3 });

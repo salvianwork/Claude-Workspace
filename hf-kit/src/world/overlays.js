@@ -27,7 +27,10 @@
   var SAFE = 96, MAX_WORDS = 4, OUT_CLAMP = 200, OUT_GONE = 280, LEAD = 66;
 
   var NUM = /^[-+~≈]?\d[\d.,]*(%|°[CF]?|x|×)?$/;
-  var UNIT = /^(%|°[CF]?|[A-Za-zµ°]{1,3}(\/[A-Za-z]{1,3})?[²³23]?|x|×)$/;
+  /* Only real units merge with the number before them ("343 m/s" is one word, "2 big dogs" is three). */
+  var UNITS = ["m", "cm", "mm", "km", "s", "ms", "h", "min", "m/s", "km/h", "mph", "kg", "g", "mg", "t", "°C", "°F", "K", "%",
+    "L", "ml", "Hz", "kHz", "dB", "W", "kW", "V", "A", "N", "Pa", "ly", "au"];
+  var UNIT = { test: function (w) { return UNITS.indexOf(w) >= 0; } };
   function countWords(text) {
     var toks = String(text || "").trim().split(/\s+/).filter(Boolean), n = 0;
     for (var i = 0; i < toks.length; i++) {
@@ -152,7 +155,7 @@
   K.overlays = {
     tag: function (el, spec, idPrefix) { return make("tag", el, spec, idPrefix); },
     label: function (el, spec, idPrefix) { return make("label", el, spec, idPrefix); },
-    countWords: countWords,
+    countWords: countWords, UNITS: UNITS,
     MAX_WORDS: MAX_WORDS, SAFE: SAFE, OUT_CLAMP: OUT_CLAMP, OUT_GONE: OUT_GONE,
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);

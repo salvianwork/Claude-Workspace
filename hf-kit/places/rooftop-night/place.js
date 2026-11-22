@@ -148,9 +148,19 @@
     s += tag("path", { d: "M2500 1880 H3140 L3220 2060 H2420 Z", fill: "#2E3A5C", stroke: "#8A929D", "stroke-width": 10 }) + tag("path", { d: "M2820 1880 V2060 M2460 1970 H3180", stroke: "#8A929D", "stroke-width": 8 }) +
       tag("path", { d: "M2560 2040 L2680 1900 M2600 2040 L2700 1920", stroke: "#9FB8E8", "stroke-width": 8, opacity: 0.4 }) + tag("rect", { x: 2560, y: 1900, width: 230, height: 60, fill: "#FFD27A", opacity: 0.25 });
     // deck chairs with a blanket, a little table, plants in pots
-    var chair = function (x, c) { return tag("path", { d: "M" + (x - 120) + " 1720 L" + (x + 60) + " 1600 M" + (x + 120) + " 1720 L" + (x - 40) + " 1560", stroke: "#8C5E3C", "stroke-width": 12, "stroke-linecap": "round" }) + tag("path", { d: "M" + (x - 100) + " 1640 L" + (x + 80) + " 1640 L" + (x + 20) + " 1500 L" + (x - 60) + " 1520 Z", fill: c, stroke: D.shade(c, 0.35), "stroke-width": 5 }); };
-    s += chair(1080, "#C2412F") + chair(1340, "#2F7F74");
-    s += tag("rect", { x: 1170, y: 1600, width: 90, height: 12, rx: 4, fill: "#8C5E3C" }) + tag("path", { d: "M1215 1612 v100", stroke: "#8C5E3C", "stroke-width": 10 }) + tag("rect", { x: 1196, y: 1570, width: 28, height: 30, rx: 6, fill: "#F2F2EC" });
+    var chair = function (x, c) { // a wooden sun lounger, side on: legs, slatted seat, raised back, striped cushion
+      var w = "#D2A577", wd = "#7A5230", y = 1690, cd = D.shade(c, 0.3), out = "";
+      out += tag("path", { d: "M" + (x - 150) + " " + y + " v60 M" + (x + 150) + " " + y + " v60 M" + (x - 110) + " " + y + " v54 M" + (x + 110) + " " + y + " v54", stroke: wd, "stroke-width": 12, "stroke-linecap": "round" });
+      out += tag("rect", { x: x - 170, y: y - 14, width: 340, height: 22, rx: 6, fill: w, stroke: wd, "stroke-width": 4 });
+      out += tag("path", { d: "M" + (x - 150) + " " + (y - 10) + " L" + (x - 230) + " " + (y - 190) + " L" + (x - 200) + " " + (y - 200) + " L" + (x - 110) + " " + (y - 10) + " Z", fill: w, stroke: wd, "stroke-width": 4, "stroke-linejoin": "round" });
+      out += tag("path", { d: "M" + (x - 140) + " " + (y - 30) + " L" + (x - 214) + " " + (y - 186) + " L" + (x - 186) + " " + (y - 196) + " L" + (x - 100) + " " + (y - 30) + " Z", fill: c, stroke: cd, "stroke-width": 4 });
+      out += tag("rect", { x: x - 120, y: y - 40, width: 280, height: 30, rx: 12, fill: c, stroke: cd, "stroke-width": 4 });
+      for (var k = 0; k < 4; k++) out += tag("path", { d: "M" + (x - 80 + k * 66) + " " + (y - 38) + " v26", stroke: "#FFF3E0", "stroke-width": 10, opacity: 0.8 });
+      out += tag("path", { d: "M" + (x - 160) + " " + (y - 70) + " H" + (x - 60) + " M" + (x - 70) + " " + (y - 70) + " V" + (y - 14), stroke: wd, "stroke-width": 10, "stroke-linecap": "round" });
+      return out;
+    };
+    s += chair(1020, "#C2412F") + chair(1480, "#2F7F74");
+    s += tag("rect", { x: 1210, y: 1630, width: 90, height: 12, rx: 4, fill: "#8C5E3C" }) + tag("path", { d: "M1255 1642 v100", stroke: "#8C5E3C", "stroke-width": 10 }) + tag("rect", { x: 1236, y: 1600, width: 28, height: 30, rx: 6, fill: "#F2F2EC" });
     [[900, 1560], [2000, 1540], [3000, 1580]].forEach(function (q, i) { s += tag("path", { d: "M" + (q[0] - 50) + " " + q[1] + " l10 70 h80 l10 -70 Z", fill: "#B5523B", stroke: "#6E2E20", "stroke-width": 4 }); for (var lf = 0; lf < 6; lf++) s += tag("ellipse", { cx: q[0] + (lf - 2.5) * 16, cy: q[1] - 40 - (lf % 2) * 20, rx: 14, ry: 40, fill: lf % 2 ? "#2E6B4A" : "#3E7F5A", transform: "rotate(" + ((lf - 2.5) * 16) + " " + (q[0] + (lf - 2.5) * 16) + " " + (q[1] - 20) + ")" }); });
     // air conditioners with spinning fans, a vent pipe that steams
     [[2150, 1460], [2400, 1470]].forEach(function (q, i) { s += tag("rect", { x: q[0] - 100, y: q[1] - 140, width: 200, height: 140, rx: 10, fill: "#9AA3AE", stroke: "#5A6470", "stroke-width": 5 }) + tag("circle", { cx: q[0], cy: q[1] - 70, r: 50, fill: "#3A4651" }) + tag("g", { "data-fan": i, transform: "translate(" + q[0] + " " + (q[1] - 70) + ")" }, tag("path", { d: "M0 0 L40 -10 L36 12 Z M0 0 L-40 10 L-36 -12 Z M0 0 L10 40 L-12 36 Z M0 0 L-10 -40 L12 -36 Z", fill: "#C9CED6" })); });

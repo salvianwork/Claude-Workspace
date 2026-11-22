@@ -10,11 +10,13 @@
   /* World scenes (places, Task 4): a bold but calm camera. Zoom 0.6x (pull-out reveal: the whole
    * 3840 x 2160 world fills the frame) to 5x (a push-in on one detail). The pan limit is the kit's
    * (0.35 origin widths x zoom per second at the eased peak: over the 3840-px world at frame scale 1
-   * that is about 0.7 frame widths a second, energetic but never a whip pan). Zoom may change by
-   * up to 1.6 per second at the eased peak (about 0.53 on average), so a push-in from 1x to 2.5x
-   * takes 2.8 s and a full 1x -> 5x dive 7.5 s; cut is instant. minZoom is only set here: the kit
-   * camera (DEFAULT_LIMITS) still never zooms out past 1. */
-  var WORLD_LIMITS = { minZoom: 0.6, maxZoom: 5, maxPanPerSec: 0.35, maxZoomPerSec: 1.6 };
+   * that is about 0.7 frame widths a second, energetic but never a whip pan). Zoom is a
+   * MULTIPLICATIVE rate here (zoomMode "log"): zoom is eased in log space, and at the eased peak
+   * it changes by at most 1.6x per second, i.e. |d ln z / dt| <= ln 1.6, the same feel at every
+   * zoom. So 1x -> 2x takes 4.4 s, 0.6x -> 1.2x 4.4 s, 1x -> 5x 10.3 s; a cut is instant. minZoom
+   * and zoomMode are only set here: the kit camera (DEFAULT_LIMITS) keeps its additive zoom rate
+   * and never zooms out past 1. */
+  var WORLD_LIMITS = { minZoom: 0.6, maxZoom: 5, maxPanPerSec: 0.35, maxZoomPerSec: 1.6, zoomMode: "log" };
   var LAG_TOL = 0.002; // a follow is "on target" when it lags by less than this (origin widths x zoom)
 
   /* Seconds for `at` = {word:i} (that word's start) or {t:sec}. words = one scene's array. */
@@ -75,11 +77,17 @@
     return Math.min(lim.maxZoom, Math.max(lim.minZoom === undefined ? 1 : lim.minZoom, z));
   }
 
+  /* Zoom interpolation and the time a zoom change needs (peak counted): additive (kit) or
+   * multiplicative (zoomMode "log": eased in log space, peak |d ln z/dt| <= ln maxZoomPerSec). */
+  function zoomLerp(z0, z1, e, lim) { return lim.zoomMode === "log" ? z0 * Math.pow(z1 / z0, e) : z0 + (z1 - z0) * e; }
+  function zoomTime(z0, z1, lim) {
+    return lim.zoomMode === "log" ? EASE_PEAK * Math.abs(Math.log(z1 / z0)) / Math.log(lim.maxZoomPerSec) : EASE_PEAK * Math.abs(z1 - z0) / lim.maxZoomPerSec;
+  }
+
   /* Shortest duration an eased move may take without breaking the limits (peak speed counted). */
   function minDuration(a, b, lim) {
     var pan = Math.hypot(b.x - a.x, b.y - a.y) * Math.max(a.zoom, b.zoom); // screen widths
-    var dz = Math.abs(b.zoom - a.zoom);
-    return EASE_PEAK * Math.max(pan / lim.maxPanPerSec, dz / lim.maxZoomPerSec);
+    return Math.max(EASE_PEAK * pan / lim.maxPanPerSec, zoomTime(a.zoom, b.zoom, lim));
   }
 
   /* Slew-limited follower: integrates in fixed STEP increments from `S`, moving toward
@@ -159,13 +167,13 @@
           return {
             S: S, E: E,
             pos: function (t) { var u = e(t); return { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u }; },
-            zoom: function (t) { return zFrom + (zTo - zFrom) * e(t); },
+            zoom: function (t) { return zoomLerp(zFrom, zTo, e(t), lim); },
           };
         })(S, E, from, to, zFrom, zTo);
       } else {
-        var zEnd = S + Math.max(nominalEnd - S, EASE_PEAK * Math.abs(zTo - zFrom) / lim.maxZoomPerSec);
+        var zEnd = S + Math.max(nominalEnd - S, zoomTime(zFrom, zTo, lim));
         var zoomAt = (function (S, zEnd, zFrom, zTo) {
-          return function (t) { return zFrom + (zTo - zFrom) * easeInOutCubic(zEnd > S ? Math.min(1, Math.max(0, (t - S) / (zEnd - S))) : 1); };
+          return function (t) { return zoomLerp(zFrom, zTo, easeInOutCubic(zEnd > S ? Math.min(1, Math.max(0, (t - S) / (zEnd - S))) : 1), lim); };
         })(S, zEnd, zFrom, zTo);
         var fol = makeFollower(S, from, ki.target, zoomAt, lim, true);
         var End = zEnd;
@@ -189,7 +197,7 @@
 
   function getBuilt(keys, anchors, limits) {
     var lim = Object.assign({}, DEFAULT_LIMITS, limits || {});
-    var a = anchors || NONE, lk = JSON.stringify([lim.minZoom, lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec]);
+    var a = anchors || NONE, lk = JSON.stringify([lim.minZoom, lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec, lim.zoomMode]);
     var byA = cache.get(keys);
     if (!byA) cache.set(keys, (byA = new WeakMap()));
     var byL = byA.get(a);
@@ -213,7 +221,8 @@
    * - A key with cut: true is instant: at its own time t the camera snaps to the key's pose (no
    *   slew, no ease), interrupting any move still running; a cut onto a moving anchor then follows
    *   it. Later moves chain from the cut.
-   * Zoom is clamped to [limits.minZoom (default 1), limits.maxZoom]; WORLD_LIMITS allow 0.6 to 5.
+   * Zoom is clamped to [limits.minZoom (default 1), limits.maxZoom]; WORLD_LIMITS allow 0.6 to 5
+   *   and ease zoom in log space with a multiplicative rate cap (zoomMode "log").
    * Before the first key the first pose is held. */
   function cameraAt(keys, t, anchors, limits) {
     if (!keys || !keys.length) return { x: 0.5, y: 0.5, zoom: 1 };

@@ -17,8 +17,8 @@
  *   pulse_along  a glowing pulse travelling a path ([{x, y}, ...], smoothed through its points):
  *                duration [path length / speed] or speed [800 px/s], trail [360 px],
  *                ease ["linear": a wave travels at constant speed | "inOut"]
- *   speed_lines  streaks trailing a moving thing at x / y.         angle [0: moving right],
- *                duration [1.2], length [420], spread [260], count [9]
+ *   speed_lines  streaks trailing a moving thing at x / y.         angle [0: moving right], edge (outline colour),
+ *                duration [1.2], length [420], spread [260], count [11]
  *   splash       a splash at a water surface point x / y.          duration [1.4]
  *   sparkle      twinkling stars around x / y.                     radius [200], count [10], duration [1.6]
  *   smoke        soft puffs rising from x / y.                     duration [3] (emitting), life [2.4],
@@ -291,12 +291,12 @@
   // ---- speed lines ------------------------------------------------------------------------
   function speed_lines(layer, p, idPrefix) {
     var s = start("speed_lines", layer, p, idPrefix, true);
-    var col = p.color || "#FFFFFF", size = p.size || 1, dur = p.duration || 1.2, N = p.count || 9;
+    var col = p.color || "#FFFFFF", size = p.size || 1, dur = p.duration || 1.2, N = p.count || 11;
     var len = (p.length || 420) * size, spread = (p.spread || 260) * size, ang = (p.angle || 0) * Math.PI / 180;
     var Rn = D.rng(p.seed || 3), ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
     var lines = arr(N, function (i) {
-      return { off: ((i + 0.5) / N - 0.5) * spread + (Rn() - 0.5) * spread / N, ph: Rn(), rate: 1.6 + Rn() * 1.2, l: 0.55 + Rn() * 0.6, w: (5 + Rn() * 7) * size,
-        e: D.el(s.g, "path", { fill: i % 3 === 0 ? D.tint(col, 0.2) : col }) };
+      return { off: ((i + 0.5) / N - 0.5) * spread + (Rn() - 0.5) * spread / N, ph: Rn(), rate: 1.6 + Rn() * 1.2, l: 0.55 + Rn() * 0.6, w: (10 + Rn() * 10) * size,
+        e: D.el(s.g, "path", { fill: i % 3 === 0 ? D.tint(col, 0.2) : col, stroke: p.edge || "#2E3B55", "stroke-width": 2.5 * size, "stroke-opacity": 0.45, "stroke-linejoin": "round" }) };
     });
     var behind0 = 70 * size, reach = behind0 + len * 1.9;
     function env(t) { var a = t - p.at; return a < 0 || a > dur ? 0 : E.outCubic(clamp(a / 0.16)) * (1 - E.inQuad(clamp((a - dur + 0.3) / 0.3))); }
@@ -314,7 +314,7 @@
         var fx = cx - ux * g.front, fy = cy - uy * g.front, bx = cx - ux * g.back, by = cy - uy * g.back, w = k.w / 2;
         // a wedge: round and thick at the front, a fine point at the back
         set(k.e, { d: "M" + r2(fx + nx * w) + " " + r2(fy + ny * w) + " A" + r2(w) + " " + r2(w) + " 0 0 1 " + r2(fx - nx * w) + " " + r2(fy - ny * w) + " L" + r2(bx) + " " + r2(by) + " Z",
-          opacity: e * g.op * 0.85 });
+          opacity: e * Math.min(1, 0.25 + g.op) });
       });
     }
     function box(t) {
@@ -436,11 +436,11 @@
   // ---- smoke ------------------------------------------------------------------------------
   function smoke(layer, p, idPrefix) {
     var s = start("smoke", layer, p, idPrefix, true);
-    var col = p.color || "#D9D3CA", size = p.size || 1, dur = p.duration || 3, life = p.life || 2.4;
+    var col = p.color || "#B8B0A6", size = p.size || 1, dur = p.duration || 3, life = p.life || 2.4;
     var wind = (p.wind === undefined ? 40 : p.wind) * size, rise = (p.rise || 120) * size, Rn = D.rng(p.seed || 13);
     var N = Math.max(4, Math.round(dur / 0.22));
-    var fill = grad(s.defs, s.id("puff"), [[0, D.tint(col, 0.45), 0.85], [0.6, col, 0.5], [1, col, 0]]);
-    var shade = grad(s.defs, s.id("puffd"), [[0, D.shade(col, 0.18), 0.35], [1, D.shade(col, 0.18), 0]]);
+    var fill = grad(s.defs, s.id("puff"), [[0, D.tint(col, 0.35), 0.95], [0.55, col, 0.8], [0.85, col, 0.35], [1, col, 0]]);
+    var shade = grad(s.defs, s.id("puffd"), [[0, D.shade(col, 0.3), 0.6], [0.7, D.shade(col, 0.3), 0.3], [1, D.shade(col, 0.3), 0]]);
     var puffs = arr(N, function (i) {
       var g = D.el(s.g, "g", {});
       return { born: p.at + dur * i / N + (Rn() - 0.5) * 0.1, dx: (Rn() - 0.5) * 90 * size, w: Rn() * 100 | 0, r0: (26 + Rn() * 16) * size, r1: (110 + Rn() * 70) * size,
@@ -450,7 +450,7 @@
       var a = t - k.born;
       if (a < 0 || a > life || t < p.at) return null;
       var u = a / life, h = rise * life * E.outQuad(u);
-      return { x: p.x + k.dx + wind * a + D.wobble(t, k.w, 0.6) * 22 * size * u, y: p.y - h, r: k.r0 + (k.r1 - k.r0) * E.outCubic(u), op: Math.sin(Math.PI * Math.pow(u, 0.7)) * 0.6 };
+      return { x: p.x + k.dx + wind * a + D.wobble(t, k.w, 0.6) * 22 * size * u, y: p.y - h, r: k.r0 + (k.r1 - k.r0) * E.outCubic(u), op: Math.min(1, Math.sin(Math.PI * Math.pow(u, 0.7)) * 1.1) };
     }
     function update(t) {
       var on = t >= p.at && t <= p.at + dur + life;

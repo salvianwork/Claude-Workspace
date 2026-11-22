@@ -81,9 +81,6 @@
       var gx = 2600, gy = 1500;
       s += tag("ellipse", { cx: gx, cy: gy, rx: 130, ry: 46, fill: "#E8DCF0", opacity: 0.35, transform: "rotate(-24 " + gx + " " + gy + ")" }) + tag("ellipse", { cx: gx, cy: gy, rx: 36, ry: 16, fill: "#FFF4E0", opacity: 0.8, transform: "rotate(-24 " + gx + " " + gy + ")" });
       for (var a = 0; a < 14; a++) { var x = 300 + R() * 3300, y = 300 + R() * 1500, r = 8 + R() * 18; s += tag("path", { d: "M" + r2(x - r) + " " + r2(y) + " q" + r2(r * 0.2) + " " + r2(-r) + " " + r2(r) + " " + r2(-r * 0.8) + " q" + r2(r) + " " + r2(r * 0.3) + " " + r2(r) + " " + r2(r * 1.2) + " q" + r2(-r) + " " + r2(r * 0.6) + " " + r2(-r * 2) + " " + r2(-r * 0.4) + " Z", fill: "#6E6A78", opacity: 0.8 }); }
-    } else {
-      // a satellite crossing far off
-      s += tag("g", { "data-part": "far-sat" }, tag("rect", { x: -10, y: -6, width: 20, height: 12, fill: "#C9CED6" }) + tag("rect", { x: -44, y: -4, width: 30, height: 8, fill: "#3A5A9A" }) + tag("rect", { x: 14, y: -4, width: 30, height: 8, fill: "#3A5A9A" }));
     }
     return { defs: "", body: s };
   }
@@ -142,7 +139,10 @@
       });
       var clouds = "";
       for (var c = 0; c < 30; c++) { var cx = -200 + R() * 4300, cy = p.y - p.r + 60 + R() * 760, w = 80 + R() * 220; clouds += tag("path", { d: "M" + r2(cx - w) + " " + r2(cy) + " q" + r2(w * 0.5) + " " + r2(-w * 0.18) + " " + r2(w) + " " + r2(-w * 0.04) + " q" + r2(w * 0.6) + " " + r2(-w * 0.2) + " " + r2(w) + " " + r2(w * 0.12) + " q" + r2(-w) + " " + r2(w * 0.2) + " " + r2(-w * 2) + " " + r2(-w * 0.08) + " Z", fill: "#FFFFFF", opacity: 0.75 }); }
-      clouds += tag("path", { d: "M2050 1720 a110 60 0 1 1 1 0 M2050 1720 a60 30 0 1 0 1 0", stroke: "#FFFFFF", "stroke-width": 24, fill: "none", opacity: 0.6 }); // a storm swirl
+      // a storm: a filled cloud disc with spiral arms and a clear eye
+      clouds += tag("ellipse", { cx: 2050, cy: 1720, rx: 150, ry: 78, fill: "#FFFFFF", opacity: 0.78 }) +
+        tag("path", { d: "M2050 1720 C2160 1690 2230 1730 2250 1790 C2190 1760 2120 1750 2050 1740 Z M2050 1720 C1940 1750 1870 1710 1850 1650 C1910 1680 1980 1690 2050 1700 Z", fill: "#FFFFFF", opacity: 0.85 }) +
+        tag("path", { d: "M2000 1712 Q2050 1690 2100 1712 Q2050 1700 2000 1712 Z", fill: "#C9DDF0", opacity: 0.9 }) + tag("ellipse", { cx: 2050, cy: 1720, rx: 14, ry: 8, fill: "#3C93D8" });
       s += tag("g", { "clip-path": "url(#" + P + "-disc)" }, land + tag("g", { "data-part": "clouds" }, clouds) +
         tag("rect", { x: -500, y: p.y - p.r - 100, width: 4800, height: 2700, fill: "url(#" + P + "-term)" }) +
         A.stars(R, 70, -300, 1500, 1300, 700, { colors: ["#FFD27A", "#FFE6A8", "#FFC864"], bright: 0, scale: 0.9 }));
@@ -181,7 +181,6 @@
       s += tag("path", { d: "M" + (q[0] - q[2]) + " " + q[1] + " q" + r2(q[2] * 0.2) + " " + r2(-q[2]) + " " + q[2] + " " + r2(-q[2] * 0.8) + " q" + q[2] + " " + r2(q[2] * 0.3) + " " + q[2] + " " + r2(q[2] * 1.2) + " q" + -q[2] + " " + r2(q[2] * 0.6) + " " + -(2 * q[2]) + " " + r2(-q[2] * 0.4) + " Z", fill: "#4A4652", stroke: "#2A2830", "stroke-width": 6, "data-rock": i }) +
         tag("circle", { cx: q[0] + q[2] * 0.2, cy: q[1] - q[2] * 0.3, r: q[2] * 0.18, fill: "#3A3640" });
     });
-    else s += tag("g", { transform: "translate(3700 1980) rotate(-20)" }, tag("rect", { x: -400, y: -60, width: 800, height: 120, fill: "#2E4E8E", stroke: "#C9A040", "stroke-width": 8 }) + [1, 2, 3, 4, 5, 6, 7].map(function (k) { return tag("path", { d: "M" + (-400 + k * 100) + " -60 v120", stroke: "#4C72C0", "stroke-width": 5 }); }).join(""));
     return { defs: "", body: s };
   }
 
@@ -197,7 +196,6 @@
     var G = GEO[v];
     var craft = g.ground.querySelector('[data-part="craft"]'), craftBase = craft.getAttribute("transform");
     var cloudG = g.ground.querySelector('[data-part="clouds"]');
-    var farSat = g.mid.querySelector('[data-part="far-sat"]');
     var rocks = [].slice.call(g.front.querySelectorAll("[data-rock]"));
 
     function update(t, cam) {
@@ -205,7 +203,6 @@
       // the craft drifts and turns very slowly (no sudden moves in orbit)
       craft.setAttribute("transform", "translate(" + r2(D.wobble(t, 3, 0.15) * 18) + " " + r2(D.wobble(t, 7, 0.12) * 12) + ") " + craftBase + " rotate(" + r2(Math.sin(t * 0.12) * 2.5) + ")");
       if (cloudG) cloudG.setAttribute("transform", "translate(" + r2(A.wrap(t * 9, 0, 400) - 200) + " 0)"); // Earth turns under the clouds' view
-      if (farSat) farSat.setAttribute("transform", "translate(" + r2(A.wrap(200 + t * 60, -200, 4000)) + " " + r2(300 + A.wrap(200 + t * 60, -200, 4000) * 0.12) + ")");
       rocks.forEach(function (e, k) { var c = [[160, 2000], [3720, 220], [3600, 2040]][k]; e.setAttribute("transform", "rotate(" + r2(t * (4 + k * 2)) + " " + c[0] + " " + c[1] + ")"); });
     }
     var a = anchorsFor(opts);

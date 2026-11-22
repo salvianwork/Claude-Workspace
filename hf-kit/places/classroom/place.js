@@ -209,9 +209,14 @@
         s += tag("rect", { x: x - 210, y: top - 8, width: 420, height: 30, rx: 8, fill: room("#E2B77F"), stroke: room("#9C6B45"), "stroke-width": 5 });
         s += tag("rect", { x: x - 120, y: top - 22, width: 140, height: 14, rx: 3, fill: room(["#FFFFFF", "#FFF3BF", "#D0EBFF", "#FFDEEB"][i]), transform: "rotate(" + (i % 2 ? 3 : -4) + " " + (x - 50) + " " + top + ")" });
         s += tag("rect", { x: x + 50, y: top - 16, width: 90, height: 10, rx: 5, fill: room(["#F08C00", "#1C7ED6", "#2F9E44", "#AE3EC9"][i]) });
-        // a chair tucked behind it
-        s += tag("path", { d: "M" + (x + 200) + " " + base + " V" + (base - 150) + " M" + (x + 360) + " " + base + " V" + (base - 150), stroke: room("#6C7A86"), "stroke-width": 10 }) +
-          tag("rect", { x: x + 190, y: base - 160, width: 180, height: 24, rx: 8, fill: room(["#4DABF7", "#FF8787", "#69DB7C", "#FFD43B"][i]) }) + tag("rect", { x: x + 340, y: base - 360, width: 30, height: 200, rx: 10, fill: room(["#4DABF7", "#FF8787", "#69DB7C", "#FFD43B"][i]) });
+        // a pupil's chair beside it, three-quarter view: legs, seat, back with a curved backrest
+        var cc = room(["#4DABF7", "#FF8787", "#69DB7C", "#FFD43B"][i]), cd = D.shade(cc, 0.35), steel = room("#6C7A86"), steelL = room("#8C99A3");
+        var cx = x + 230;
+        s += tag("path", { d: "M" + (cx + 34) + " " + (base - 20) + " L" + (cx + 40) + " " + (base - 176) + " M" + (cx + 176) + " " + (base - 20) + " L" + (cx + 170) + " " + (base - 176), stroke: steelL, "stroke-width": 9, "stroke-linecap": "round" });
+        s += tag("path", { d: "M" + cx + " " + base + " L" + (cx + 6) + " " + (base - 156) + " M" + (cx + 142) + " " + base + " L" + (cx + 136) + " " + (base - 156), stroke: steel, "stroke-width": 11, "stroke-linecap": "round" });
+        s += tag("path", { d: "M" + (cx - 10) + " " + (base - 150) + " L" + (cx + 150) + " " + (base - 150) + " L" + (cx + 184) + " " + (base - 182) + " L" + (cx + 24) + " " + (base - 182) + " Z", fill: cc, stroke: cd, "stroke-width": 5, "stroke-linejoin": "round" });
+        s += tag("path", { d: "M" + (cx + 140) + " " + (base - 160) + " L" + (cx + 146) + " " + (base - 360) + " M" + (cx + 176) + " " + (base - 186) + " L" + (cx + 182) + " " + (base - 384), stroke: steel, "stroke-width": 10, "stroke-linecap": "round" });
+        s += tag("path", { d: "M" + (cx + 130) + " " + (base - 300) + " Q" + (cx + 164) + " " + (base - 296) + " " + (cx + 196) + " " + (base - 324) + " L" + (cx + 196) + " " + (base - 400) + " Q" + (cx + 164) + " " + (base - 372) + " " + (cx + 130) + " " + (base - 376) + " Z", fill: cc, stroke: cd, "stroke-width": 5, "stroke-linejoin": "round" });
       });
     });
     return { defs: defs, body: s };
@@ -221,12 +226,13 @@
   function drawFront(P, v, L, R) {
     var room = L.room, s = "";
     // chair backs and a school bag in the bottom corners
-    [[260, "#4DABF7"], [3620, "#FF8787"]].forEach(function (q) { // the back of a pupil's chair, seen from behind
-      var c = room(q[1]), cd = D.shade(c, 0.35);
-      s += tag("path", { d: "M" + (q[0] - 170) + " 2200 V2080 M" + (q[0] + 170) + " 2200 V2080", stroke: room("#6C7A86"), "stroke-width": 26, "stroke-linecap": "round" });
-      s += tag("path", { d: "M" + (q[0] - 230) + " 2120 Q" + (q[0] - 240) + " 1900 " + q[0] + " 1890 Q" + (q[0] + 240) + " 1900 " + (q[0] + 230) + " 2120 Z", fill: c, stroke: cd, "stroke-width": 8 });
-      s += tag("path", { d: "M" + (q[0] - 150) + " 1950 Q" + q[0] + " 1925 " + (q[0] + 150) + " 1950", stroke: D.tint(c, 0.35), "stroke-width": 16, fill: "none", "stroke-linecap": "round", opacity: 0.8 });
-      s += tag("rect", { x: q[0] - 60, y: 1990, width: 120, height: 30, rx: 15, fill: cd, opacity: 0.6 });
+    [[260, "#4DABF7"], [3620, "#FF8787"]].forEach(function (q) { // a pupil's chair seen from behind: backrest, uprights, seat, legs
+      var c = room(q[1]), cd = D.shade(c, 0.35), steel = room("#6C7A86"), x = q[0];
+      s += tag("path", { d: "M" + (x - 180) + " 2260 L" + (x - 170) + " 1930 M" + (x + 180) + " 2260 L" + (x + 170) + " 1930", stroke: steel, "stroke-width": 26, "stroke-linecap": "round" });
+      s += tag("path", { d: "M" + (x - 230) + " 2140 H" + (x + 230) + " L" + (x + 250) + " 2180 H" + (x - 250) + " Z", fill: cd });
+      s += tag("rect", { x: x - 240, y: 1860, width: 480, height: 170, rx: 40, fill: c, stroke: cd, "stroke-width": 8 });
+      s += tag("rect", { x: x - 80, y: 1900, width: 160, height: 34, rx: 17, fill: cd, opacity: 0.75 });
+      s += tag("path", { d: "M" + (x - 200) + " 1880 Q" + x + " 1866 " + (x + 200) + " 1880", stroke: D.tint(c, 0.35), "stroke-width": 12, fill: "none", "stroke-linecap": "round", opacity: 0.8 });
     });
     s += tag("rect", { x: 560, y: 2010, width: 250, height: 220, rx: 50, fill: room("#F08C00"), stroke: room("#9A5A00"), "stroke-width": 8 }) + tag("rect", { x: 600, y: 2090, width: 170, height: 90, rx: 20, fill: room("#FFA94D"), stroke: room("#9A5A00"), "stroke-width": 6 }) + tag("path", { d: "M620 2010 q65 -70 130 0", stroke: room("#9A5A00"), "stroke-width": 14, fill: "none" });
     s += tag("g", { "data-part": "motes" }, "");
