@@ -74,14 +74,34 @@ It works in four steps. At each checkpoint, check these things:
       so 25-30 minutes for a 2-minute video). The first render may also download a browser once.
 - [ ] Write down: finish time ________, total time ________, render time (from
       `videos\<run>\04-video\render.log`, the line `hyperframes render took … s`) ________.
-- [ ] 2 to 4 scenes are custom drawings (the "hero" scenes, e.g. the volcano); the others are
-      kit scenes (titles, steps, charts, comparisons, recap). Labels appear on the word that names the part.
+- [ ] Every scene happens in a drawn place (a countryside, a lab, the sea, space…), with the host
+      and things moving in it; a place the library lacks (e.g. a volcano) is drawn for the video.
+      Labels and tags appear on the word that names the part. (Examples: `docs\hf\world-*-sheet.png`.)
 - [ ] Length is 60-180 seconds, picture is sharp (1920 x 1080), captions are readable.
 - [ ] The presenter appears, never covers text or captions, and his mouth moves while he talks.
 - [ ] Music is quiet under the voice; you can always hear the voice clearly.
 - [ ] No more than about one sound effect per scene, and none that drowns a word.
 - [ ] `videos\<run>\04-video\credits.md` lists the music and sound effects used (the video
       itself is `videos\<run>\04-video\out\video.mp4`).
+
+## 4b. A what-if video in the world look
+
+Run one what-if video (a short topic is fine), the same way as section 4:
+
+```
+/make-video "What if the Moon disappeared?" --type what-if
+```
+
+- [ ] The script starts with the question, then goes step by step, and says clearly which part is
+      imagined ("Imagine…", "would") before coming back to the real world at the end.
+- [ ] **The host steps into the scene** once or twice: he stands, walks or acts inside a place,
+      not only talking from the side of the frame.
+- [ ] **Captions are readable on a phone:** copy `04-video\out\video.mp4` to your phone (or shrink
+      the player window to phone size); every caption line can be read without squinting, and no
+      caption hides a label, a tag or a face.
+- [ ] **No scene is a slide:** every scene shows something happening in a place. No bullet lists,
+      no sentences on screen (only the captions), no title cards except the one short title in
+      scene 1; labels and tags are at most 4 words.
 
 ## 5. Approve (or not) the HyperFrames look
 

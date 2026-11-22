@@ -71,3 +71,102 @@ may render slower or faster than this cloud machine. The first real `/make-video
   Bar values count up, so a frame taken mid-animation shows an in-between number.
 - volcano prop: the "new layer" on the cone is subtle; its `lava` anchor is a fixed point on
   the right flank.
+
+## World look (World Kit phase 1, schema-2 shot lists)
+
+Four short test videos made end to end the way the agent team makes them, following the agent
+files step by step (story → voice → design → animator): script with key claims (`checks story`),
+Kokoro voice `am_adam` at speed 1.0 (`.venv-voice`, `HF_HUB_OFFLINE=1`) checked with
+`tools.review.transcript voice`, a schema-2 world shot list with storyboard, style and sound
+(`tools.hf.shots validate`), then `tools.hf.build` (with `hyperframes check`), `tools.hf.snapshot`,
+`tools.hf.snapshot --overlap`, `tools.audio.mix` and `tools.render.render --engine hyperframes`.
+No reviewer subagents were run (this was a supervised fixture task); I looked at every snapshot
+set and contact sheet myself and fixed what I saw (below).
+
+| Video | Inputs | Type, places | Host step-ins | New drawing | Contact sheet | Video (not in git) |
+|---|---|---|---|---|---|---|
+| sound | `tests/fixtures/hf/world/sound/` | explainer; countryside (rings, ripples, pulse, two dives into lattice gas and solid) | 2 (scenes 1, 3) | none (kit only) | `world-sound-sheet.png` | `world-sound.mp4` |
+| volcano | `tests/fixtures/hf/world/volcano/` | explainer; new place `volcano` (adapted from the prop) | 1 (scene 1) | place `volcano` + customs `magma-rise`, `eruption` | `world-volcano-sheet.png` | `world-volcano.mp4` |
+| process | `tests/fixtures/hf/world/process/` | explainer; ocean surface, sky-fantasy | 2 (scenes 2, 4) | none (kit only) | `world-process-sheet.png` | `world-process.mp4` |
+| whatif | `tests/fixtures/hf/world/whatif/` | what-if; space, ocean, forest night, rooftop-night | 1 (scene 3) | customs `moon-vanish`, `tide-gauge`, `axis-wobble` | `world-whatif-sheet.png` | `world-whatif.mp4` |
+
+All four: `shots validate` OK with no warnings, `hyperframes check` clean, overlap report `[]`,
+`tools.audio.measure` no problems, render log ends with `video written` and has no warning or
+error line. The scripts are deliberately 51–67 words (15–30 s), so `checks story` reports only
+the 150–450-word rule and the voice is under the 60–180 s range of a real video. The `volcano`
+place was **not** saved to `hf-kit/places/` (places are saved only after the owner approves a
+video); it lives in the fixture as `04-video/hf/scenes/place-volcano.js`. Music: the same
+generated stand-in pad as above (a scratch library outside the repo); no sound effects were
+planned (every possible spot was within 0.6 s of a key word).
+
+### Timings (same cloud machine: Linux, 4 CPUs, 15 GB RAM; render workers = 2)
+
+Authoring = wall clock of my own work (reading the plan and the kit is counted once, as shared
+setup), from the first script line to a shot list I was happy with after looking at the frames.
+The render column is `hyperframes render took … s` from `render.log`; the full
+`tools.render.render` call adds its rebuild, `hyperframes check` and the mux.
+
+| Video | Length | Scenes | Authoring (wall clock) | Voice synth | Build + check | Render (`hyperframes render`) | Full render call | Render ÷ length |
+|---|---|---|---|---|---|---|---|---|
+| shared setup | – | – | 4.5 min reading + 4 min four scripts (fact search) + 5 min voice and transcript checks | – | – | – | – | – |
+| sound | 22.7 s | 3 | ≈ 4 min shot list + 3 look/fix rounds | 44 s (first call: model load) | 61 s | 231 s | 289 s | 10.2× |
+| volcano | 21.3 s | 3 | ≈ 6 min: new place + 2 customs (from the prop) + 3 look/fix rounds | 13 s | 33 s | 135 s | 168 s | 6.4× |
+| process | 25.2 s | 4 | ≈ 3 min + 3 look/fix rounds | 14 s | 42 s | 93.0 s / 87.9 s (two runs) | 130 s / 124 s | 3.7× / 3.5× |
+| whatif | 26.3 s | 5 | ≈ 6 min: 3 customs + 5 look/fix rounds | 13 s | 45 s | 93.8 s / 86.1 s (two runs) | 139 s / 126 s | 3.6× / 3.3× |
+
+Snapshots (start/mid/end per scene) took 9–12 s per video, the overlap report about 1.5 s, the
+mix a few seconds. Storyboards, notes and the final checks took about 8 minutes for all four.
+
+### Against the target (3–4 h per 2-minute video at first, falling toward 1–1.5 h)
+
+All in, the four videos (about 95 s of finished video, 15 scenes) took about **45 minutes of
+authoring** (shared setup included) and about **15 minutes of machine time** (voice, builds,
+snapshots, overlap, mixes, first renders), plus two re-renders after the last fixes. Per minute
+of video that is roughly 30 min authoring + 10 min machine. Scaled to a **2-minute video**
+(8–10 scenes, 1–2 new drawings): about **1–1.5 h of authoring, 15–20 min of render, 30–45 min
+of machine time in all with one re-render** (at 4–10× the length), i.e. **about 1.5–2 h end to end**. That is inside
+the 3–4 h first target and close to the 1–1.5 h goal. Honest caveats: this is the agent's own
+wall clock working alone, without the five-agent hand-offs, the reviewer's four gates (web
+searches, frame checks, transcripts) or the owner's checkpoints, which in a real `/make-video`
+run add review rounds and waiting time; and a real 2-minute script needs 4–6× the beats of
+these fixtures. Render speed here was 3.3–10× the length (sound, the first and heaviest render, 10×; the
+later ones 3.3–6.4×), similar to or faster than the schema-1 fixtures (6–10×); the owner's PC may differ. The first real `/make-video` run (TEST-CHECKLIST 4 and 4b) gives the
+real number.
+
+### What I saw and fixed (two or more look/fix rounds per video)
+
+- **sound:** the opening framing (zoom 1.65) cropped the host's head under the title → opens
+  at 0.85 and pulls out to 0.7, then pushes in on the strike; the "Water: 1,480 m/s" label sat
+  under the captions → moved above the lake, ripples made whiter; the lake push-in cut the
+  friend's head (kit warning) → zoom 0.95; the recap framed the bridge and lost the host → frames
+  the whole line from `rail-near` at 0.6; a glow on the bridge meant nothing → replaced by the
+  friend jumping as the pulse arrives. Speeds on screen are in the true ratio 343 : 1,480 : 5,960
+  (rings 172 px/s, ripples 745, pulse 3,000), so the scene needs no "not to scale" tag.
+- **volcano:** the chamber sat under the caption band in the wide shots → chamber and vent
+  raised; the new-layer outline bridged the crater with a straight line → drawn as two flank
+  lines; "New layer" covered the host's head → label on the left of the slope; the recap was a
+  dot climbing an empty vent → reuses `magma-rise` and `eruption` (with `vent: false`) so the
+  whole story replays in 4.5 s; the host stands at the volcano's foot (farm moved left).
+- **process:** the side-slot host hid the boat → right slot; vapour wisps too strong for an
+  "invisible gas" → smaller; the storm cloud was half off the top → wider framing (0.62) and a
+  darker cloud; rain streaks too pale to read → bluer, more of them (second render).
+- **whatif:** the "not to scale" label was hidden at the bottom → on `open`; "Without the
+  Moon" covered the host's face → host in the right slot; the forest night variant draws a Moon
+  in the sky layer, and the pull-out showed it (wrong for "no moonlight") → a tight framing that
+  keeps the sky out, label "No moonlight" rides the host; the swinging axis left the frame
+  after a push-in and crossed the space station → no push-in, axis centred, swing 12°; the
+  rooftop glow lit an empty spot instead of the Moon → removed, the host points up from the slot
+  with the real Moon in frame; after the Moon vanished a dark disc showed on the Milky Way →
+  soft-edged cover with a few faint stars (second render).
+
+### Known limits (not fixed)
+
+- whatif scene 3 says "only the stars would light the way", but the forest framing (chosen to
+  keep the place's drawn Moon out of view) shows the dark trees, fireflies and the dimmed host,
+  not the starry sky; a forest night variant without a Moon (or a `stars` effect) would fix it.
+  The rooftop-night `clear` variant has a Moon, so it could not be used for "darker nights".
+- whatif: the axis swing (12° each way) and its drawn tilt are illustrative; the narration
+  says only "far less steady" (studies differ on how large the swing would be).
+- volcano: the eruption's sub-timings (`flow`, `cool`, `grow`) are seconds after the burst
+  word, taken from the word times; a re-recorded voice would need them updated.
+- The transcript check flags spelling only ("metres"/"meters", "vapour"/"vapor").
