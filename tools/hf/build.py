@@ -1,6 +1,6 @@
 """Build the run's HyperFrames composition: 04-video/hf/ = one video from shots.json + the voice.
 
-    python -m tools.hf.build <run_dir> [--no-check] [--allow-hero-count]
+    python -m tools.hf.build <run_dir> [--no-check] [--allow-hero-count] [--allow-step-ins]
 
 Writes 04-video/hf/index.html (one composition: scenes back to back, each ceil(duration_s x 30)
 frames from the voice manifest; transitions inside scene time; captions from words.json;
@@ -10,6 +10,14 @@ inlined in index.html), kit/ (hf-kit vendor + src + the props the video uses). H
 kit/props/<prop>/prop.js. The build validates shots.json first (2-4 heroes included;
 `--allow-hero-count` skips that rule for drafts and tests), then runs `hyperframes check`; a
 scene that fails to load, mount or update is reported as `scene-<id>` and the build fails.
+
+Schema 2 (`"schema": 2`, world scenes): each scene is `kind: "world"` with the shots.json scene as
+`world` and the top-level `cast` in data.json (the kit checks the host); the host's mouth is the
+scene's narration (`mouth`, from its wav); extras keep their own idle mouths. Places load from
+kit/places/<name>/place.js (only the places the video uses are copied), or from the run's
+scenes/place-<name>.js when `new_place` is set; scenes/scene-<id>.js (custom moves) loads when it
+exists. Captions take `captions` {size, position} from style.json. The 1-2 step-ins rule applies
+(`--allow-step-ins` skips it for drafts and tests).
 """
 from __future__ import annotations
 
@@ -24,10 +32,12 @@ from pathlib import Path
 import soundfile as sf
 
 from tools.hf.render import KIT_DIR, HFError, assert_offline, check, install_kit
-from tools.hf.shots import FPS, ShotsError, load_run, module_path, review_shots, scene_frames
+from tools.hf.shots import (FPS, ShotsError, load_run, module_path, place_module_path, review_shots,
+                            scene_frames, schema_of)
 from tools.voice.mouth import mouth_envelope
 
 _WORD_KEYS = ("i", "text", "display", "start", "end")
+_STYLE_KEYS = ("colors", "fonts", "sizes", "safe", "captions")
 
 _PAGE = """<!doctype html>
 <html lang="en">
@@ -107,23 +117,47 @@ def compose_data(run_dir: Path, d: dict, warnings: list[str]) -> dict:
                  "presenter": s.get("presenter") or {"position": "none", "size": "small"},
                  "transition": s.get("transition", "fade"), "next": nxt,
                  "mouth": _scene_mouth(run_dir, m["file"], frames, sid)}
-        if s["kind"] == "hero":
+        if s["kind"] == "world":
+            # no side presenter: the host is an actor; his mouth is this scene's narration
+            scene.update(cues=[], camera=[], presenter={"position": "none", "size": "small"}, world=s)
+        elif s["kind"] == "hero":
             scene.update(prop=s["prop"], new_prop=bool(s.get("new_prop", False)), params=s.get("params", {}))
         else:
             scene.update(scene=s["scene"], props=s.get("props", {}))
         scenes.append(scene)
         start += frames
-    return {"fps": FPS, "width": 1920, "height": 1080, "frames": start, "total": start / FPS,
-            "style": {k: style[k] for k in ("colors", "fonts", "sizes", "safe") if k in style} or None,
+    data = {"fps": FPS, "width": 1920, "height": 1080, "frames": start, "total": start / FPS,
+            "style": {k: style[k] for k in _STYLE_KEYS if k in style} or None,
             "presenterOutfit": style.get("presenterOutfit", "blazer"),
             "warnings": warnings, "scenes": scenes}
+    if schema_of(d["shots"]) == 2:
+        data["cast"] = d["shots"].get("cast", [])
+    return data
 
 
-def page(data: dict, title: str, kit_scripts: list[str]) -> tuple[str, list[str]]:
-    """(index.html text, prop names copied into kit/props)."""
+def world_places(data: dict) -> list[str]:
+    """Library places the world scenes use (copied into kit/places)."""
+    out: list[str] = []
+    for s in data["scenes"]:
+        if s["kind"] == "world" and not s["world"].get("new_place") and s["world"]["place"] not in out:
+            out.append(s["world"]["place"])
+    return out
+
+
+def page(data: dict, title: str, kit_scripts: list[str],
+         scene_modules: set[int] | frozenset = frozenset()) -> tuple[str, list[str]]:
+    """(index.html text, prop names copied into kit/props). `scene_modules`: ids of world scenes
+    whose scenes/scene-<id>.js (custom moves) exists."""
     files: dict[str, list[int]] = {}
     props: list[str] = []
     for s in data["scenes"]:
+        if s["kind"] == "world":
+            w = s["world"]
+            src = f"scenes/place-{w['place']}.js" if w.get("new_place") else f"kit/places/{w['place']}/place.js"
+            files.setdefault(src, []).append(s["id"])
+            if s["id"] in scene_modules:
+                files.setdefault(f"scenes/scene-{s['id']}.js", []).append(s["id"])
+            continue
         if s["kind"] != "hero":
             continue
         if s["new_prop"]:
@@ -161,13 +195,14 @@ def _write(path: Path, text: str) -> None:
 
 
 def build(run_dir: Path, kit_dir: Path = KIT_DIR, *, run_check: bool = True,
-          hero_count: bool = True) -> Path:
+          hero_count: bool = True, step_ins: bool = True) -> Path:
     """Build 04-video/hf/ and return that folder (the composition dir for tools.hf.render).
 
     Raises HFError when shots.json is invalid (every problem listed), the composition would
     load anything from the network, or `hyperframes check` finds errors (a failing scene is
     named `scene-<id>`). Camera warnings are printed and kept in data.json `warnings`.
-    `hero_count=False` skips the 2-4 hero rule (drafts and test fixtures only)."""
+    `hero_count=False` skips the 2-4 hero rule (schema 1), `step_ins=False` the 1-2 host step-ins
+    rule (schema 2); drafts and test fixtures only."""
     run_dir = Path(run_dir)
     kit_dir = Path(kit_dir)
     comp = run_dir / "04-video" / "hf"
@@ -175,7 +210,7 @@ def build(run_dir: Path, kit_dir: Path = KIT_DIR, *, run_check: bool = True,
         d = load_run(run_dir)
         errs, warns = review_shots(d["shots"], d["words"], d["manifest"], kit_dir / "props",
                                    scenes_dir=comp / "scenes", style=d["style"], hero_count=hero_count,
-                                   kit_dir=kit_dir)
+                                   kit_dir=kit_dir, allow_step_ins=not step_ins)
     except ShotsError as e:
         raise HFError(str(e)) from e
     if errs:
@@ -184,11 +219,17 @@ def build(run_dir: Path, kit_dir: Path = KIT_DIR, *, run_check: bool = True,
         print(f"warning: {w}", file=sys.stderr)
     data = compose_data(run_dir, d, warns)
     comp.mkdir(parents=True, exist_ok=True)
-    text, props = page(data, f"{run_dir.name} video", _kit_scripts(kit_dir))
-    install_kit(comp, kit_dir=kit_dir, props=props)
+    world = schema_of(d["shots"]) == 2
+    customs = {s["id"] for s in data["scenes"]
+               if s["kind"] == "world" and module_path(comp / "scenes", s["id"]).is_file()}
+    text, props = page(data, f"{run_dir.name} video", _kit_scripts(kit_dir), customs)
+    install_kit(comp, kit_dir=kit_dir, props=props, places=world_places(data) if world else None)
     for s in data["scenes"]:
         if s["kind"] == "hero" and s["new_prop"] and not module_path(comp / "scenes", s["id"]).is_file():
             raise HFError(f"scene {s['id']}: hero module scenes/scene-{s['id']}.js missing")
+        if s["kind"] == "world" and s["world"].get("new_place") and \
+                not place_module_path(comp / "scenes", s["world"]["place"]).is_file():
+            raise HFError(f"scene {s['id']}: place module scenes/place-{s['world']['place']}.js missing")
     _write(comp / "data.json", json.dumps(data, indent=1, ensure_ascii=False))
     _write(comp / "index.html", text)
     remote = assert_offline(comp)
@@ -204,10 +245,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("run_dir", type=Path)
     p.add_argument("--no-check", action="store_true", help="skip `hyperframes check` (faster, for drafts)")
     p.add_argument("--allow-hero-count", action="store_true",
-                   help="draft only: do not require 2-4 hero scenes")
+                   help="draft only (schema 1): do not require 2-4 hero scenes")
+    p.add_argument("--allow-step-ins", action="store_true",
+                   help="draft only (schema 2): do not require 1-2 host step-ins")
     a = p.parse_args(argv)
     try:
-        comp = build(a.run_dir, run_check=not a.no_check, hero_count=not a.allow_hero_count)
+        comp = build(a.run_dir, run_check=not a.no_check, hero_count=not a.allow_hero_count,
+                     step_ins=not a.allow_step_ins)
     except HFError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

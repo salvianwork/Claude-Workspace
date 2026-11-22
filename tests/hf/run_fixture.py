@@ -103,3 +103,70 @@ def load(run: Path) -> tuple[dict, dict, dict]:
     """(shots, words, manifest) of a run."""
     r = lambda p: json.loads((run / p).read_text(encoding="utf-8"))
     return r("03-design/shots.json"), r("02-voice/words.json"), r("02-voice/manifest.json")
+
+
+# ---- schema 2: world scenes ----------------------------------------------------------------
+
+WORLD_NARRATION = {
+    1: ("Sound needs something to travel through. Strike a steel rail, and the pulse races along it "
+        "at almost six thousand metres a second."),
+    2: "In air, the same sound crawls along at only three hundred and forty three metres a second.",
+}
+WORLD_SECONDS = {1: 11.0, 2: 6.0}
+
+
+def world_shots() -> dict:
+    """Two world scenes: the host steps into the countryside once (scene 1), then talks from the
+    side slot in the lab (scene 2). Valid as is (1 step-in)."""
+    return {"schema": 2, "type": "explainer", "audience": "all-ages",
+            "cast": [{"id": "host", "character": "host", "outfit": "lab-coat"}],
+            "scenes": [
+                {"id": 1, "kind": "world", "place": "countryside", "variant": "day", "new_place": False,
+                 "facts": ["~5,960 m/s in steel"],
+                 "actors": [{"id": "host", "start": {"slot": "right"}},
+                            {"id": "friend", "character": "extra-1", "outfit": "casual", "start": {"anchor": "rail-far"}}],
+                 "beats": [
+                     {"at": {"word": 0}, "action": "host waves, then walks to the rail",
+                      "moves": [{"do": "gesture", "who": "host", "name": "wave"},
+                                {"do": "walk_to", "who": "host", "to": "rail-near", "at": {"word": 1}}]},
+                     {"at": {"word": 6}, "action": "host strikes the rail; a pulse races to the friend",
+                      "moves": [{"do": "use", "who": "host", "prop": "hammer", "at": {"word": 12}},
+                                {"do": "pulse_along", "path": "rail", "from": "rail-near", "to": "rail-far",
+                                 "speed": "fast", "at": {"word": 12}},
+                                {"do": "tag_follow", "target": "pulse", "text": "≈5,960 m/s"},
+                                {"do": "follow", "target": "pulse", "zoom": 1.1, "at": {"word": 12}}]}],
+                 "transition": "fade"},
+                {"id": 2, "kind": "world", "place": "lab", "variant": "bright", "new_place": False,
+                 "actors": [{"id": "host", "start": {"slot": "left"}}],
+                 "beats": [
+                     {"at": {"word": 0}, "action": "host points at the bench; a label names the speed",
+                      "moves": [{"do": "point", "who": "host", "target": "bench"},
+                                {"do": "label", "target": "bench", "text": "Air: 343 m/s", "at": {"word": 9}}]}],
+                 "transition": "slide"},
+            ]}
+
+
+def make_world_run(root: Path, shots_doc: dict | None = None, *, style_extra: dict | None = None) -> Path:
+    """A schema-2 run folder (FakeEngine-style voice) with world_shots() (or `shots_doc`)."""
+    run = Path(root) / "world run"  # space on purpose (Windows paths)
+    for d in ("02-voice", "03-design", "04-video"):
+        (run / d).mkdir(parents=True)
+    scenes, words = [], []
+    for sid, text in WORLD_NARRATION.items():
+        ws = words_for(text, WORLD_SECONDS[sid])
+        name = f"scene-{sid:02d}.wav"
+        _voice(run / "02-voice" / name, ws, WORLD_SECONDS[sid])
+        scenes.append({"id": sid, "file": name, "duration_s": WORLD_SECONDS[sid]})
+        words.append({"id": sid, "source": "kokoro", "words": ws})
+    manifest = {"language": "en", "engine": "kokoro", "voice": "am_adam", "speed": 1.0, "sample_rate": SR,
+                "scenes": scenes, "total_s": round(sum(WORLD_SECONDS.values()), 3)}
+    (run / "02-voice" / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (run / "02-voice" / "words.json").write_text(json.dumps({"source": "kokoro", "scenes": words}), encoding="utf-8")
+    doc = shots_doc if shots_doc is not None else world_shots()
+    (run / "03-design" / "shots.json").write_text(json.dumps(doc, indent=1, ensure_ascii=False), encoding="utf-8")
+    style = {"colors": {"background": "#0F172A", "surface": "#1E293B", "primary": "#38BDF8", "accent": "#F59E0B", "text": "#F1F5F9"},
+             "fonts": {"heading": "Poppins", "body": "Inter"}, "presenterOutfit": "labcoat"}
+    style.update(style_extra or {})
+    (run / "03-design" / "style.json").write_text(json.dumps(style), encoding="utf-8")
+    (run / "03-design" / "sound.json").write_text(json.dumps({"music_mood": "curious", "sfx": []}), encoding="utf-8")
+    return run

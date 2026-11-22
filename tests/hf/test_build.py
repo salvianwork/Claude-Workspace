@@ -237,3 +237,111 @@ def test_render_hyperframes_end_to_end(run, tmp_path, capsys):
         Path(keep).mkdir(parents=True, exist_ok=True)
         for p in shots:
             shutil.copyfile(p, Path(keep) / p.name)
+
+
+# ---- Review Focus 4: schema 1 builds byte-identical data.json ------------------------------
+
+GOLDEN = REPO / "tests" / "fixtures" / "hf" / "golden"
+
+
+@needs_node
+def test_schema1_make_run_data_json_is_byte_identical(run):
+    """Golden captured with the tools at f7e955f (before schema 2)."""
+    comp = build(run, KIT, run_check=False, hero_count=False)
+    assert (comp / "data.json").read_bytes() == (GOLDEN / "make-run-data.json").read_bytes()
+
+
+VOLCANO = REPO / "tests" / "fixtures" / "hf" / "volcano"
+
+
+@needs_node
+@pytest.mark.skipif(not (VOLCANO / "02-voice" / "scene-01.wav").is_file(),
+                    reason="the volcano fixture's wavs are not in git (made by the real voice)")
+def test_schema1_volcano_fixture_data_json_is_byte_identical(tmp_path):
+    run = tmp_path / "vol run"
+    shutil.copytree(VOLCANO, run, ignore=shutil.ignore_patterns("kit", "snapshots", ".hyperframes", "out"))
+    for f in ("data.json", "index.html"):
+        (run / "04-video" / "hf" / f).unlink(missing_ok=True)
+    comp = build(run, KIT, run_check=False)
+    assert (comp / "data.json").read_bytes() == (GOLDEN / "volcano-data.json").read_bytes()
+
+
+# ---- schema 2: world scenes ---------------------------------------------------------------
+
+from tests.hf.run_fixture import WORLD_SECONDS, make_world_run, world_shots  # noqa: E402
+from tests.hf.test_shots import CUSTOM_MODULE, PLACE_MODULE  # noqa: E402
+
+
+@needs_node
+def test_build_world_scenes(tmp_path):
+    run = make_world_run(tmp_path, style_extra={"captions": {"size": 72, "position": "top"}})
+    comp = build(run, KIT, run_check=False)
+    page = (comp / "index.html").read_text(encoding="utf-8")
+    data = json.loads((comp / "data.json").read_text(encoding="utf-8"))
+    assert data["cast"] == world_shots()["cast"]
+    assert data["style"]["captions"] == {"size": 72, "position": "top"}
+    frames = [330, 180]
+    assert [s["frames"] for s in data["scenes"]] == frames and data["frames"] == sum(frames)
+    for s, want in zip(data["scenes"], world_shots()["scenes"]):
+        assert s["kind"] == "world" and s["world"] == want
+        assert s["presenter"] == {"position": "none", "size": "small"}  # the host is an actor
+        assert len(s["mouth"]) == s["frames"] and max(s["mouth"]) > 0.3  # the host = the narration
+    assert [s["transition"] for s in data["scenes"]] == ["fade", "slide"]
+    # only the places the video uses, loaded after the kit
+    for p in ("countryside", "lab"):
+        assert f'<script src="kit/places/{p}/place.js"></script>' in page
+        assert (comp / "kit" / "places" / p / "place.js").is_file()
+    assert not (comp / "kit" / "places" / "ocean").exists()
+    assert page.index('src="kit/src/composition.js"') < page.index('src="kit/places/countryside/place.js"')
+    assert '"kit/places/countryside/place.js": [1]' in page
+    assert assert_offline(comp) == []
+
+
+@needs_node
+def test_build_world_loads_new_places_and_customs_from_the_run(tmp_path):
+    shots = world_shots()
+    s2 = shots["scenes"][1]
+    s2.update(place="my-hill", new_place=True, variant="day",
+              beats=[{"at": {"word": 0}, "moves": [{"do": "point", "who": "host", "target": "spot"},
+                                                   {"do": "custom", "name": "rail-spark"}]}])
+    run = make_world_run(tmp_path, shots)
+    scenes = run / "04-video" / "hf" / "scenes"
+    scenes.mkdir(parents=True)
+    (scenes / "place-my-hill.js").write_text(PLACE_MODULE, encoding="utf-8")
+    (scenes / "scene-2.js").write_text(CUSTOM_MODULE, encoding="utf-8")
+    comp = build(run, KIT, run_check=False)
+    page = (comp / "index.html").read_text(encoding="utf-8")
+    assert '<script src="scenes/place-my-hill.js"></script>' in page
+    assert '<script src="scenes/scene-2.js"></script>' in page
+    assert '"scenes/place-my-hill.js": [2]' in page
+    assert not (comp / "kit" / "places" / "lab").exists()
+
+
+@needs_node
+def test_build_world_refuses_errors_and_step_in_flag(tmp_path):
+    shots = world_shots()
+    shots["scenes"][0]["beats"][0]["moves"].pop(1)  # no step-in
+    run = make_world_run(tmp_path, shots)
+    with pytest.raises(HFError, match="steps into the world in 0 scene"):
+        build(run, KIT, run_check=False)
+    assert build_mod.main([str(run), "--no-check"]) == 1
+    assert build_mod.main([str(run), "--no-check", "--allow-step-ins"]) == 0
+    shots["scenes"][1]["beats"][0]["moves"][0]["target"] = "sink"
+    (run / "03-design" / "shots.json").write_text(json.dumps(shots), encoding="utf-8")
+    with pytest.raises(HFError, match=r'scene 2 beat 0 move 0 \(point\): unknown target "sink"'):
+        build(run, KIT, run_check=False, step_ins=False)
+
+
+@pytest.mark.slow
+@needs_hf
+def test_render_world_video_end_to_end(tmp_path):
+    run = make_world_run(tmp_path)
+    build_mix(run, _music_library(tmp_path))
+    assert render_mod.main([str(run), "--engine", "hyperframes"]) == 0
+    out = run / "04-video" / "out" / "video.mp4"
+    info = json.loads(subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(out)],
+        capture_output=True, text=True, check=True).stdout)
+    total = json.loads((run / "02-voice" / "manifest.json").read_text())["total_s"]
+    assert total == sum(WORLD_SECONDS.values())
+    assert abs(float(info["format"]["duration"]) - total) <= 0.1

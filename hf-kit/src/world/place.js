@@ -4,7 +4,9 @@
  * like props) and registers
  *
  *   HFKit.places[name] = {
- *     meta: {name, description, variants: [...], anchors: [...], paths: [...]},
+ *     meta: {name, description, variants: [...], anchors: [...], paths: [...], actorScale?,
+ *            actorLight?, notToScale? (true: sizes are not true to scale; shots validate then
+ *            needs a "not to scale" tag or label in each scene there)},
  *     anchorsFor({variant, seed}) -> {anchors: {name: (t) => {x, y}}, paths: {name: [{x, y}, ...]}},
  *     mount(layers, {variant, seed, idPrefix}) -> {update(t, cam), anchors, paths},
  *   }

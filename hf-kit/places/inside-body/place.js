@@ -30,6 +30,7 @@
     anchors: ["heart", "lungs", "vessel", "stomach", "liver", "trachea"],
     paths: ["bloodstream"],
     midline: MID, // the body's midline (x); the body's left is the viewer's right
+    notToScale: true, // sizes and distances are not true to scale: a scene here carries a "not to scale" tag
     actorScale: 0.5, // a tiny explorer inside the body (not to scale)
     actorLight: {
       organs: { tint: "#FF9A8A", amount: 0.26, rim: "#FFD6C8", rimSide: 1 },

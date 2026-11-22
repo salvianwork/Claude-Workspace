@@ -30,6 +30,7 @@
     variants: ["earth-orbit", "deep-space"],
     anchors: ["planet", "moon", "craft", "star", "open"],
     paths: ["orbit"],
+    notToScale: true, // sizes and distances are not true to scale: a scene here carries a "not to scale" tag
     actorScale: 0.6, // an astronaut by the craft (not to scale)
     actorLight: {
       "earth-orbit": { tint: "#EEF3FF", amount: 0.16, rim: "#FFFFFF", rimSide: 1 }, // hard sunlight from the right

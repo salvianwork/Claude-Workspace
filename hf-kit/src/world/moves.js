@@ -872,7 +872,7 @@
       var mv = p.mv, at = p.t;
       if (mv.target === "pulse" && !p.explicit) { // a tag on the pulse appears with the pulse
         var pl = pulses.find(function (q) { return q.at >= p.beatStart - 1e-9; }) || pulses[pulses.length - 1];
-        at = Math.max(at, pl.at);
+        if (pl) at = Math.max(at, pl.at); // none when the pulse_along itself is invalid (its error is reported)
       }
       var until = p.until || Math.min(duration, Math.max(p.beatEnd, at + (mv.do === "title" ? 3 : 1.5)));
       if (mv.do === "title" && !p.until) until = Math.min(duration, at + 3.2);

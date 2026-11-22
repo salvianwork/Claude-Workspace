@@ -14,7 +14,9 @@
  * transition kind over its last 0.3 s, so transitions stay inside scene time. Everything is a
  * pure function of t (seekable). A scene that fails to mount or update is reported once with
  * console.error("scene-<id>: ...") (HyperFrames `check` counts console errors) and left blank;
- * the other scenes still play. Classic script: load after every other kit script and the props. */
+ * the other scenes still play. mountComposition returns {timeline, render(t), mounted: [{s, el, api,
+ * update(t)} | null]} (api = the scene's mount: a world scene's api.boxes(t) feeds the overlap
+ * report). Classic script: load after every other kit script and the props. */
 (function (root) {
   "use strict";
   var K = root.HFKit;
@@ -76,7 +78,7 @@
         return null;
       }
       return {
-        s: s, el: el,
+        s: s, el: el, api: parts.api, // api.boxes(t) of a world scene: the overlap report (tools/hf/snapshot.py)
         update: function (t) {
           try {
             parts.api.update(t);

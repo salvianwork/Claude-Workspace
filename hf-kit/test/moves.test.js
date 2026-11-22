@@ -145,6 +145,11 @@ test("errors name the scene, beat and move index", () => {
   assert.deepEqual(errorsOf(oneBeat([{ do: "title", text: "Late title" }])), ['scene 2 beat 1 move 0 (title): a title belongs in scene 1 only']);
 });
 
+test("a tag on the pulse of an invalid pulse_along reports the pulse error (no crash)", () => {
+  assert.deepEqual(errorsOf(oneBeat([{ do: "pulse_along", path: "road", from: "rail-near", to: "rail-far" },
+    { do: "tag_follow", target: "pulse", text: "fast" }])), ['scene 2 beat 1 move 0 (pulse_along): unknown path "road"']);
+});
+
 test("a move `at` word outside the scene is an error", () => {
   assert.deepEqual(errorsOf(oneBeat([{ do: "jump", who: "host", at: { word: 99 } }])), ["scene 2 beat 1 move 0 (jump): no word 99 in this scene"]);
   assert.deepEqual(errorsOf(railway({ beats: [{ at: { word: 40 }, moves: [{ do: "jump", who: "host" }] }] })), ["scene 1 beat 0: no word 40 in this scene"]);

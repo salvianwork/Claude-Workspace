@@ -9,6 +9,14 @@
 //            props?, params?, cues, camera, presenter, transition?, duration, words}]}
 //   module = path of the prop script to load for a hero (library prop.js or the run's
 //   04-video/hf/scenes/scene-<id>.js).
+//   Schema 2 (world scenes): request.cast = the top-level cast, and scenes [{id, kind: "world",
+//   world: <the shots.json scene>, words, duration, transition?, place_module, place_label,
+//   scene_module?, scene_label?, customs_unchecked?}]. place_module is the library place.js or the
+//   run's scenes/place-<name>.js; scene_module (scenes/scene-<id>.js) registers HFKit.customs;
+//   customs_unchecked (shots validate --no-modules) accepts any custom name. Checked with
+//   HFKit.validateWorld (errors, camera overrun > 0.25 s included) and HFKit.compileMoves (its
+//   warnings; an overrun up to 0.25 s warns); a place with meta.notToScale needs a "not to scale"
+//   tag or label. World errors already name their scene ("scene 2 beat 0 move 1 (...)").
 // report  = {scenes: [{id, errors: [...], warnings: [...], overrun: seconds | null}]}
 // Called by tools/hf/shots.py. Kit files are classic scripts (globalThis.HFKit), loaded with vm.
 import { readFileSync } from "node:fs";
@@ -103,16 +111,51 @@ function checkHero(s, out) {
   overrunOf(keys, norm, undefined, s.duration, out);
 }
 
+const NOT_TO_SCALE = /\bnot\s+to\s+scale\b/i;
+
+function hasNotToScale(scene) {
+  return (scene.beats || []).some((b) => b && (b.moves || []).some((mv) =>
+    mv && (mv.do === "tag_follow" || mv.do === "label") && NOT_TO_SCALE.test(String(mv.text || ""))));
+}
+
+function checkWorld(s, out) {
+  const scene = s.world, name = scene.place;
+  const bad = loadModule(s.place_module);
+  if (bad) { out.errors.push(`${s.place_label} failed to load: ${bad}`); return; }
+  const P = K.places[name];
+  if (!P || !P.meta || typeof P.anchorsFor !== "function" || typeof P.mount !== "function") {
+    out.errors.push(`${s.place_label} does not register HFKit.places["${name}"] = {meta, anchorsFor, mount}`); return;
+  }
+  if (s.scene_module) {
+    const badMod = loadModule(s.scene_module);
+    if (badMod) { out.errors.push(`${s.scene_label} failed to load: ${badMod}`); return; }
+  }
+  // --no-modules: custom pieces are not written yet, so any name passes
+  const customs = s.customs_unchecked ? new Proxy({}, { get: (o, k) => (typeof k === "string" ? {} : undefined) }) : K.customs;
+  const opts = { cast: req.cast, duration: s.duration, customs };
+  out.errors.push(...K.validateWorld(scene, s.words, opts));
+  const w = K.worldFor(scene, opts);
+  if (!w.fatal) {
+    const c = K.compileMoves(scene, s.words, w);
+    out.warnings.push(...c.warnings);
+    out.overrun = c.overrun;
+    if (c.overrun > 0 && c.overrun <= OVERRUN_FAIL)
+      out.warnings.push(`camera finishes ${c.overrun.toFixed(2)} s after the scene ends (the end of the move is cut)`);
+  }
+  if (P.meta.notToScale && !hasNotToScale(scene))
+    out.errors.push(`place ${name} is not to scale: add a "not to scale" tag or label to the scene`);
+}
+
 const report = { scenes: [] };
 for (const s of req.scenes) {
   const out = { id: s.id, errors: [], warnings: [], overrun: null };
   s.cues = s.cues || [];
   s.camera = s.camera || [];
-  checkPresenter(s.presenter, out.errors);
+  if (s.kind !== "world") checkPresenter(s.presenter, out.errors);
   if (s.transition !== undefined && !K.blocks.TRANSITIONS.includes(s.transition))
     out.errors.push(`transition must be one of ${K.blocks.TRANSITIONS.join(", ")} (got ${s.transition})`);
   try {
-    if (s.kind === "kit") checkKit(s, out); else checkHero(s, out);
+    if (s.kind === "world") checkWorld(s, out); else if (s.kind === "kit") checkKit(s, out); else checkHero(s, out);
   } catch (e) {
     out.errors.push(String(e && e.message || e).replace(/^scene \S+: /, ""));
   }

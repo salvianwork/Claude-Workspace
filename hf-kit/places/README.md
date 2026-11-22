@@ -27,8 +27,11 @@ comment is the full contract.
 - `place.js` — classic script (no imports, no network, no `Math.random`/`Date.now`/timers),
   loaded after the kit scripts: `HFKit.places["<name>"] = {meta, anchorsFor, mount}`, drawn with
   the `HFKit.draw` and `HFKit.place.svg` helpers so places look consistent.
-  - `meta = {name, description, variants: [...], anchors: [...], paths: [...], actorScale, actorLight}`.
+  - `meta = {name, description, variants: [...], anchors: [...], paths: [...], actorScale, actorLight, notToScale?}`.
     The first variant is the default. `actorScale` is the `mountActor` scale that fits the place.
+    `notToScale: true` (optional) marks a place whose sizes and distances are not true to scale
+    (`space`, `inside-body`): `shots validate` then needs a `"not to scale"` tag or label in
+    every scene that uses it.
     `actorLight[variant] = {tint, amount 0..1, rim?, rimSide?}` is how an actor there is lit
     (pass it as `mountActor` `spec.light` / `ctx.light`): night and dim variants darken and cool
     the actor and add a soft rim from the moon or the lamp.
