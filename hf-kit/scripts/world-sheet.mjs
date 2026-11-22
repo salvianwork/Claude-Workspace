@@ -5,11 +5,14 @@
 //                                          and a stop (turn back to front); places light the actor (meta.actorLight)
 //   sample/world-sheet/place-<name>.png    every variant of each place: the whole world with its anchors
 //                                          and paths marked, plus two in-camera shots with the host
+//   sample/world-sheet/effects.png         every effect over time (frames after its start), box(t) dashed
+//   sample/world-sheet/overlays.png        the tag clamp demo: a tag / label whose point leaves the frame
 //
 //   npm run world-sheet                          -> sample/world-sheet/*.png
 //   npm run world-sheet -- --out=<dir>           write the sheets there instead
 //   npm run world-sheet -- --frames=<dir>        also save every place shot full size (1920 x 1080)
 //   npm run world-sheet -- --preview             also refresh places/<name>/preview.png
+//   npm run world-sheet -- --only=effects,lab    render only those sheets (host, effects, overlays, <place>)
 //
 // Each PNG must stay <= 1.5 MB: a sheet over that is quantized to 256 colours (ffmpeg on PATH) or
 // captured smaller; the script fails if it still does not fit.
@@ -30,8 +33,11 @@ const outDir = resolve(arg("out") || join(KIT, "sample", "world-sheet"));
 const framesDir = arg("frames") ? resolve(arg("frames")) : null;
 const MAX_BYTES = 1.5 * 1024 * 1024;
 const MAX_WIDTH = 2000; // sheet PNGs are at most this wide
-const PLACES = readdirSync(join(KIT, "places")).filter((d) => statSync(join(KIT, "places", d)).isDirectory()).sort();
-const SCRIPTS = [...globalThis.HFKit.SCRIPTS, ...PLACES.map((p) => `places/${p}/place.js`)].map((s) => join(KIT, s));
+const ALL_PLACES = readdirSync(join(KIT, "places")).filter((d) => statSync(join(KIT, "places", d)).isDirectory()).sort();
+const ONLY = arg("only") ? String(arg("only")).split(",") : null; // --only=host,effects,overlays,<place>,... renders just those
+const PLACES = ONLY ? ALL_PLACES.filter((p) => ONLY.includes(p)) : ALL_PLACES;
+const wants = (name) => !ONLY || ONLY.includes(name);
+const SCRIPTS = [...globalThis.HFKit.SCRIPTS, ...ALL_PLACES.map((p) => `places/${p}/place.js`)].map((s) => join(KIT, s));
 
 /* The in-camera shots per place: [label, cam, host actor or null]. Anchors are looked up in the page. */
 const SHOTS = {
@@ -42,6 +48,42 @@ const SHOTS = {
   lab: [
     ["bench, zoom 1", { anchor: "bench", dy: 0, zoom: 1 }, { anchor: "bench", dx: -420, dy: 330, outfit: "lab-coat", pose: "point-right", expression: "happy" }],
     ["door, zoom 1.3", { anchor: "door", dx: -500, dy: -360, zoom: 1.3 }, { anchor: "door", dx: -40, dy: 0, outfit: "lab-coat", pose: "wave", expression: "happy" }],
+  ],
+  "city-street": [
+    ["sidewalk, zoom 1", { anchor: "sidewalk", dx: 300, dy: -260, zoom: 1 }, { anchor: "sidewalk", outfit: "casual", pose: "wave", expression: "happy" }],
+    ["crossing, zoom 1.3", { anchor: "crosswalk", dx: -200, dy: -60, zoom: 1.3 }, null],
+  ],
+  home: [
+    ["sofa, zoom 1", { anchor: "sofa", dx: 250, dy: 160, zoom: 1 }, { anchor: "floor", dx: -80, outfit: "casual", pose: "talk", expression: "happy" }],
+    ["kitchen, zoom 1.4", { anchor: "kitchen", dy: 40, zoom: 1.4 }, null],
+  ],
+  classroom: [
+    ["board, zoom 1", { anchor: "board", dy: 230, zoom: 1 }, { anchor: "front", dx: -300, outfit: "blazer", pose: "point-right", expression: "happy" }],
+    ["seats, zoom 1.1", { anchor: "seats", dx: 250, dy: 80, zoom: 1.1 }, null],
+  ],
+  forest: [
+    ["trail, zoom 1", { anchor: "trail", dx: 300, dy: -250, zoom: 1 }, { anchor: "trail", outfit: "explorer", pose: "point-right", expression: "curious" }],
+    ["stream and log, zoom 1.3", { anchor: "stream", dx: -200, dy: -150, zoom: 1.3 }, null],
+  ],
+  ocean: [
+    ["boat, zoom 1.2", { anchor: "boat", dy: 120, zoom: 1.2 }, null],
+    ["reef, zoom 1.3", { anchor: "reef", dy: -120, zoom: 1.3 }, null],
+  ],
+  space: [
+    ["craft, zoom 1.2", { anchor: "craft", dx: -150, dy: 60, zoom: 1.2 }, { anchor: "craft", dx: -380, dy: 150, outfit: "explorer", pose: "wave", expression: "happy" }],
+    ["planet limb, zoom 0.8", { anchor: "planet", dy: -300, zoom: 0.8 }, null],
+  ],
+  "inside-body": [
+    ["heart and lungs, zoom 1.3", { anchor: "heart", dx: -150, dy: -40, zoom: 1.3 }, null],
+    ["stomach, zoom 1.4", { anchor: "stomach", dx: -120, zoom: 1.4 }, { anchor: "stomach", dx: -330, dy: 140, outfit: "lab-coat", pose: "point-right", expression: "curious" }],
+  ],
+  "sky-fantasy": [
+    ["island, zoom 1", { anchor: "island", dx: 200, dy: -250, zoom: 1 }, { anchor: "island", outfit: "explorer", pose: "celebrate", expression: "happy" }],
+    ["balloon and tower, zoom 0.9", { anchor: "balloon", dx: 300, dy: 200, zoom: 0.9 }, null],
+  ],
+  "rooftop-night": [
+    ["telescope, zoom 1", { anchor: "telescope", dx: 200, dy: -250, zoom: 1 }, { anchor: "telescope", dx: -260, outfit: "casual", pose: "point-right", expression: "curious" }],
+    ["ledge and skyline, zoom 1.2", { anchor: "ledge", dy: -250, zoom: 1.2 }, null],
   ],
 };
 
@@ -91,6 +133,18 @@ function pageBuild(spec) {
       a.update(o.t, { pose: o.actor.pose, expression: o.actor.expression });
     }
     place.update(o.t, cam);
+    if (o.effect) { // an effect on its own world-sized layer above the ground, with its box(t) dashed
+      const NS = "http://www.w3.org/2000/svg", fxl = document.createElementNS(NS, "svg");
+      fxl.setAttribute("width", 3840); fxl.setAttribute("height", 2160);
+      fxl.style.cssText = "position:absolute;left:0;top:0;overflow:visible;transform-origin:0 0";
+      fxl.style.transform = K.place.layerTransform(cam, 1);
+      inner.insertBefore(fxl, layers.front);
+      const fx = K.effects[o.effect.name](fxl, o.effect.params, "sheet-fx-" + n);
+      fx.update(o.t);
+      const b = fx.box(o.t);
+      if (b.width > 0) fxl.insertAdjacentHTML("beforeend", `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" opacity="0.8"/>`);
+      if (fx.anchor) { const q = fx.anchor(o.t); fxl.insertAdjacentHTML("beforeend", `<circle cx="${q.x}" cy="${q.y}" r="12" fill="#E8590C" stroke="#fff" stroke-width="5"/>`); }
+    }
     if (o.marks) {
       const NS = "http://www.w3.org/2000/svg";
       const svg = document.createElementNS(NS, "svg");
@@ -134,6 +188,45 @@ function pageBuild(spec) {
       frame(row, { place: spec.place, variant, t: 2, cam: { x: 1920, y: 1080, zoom: 0.5 }, scale: 0.72, marks: true, caption: "whole world · " + variant });
       const col = el(row, "div", "col");
       for (const [cap, cam, actor] of spec.shots) frame(col, { place: spec.place, variant, t: 2, cam, actor, scale: 0.36, caption: cap });
+    }
+    return;
+  }
+
+  if (spec.kind === "effects") {
+    el(sheet, "h1", "", "Effects over time");
+    el(sheet, "div", "sub", "HFKit.effects in the countryside (day), pushed in (zoom 1.4 to 1.8). Each row: the same effect at increasing times after its start (at = 0.5 s). Dashed: box(t); orange dot: pulse_along's anchor \"pulse\".");
+    for (const [title, params, cam, times] of spec.rows) {
+      const name = title.split(" ")[0];
+      el(sheet, "h2", "", title);
+      const strip = el(sheet, "div", "strip");
+      for (const t of times) frame(strip, { place: "countryside", variant: "day", t, cam, scale: 0.2, effect: { name, params }, caption: "t = " + t.toFixed(2) });
+    }
+    return;
+  }
+
+  if (spec.kind === "overlays") {
+    el(sheet, "h1", "", "Tags: following a point that leaves the frame");
+    el(sheet, "div", "sub", "The frame (1920×1080, solid edge) with 400 px of the world around it (hatched). Red cross: the tag's true point. Inside the safe line (96 px, dotted) the pill is clamped to the edge, a chevron points at the point; from 200 px outside it fades and is gone by 280 px.");
+    for (const [title, points, kind, text] of spec.rows) {
+      el(sheet, "h2", "", title);
+      const strip = el(sheet, "div", "strip");
+      strip.style.cssText = "flex-wrap:wrap;max-width:2520px";
+      for (const pt of points) {
+        n += 1;
+        const S = 0.3, M = 400, wrap = el(strip, "div", "frame");
+        wrap.style.width = (1920 + 2 * M) * S + "px"; wrap.style.height = (1080 + 2 * M) * S + "px"; wrap.style.background = "repeating-linear-gradient(45deg,#E9DCC8 0 18px,#DCCBB2 18px 36px)";
+        const outer = el(wrap, "div"); outer.style.cssText = `position:absolute;left:0;top:0;width:${1920 + 2 * M}px;height:${1080 + 2 * M}px;transform:scale(${S});transform-origin:0 0`;
+        const inner = el(outer, "div"); inner.style.cssText = `position:absolute;left:${M}px;top:${M}px;width:1920px;height:1080px;overflow:hidden;outline:6px solid #3A2F28`;
+        const layers = K.placeLayers(inner, "sheet-ov-" + n);
+        const cam = { x: 1600, y: 1000, zoom: 1 };
+        K.places["city-street"].mount(layers, { variant: "day", idPrefix: "sheet-ov-" + n }).update(2, cam);
+        const ov = el(inner, "div"); ov.style.cssText = "position:absolute;left:0;top:0;width:1920px;height:1080px";
+        const safe = el(inner, "div"); safe.style.cssText = "position:absolute;left:96px;top:96px;width:1728px;height:888px;outline:4px dotted rgba(255,255,255,.8)";
+        const o = K.overlays[kind](ov, { text, target: "point" }, "sheet-ov-" + n + "-tag");
+        const st = o.update(2, pt);
+        const mark = el(outer, "div"); mark.style.cssText = `position:absolute;left:${M + pt.x - 30}px;top:${M + pt.y - 30}px;width:60px;height:60px;background:linear-gradient(45deg,transparent 42%,#E03131 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#E03131 42% 58%,transparent 58%)`;
+        el(wrap, "div", "cap", `(${pt.x}, ${pt.y}) · opacity ${st.opacity}${st.clamped ? " · clamped" : ""}`);
+      }
     }
     return;
   }
@@ -229,11 +322,31 @@ async function render(spec, out, viewport) {
 }
 
 try {
-  await render({
+  if (wants("host")) await render({
     kind: "host", outfits: ["blazer", "lab-coat", "casual", "explorer"],
     poses: [["idle", "neutral"], ["talk", "happy"], ["point-right", "curious"], ["wave", "happy"], ["think", "thinking"], ["celebrate", "happy"]],
     cycles: [["walk", "blazer", 1], ["run", "casual", 1], ["walk", "lab-coat", -1], ["jump", "explorer", 1], ["jump", "blazer", 0]],
   }, join(outDir, "host.png"));
+  if (wants("effects")) {
+    const T = [0.5, 0.65, 0.85, 1.1, 1.45, 2.0];
+    const sky = { x: 1920, y: 820, zoom: 1.8 };
+    await render({ kind: "effects", rows: [
+      ["burst", { at: 0.5, x: 1920, y: 820, color: "#FFB43C" }, sky, T],
+      ["rings (sound from the rail, laid on the ground plane)", { at: 0.5, x: 1500, y: 1500, count: 3, interval: 0.3, squash: 0.45, color: "#7FE3FF" }, { x: 1650, y: 1400, zoom: 1.4 }, T],
+      ["rings (directional wavefront)", { at: 0.5, x: 1600, y: 820, arc: { angle: 0, spread: 70 }, count: 4, interval: 0.25, color: "#FFD43B" }, sky, T],
+      ["pulse_along (the rail path)", { at: 0.5, path: [{ x: 1300, y: 1500 }, { x: 1900, y: 1500 }, { x: 2600, y: 1500 }], duration: 1.6 }, { x: 1900, y: 1380, zoom: 1.3 }, [0.5, 0.7, 1.0, 1.4, 1.9, 2.3]],
+      ["speed_lines (moving right)", { at: 0.5, x: 2150, y: 820, angle: 0, duration: 1.6, color: "#FFFFFF" }, sky, T],
+      ["splash (on the lake)", { at: 0.5, x: 2240, y: 1616, color: "#7FD3F5" }, { x: 2240, y: 1480, zoom: 1.6 }, [0.5, 0.6, 0.8, 1.05, 1.4, 1.85]],
+      ["sparkle", { at: 0.5, x: 1920, y: 820 }, sky, T],
+      ["smoke", { at: 0.5, x: 1920, y: 1000, duration: 3 }, sky, [0.5, 0.8, 1.3, 2.0, 2.8, 3.8]],
+      ["glow", { at: 0.5, x: 1920, y: 820, rays: 8, duration: 3 }, sky, [0.5, 0.6, 0.8, 1.2, 2.0, 3.3]],
+    ] }, join(outDir, "effects.png"));
+  }
+  if (wants("overlays")) await render({ kind: "overlays", rows: [
+    ["tag \"343 m/s\": the point runs off the right edge", [{ x: 1500, y: 500 }, { x: 1850, y: 500 }, { x: 2000, y: 500 }, { x: 2100, y: 500 }, { x: 2250, y: 500 }, { x: 2400, y: 500 }], "tag", "343 m/s"],
+    ["tag \"Speed of sound\": off the top, the left and a corner", [{ x: 900, y: 140 }, { x: 900, y: -120 }, { x: -150, y: 700 }, { x: -260, y: 700 }, { x: 2060, y: 1180 }, { x: 960, y: -320 }], "tag", "Speed of sound"],
+    ["label \"magma chamber\"", [{ x: 960, y: 600 }, { x: 1880, y: 600 }, { x: 2050, y: 600 }, { x: 960, y: 1060 }, { x: 960, y: 1250 }, { x: 960, y: 1380 }], "label", "magma chamber"],
+  ] }, join(outDir, "overlays.png"));
   for (const name of PLACES) {
     await render({ kind: "place", place: name, shots: SHOTS[name] || [] }, join(outDir, `place-${name}.png`));
     if (framesDir || arg("preview")) {

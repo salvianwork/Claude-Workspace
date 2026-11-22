@@ -149,11 +149,58 @@
     return g;
   }
 
+  // ---- shared art (so every place has the same hand) ------------------------------------
+  /* v wrapped into [lo, hi): drifting clouds, motes and traffic never run out in a long scene. */
+  function wrap(v, lo, hi) { var span = hi - lo; return lo + (((v - lo) % span) + span) % span; }
+  /* Soft fade near the ends of a wrap span (0 at lo / hi, 1 inside by `edge`): hides the jump. */
+  function wrapFade(v, lo, hi, edge) { return Math.min(1, Math.max(0, (v - lo) / edge), Math.max(0, (hi - v) / edge)); }
+  /* A tone function for a variant: mix every colour toward `toward` by k after darkening by dk. */
+  function toner(dk, toward, k) { return function (c) { return D.mix(D.shade(c, dk), toward, k); }; }
+  /* A fluffy flat-shaded cloud at (cx, cy), scale s; pal = {cloud, cloudShade, cloudLight}. */
+  function cloud(cx, cy, s, pal, id) {
+    var out = tag("ellipse", { cx: 0, cy: 34, rx: 210, ry: 34, fill: pal.cloudShade, opacity: 0.9 }) +
+      tag("ellipse", { cx: -95, cy: 0, rx: 110, ry: 70, fill: pal.cloud }) + tag("ellipse", { cx: 20, cy: -38, rx: 120, ry: 98, fill: pal.cloud }) +
+      tag("ellipse", { cx: 130, cy: 4, rx: 100, ry: 64, fill: pal.cloud }) + tag("ellipse", { cx: 0, cy: 30, rx: 200, ry: 36, fill: pal.cloud }) +
+      tag("ellipse", { cx: 40, cy: -70, rx: 60, ry: 40, fill: pal.cloudLight, opacity: 0.9 }) + tag("ellipse", { cx: 0, cy: 50, rx: 170, ry: 16, fill: pal.cloudShade, opacity: 0.55 });
+    return tag("g", { "data-cloud": id, transform: "translate(" + D.r2(cx) + " " + D.r2(cy) + ") scale(" + D.r2(s) + ")" }, out);
+  }
+  /* A round, flat-shaded tree: trunk, four leaf blobs, shade and light. tone = colour function. */
+  function tree(x, y, r, tone, seed, outline) {
+    var R = D.rng(seed), lean = (R() - 0.5) * 0.3;
+    var dark = tone("#2F6E35"), mid = tone("#43913F"), light = tone("#79BC57"), trunk = tone("#6B4A2F");
+    var s = tag("ellipse", { cx: x + r * 0.25, cy: y + r * 1.55, rx: r * 0.95, ry: r * 0.16, fill: "#1D3A1A", opacity: 0.22 });
+    s += tag("path", { d: "M" + D.r2(x - r * 0.1) + " " + D.r2(y + r * 1.55) + " L" + D.r2(x - r * 0.06 + lean * r) + " " + D.r2(y + r * 0.4) + " L" + D.r2(x + r * 0.08 + lean * r) + " " + D.r2(y + r * 0.4) + " L" + D.r2(x + r * 0.12) + " " + D.r2(y + r * 1.55) + " Z",
+      fill: trunk, stroke: outline ? D.shade(trunk, 0.35) : "none", "stroke-width": 3 });
+    var blobs = [[0, 0, 1], [-0.55, 0.3, 0.68], [0.55, 0.28, 0.7], [0.05, -0.45, 0.66]];
+    s += blobs.map(function (b) { return tag("circle", { cx: x + b[0] * r, cy: y + b[1] * r, r: b[2] * r, fill: mid, stroke: outline ? dark : "none", "stroke-width": outline ? 4 : 0 }); }).join("");
+    s += blobs.map(function (b) { return tag("circle", { cx: x + b[0] * r, cy: y + b[1] * r, r: b[2] * r * 0.97, fill: mid }); }).join("");
+    s += tag("circle", { cx: x - r * 0.35, cy: y + r * 0.42, r: r * 0.55, fill: dark, opacity: 0.45 });
+    s += tag("circle", { cx: x + r * 0.28, cy: y - r * 0.38, r: r * 0.42, fill: light, opacity: 0.85 });
+    s += tag("circle", { cx: x + r * 0.62, cy: y + r * 0.05, r: r * 0.24, fill: light, opacity: 0.6 });
+    return s;
+  }
+  /* n stars in the box (x, y, w, h): varied size and warmth, data-star for twinkling. */
+  function stars(R, n, x, y, w, h, opts) {
+    opts = opts || {};
+    var out = "", cols = opts.colors || ["#FFF8E1", "#FFFFFF", "#DCE8FF", "#FFE2C4"];
+    for (var i = 0; i < n; i++) {
+      var big = R() < (opts.bright || 0.06), rr = big ? 3.4 + R() * 2.6 : 1.2 + R() * 2.4;
+      out += tag("circle", { cx: x + R() * w, cy: y + R() * h, r: rr * (opts.scale || 1), fill: cols[(R() * cols.length) | 0], opacity: 0.35 + R() * 0.6, "data-star": i });
+    }
+    return out;
+  }
+  /* A window glazing: a soft diagonal glint over a pane. */
+  function glint(x, y, w, h, op) {
+    return tag("path", { d: "M" + D.r2(x + w * 0.12) + " " + D.r2(y + h * 0.55) + " L" + D.r2(x + w * 0.42) + " " + D.r2(y + h * 0.08) + " M" + D.r2(x + w * 0.24) + " " + D.r2(y + h * 0.62) + " L" + D.r2(x + w * 0.5) + " " + D.r2(y + h * 0.22),
+      stroke: "#FFFFFF", "stroke-width": Math.max(4, w * 0.05), "stroke-linecap": "round", opacity: op === undefined ? 0.3 : op });
+  }
+
   K.place = {
     WORLD: WORLD, FRAME: FRAME, LAYERS: LAYERS, PARALLAX: PARALLAX, REF: REF,
     layerCam: layerCam, toScreen: toScreen, layerTransform: layerTransform, applyCamera: applyCamera,
     defs: defs, variantOf: variantOf, paint: paint,
     svg: { attrs: attrs, tag: tag, lin: lin, rad: rad, blur: blur, pts: pts, smooth: smooth },
+    art: { wrap: wrap, wrapFade: wrapFade, toner: toner, cloud: cloud, tree: tree, stars: stars, glint: glint },
   };
   K.placeLayers = placeLayers;
   K.places = K.places || {};

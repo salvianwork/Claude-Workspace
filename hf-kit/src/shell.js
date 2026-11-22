@@ -13,43 +13,63 @@
   var PRESENTER_EDGE = 24; // presenter box distance from the frame edge (he is a drawing, not text)
   var PRESENTER_GAP = 40;  // free space between presenter and content
 
-  /* Full style tokens: `style` (partial, e.g. style.json) over the default dark navy + orange look. */
+  var CAPTION_POSITIONS = ["bottom", "top"];
+
+  /* Full style tokens: `style` (partial, e.g. style.json) over the default dark navy + orange look.
+   * style.captions = {size?, position?: "bottom" | "top"} (style.json) sets the caption size (over
+   * sizes.caption) and where the caption band sits. */
   function resolveStyle(style) {
-    var s = style || {}, d = K.tokens;
+    var s = style || {}, d = K.tokens, cap = s.captions || {};
+    var sizes = Object.assign({}, d.sizes, s.sizes || {});
+    if (cap.size !== undefined) {
+      if (!(typeof cap.size === "number" && cap.size >= 24 && cap.size <= 120)) throw new Error("style: captions.size must be a number of px from 24 to 120");
+      sizes.caption = cap.size;
+    }
+    var position = cap.position === undefined ? "bottom" : cap.position;
+    if (CAPTION_POSITIONS.indexOf(position) < 0) throw new Error('style: captions.position must be "bottom" or "top", got ' + position);
     return {
       colors: Object.assign({}, d.colors, s.colors || {}),
       fonts: Object.assign({}, d.fonts, s.fonts || {}),
-      sizes: Object.assign({}, d.sizes, s.sizes || {}),
+      sizes: sizes,
       safe: s.safe === undefined ? d.safe : s.safe,
+      captions: { size: sizes.caption, position: position },
     };
   }
 
-  /* {canvas, content, presenterBox, captionTop, safe}. presenter = {position: left|right|none,
-   * size: small|large} (shots.json presenter; other fields ignored). The presenter takes 22 % /
-   * 34 % of the width on his side and stands on the caption line; content never meets him. */
+  /* {canvas, content, presenterBox, captionTop, captionBand, captions, safe}. presenter =
+   * {position: left|right|none, size: small|large} (shots.json presenter; other fields ignored).
+   * The presenter takes 22 % / 34 % of the width on his side and stands on the caption line;
+   * content never meets him. Captions at the bottom (default): the band runs from captionTop to the
+   * frame's foot. Captions at the top: the band is the top safe margin plus the caption reserve,
+   * content starts below it, and captionTop is the bottom safe line (nothing but captions above
+   * the band, nothing at all below captionTop). */
   function layout(style, presenter) {
     var s = resolveStyle(style);
     var pr = presenter || { position: "none", size: "small" };
     var pos = pr.position || "none", size = pr.size || "small";
     if (["left", "right", "none"].indexOf(pos) < 0) throw new Error("layout: unknown presenter position " + pos);
     if (!PRESENTER_WIDTH[size]) throw new Error("layout: unknown presenter size " + size);
-    var top = K.captionTop(s), safe = s.safe;
+    var safe = s.safe, onTop = s.captions.position === "top";
+    var top = onTop ? H - safe : K.captionTop(s);
+    var band = onTop ? { x: safe, y: 0, width: W - 2 * safe, height: safe + K.captionReserve(s) } : { x: safe, y: top, width: W - 2 * safe, height: H - top };
+    var y0 = onTop ? band.height : safe;
     var pbox = null;
     if (pos !== "none") {
       var width = Math.round(W * PRESENTER_WIDTH[size]);
-      var height = Math.min(top - PRESENTER_EDGE, Math.round(width * 1.08));
+      var height = Math.min(top - (onTop ? y0 : PRESENTER_EDGE), Math.round(width * 1.08));
       pbox = { x: pos === "left" ? PRESENTER_EDGE : W - PRESENTER_EDGE - width, y: top - height, width: width, height: height };
     }
     var content;
-    if (!pbox) content = { x: safe, y: safe, width: W - 2 * safe, height: top - safe };
+    if (!pbox) content = { x: safe, y: y0, width: W - 2 * safe, height: top - y0 };
     else if (pos === "left") {
       var x = Math.max(safe, pbox.x + pbox.width + PRESENTER_GAP);
-      content = { x: x, y: safe, width: W - safe - x, height: top - safe };
+      content = { x: x, y: y0, width: W - safe - x, height: top - y0 };
     } else {
       var right = Math.min(W - safe, pbox.x - PRESENTER_GAP);
-      content = { x: safe, y: safe, width: right - safe, height: top - safe };
+      content = { x: safe, y: y0, width: right - safe, height: top - y0 };
     }
-    return { canvas: { width: W, height: H }, content: content, presenterBox: pbox, captionTop: top, safe: safe, presenter: { position: pos, size: size } };
+    return { canvas: { width: W, height: H }, content: content, presenterBox: pbox, captionTop: top, captionBand: band, captions: s.captions,
+      safe: safe, presenter: { position: pos, size: size } };
   }
 
   // ---- camera view ----------------------------------------------------------------------
@@ -137,7 +157,8 @@
     stage.style.transformOrigin = "0 0";
     var overlay = abs(div("hf-overlay"), { x: 0, y: 0, width: W, height: H });
     var presenter = L.presenterBox ? abs(div("hf-presenter"), L.presenterBox) : null;
-    var captions = abs(div("hf-captions"), { x: style.safe, y: L.captionTop, width: W - 2 * style.safe, height: H - L.captionTop });
+    var captions = abs(div("hf-captions"), L.captionBand);
+    captions.setAttribute("data-position", L.captions.position);
     var seed = opts.seed || 1;
 
     function update(t) {
@@ -155,21 +176,26 @@
    * present, else `text`. */
   function captionWord(w) { return w.display || w.text; }
 
-  /* Word-highlighted captions in the caption slot (from shell().layers.captions). Fixed pages of
-   * `maxWords` words (HFKit.captionPage); the spoken word is in the accent colour, words not yet
-   * spoken are dimmed. Returns {update(t)}. */
+  /* Word-highlighted captions in the caption slot (from shell().layers.captions): a dark pill
+   * (style captions.size, 60 px by default) centred in the band, 28 px below its top edge
+   * (bottom band) or 28 px above its bottom edge (top band). Fixed pages of `maxWords` words
+   * (HFKit.captionPage); the spoken word is in the accent colour on a soft accent highlight,
+   * words not yet spoken are dimmed. Returns {update(t), el}. */
   function mountCaptions(el, opts) {
     var style = resolveStyle(opts.style);
     var words = opts.words || [];
     var maxWords = opts.maxWords || 7;
     var doc = el.ownerDocument;
+    var fs = style.sizes.caption, onTop = style.captions.position === "top";
     el.innerHTML = "";
     var bar = doc.createElement("div");
     bar.className = "hf-caption-bar";
-    css(bar, { position: "absolute", left: "50%", top: "28px", transform: "translateX(-50%)", maxWidth: (el.clientWidth || W - 2 * style.safe) + "px",
-      padding: "10px 30px 12px", borderRadius: "22px", background: "rgba(2,6,23,0.62)", boxShadow: "0 8px 30px rgba(2,6,23,0.35)",
-      fontFamily: style.fonts.body, fontWeight: "600", fontSize: style.sizes.caption + "px", lineHeight: "1.32", textAlign: "center",
+    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (el.clientWidth || W - 2 * style.safe) + "px",
+      padding: Math.round(fs * 0.16) + "px " + Math.round(fs * 0.6) + "px " + Math.round(fs * 0.2) + "px", borderRadius: "999px",
+      background: "rgba(2,6,23,0.72)", boxShadow: "0 10px 34px rgba(2,6,23,0.38), inset 0 0 0 2px rgba(255,255,255,0.06)",
+      fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: "1.3", textAlign: "center",
       color: style.colors.text, whiteSpace: "normal", boxSizing: "border-box", width: "max-content" });
+    if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
     el.appendChild(bar);
     var shown = null, spans = [];
     function update(t) {
@@ -189,6 +215,7 @@
       }
       spans.forEach(function (s, j) {
         s.style.color = j === pg.current ? style.colors.accent : j < pg.current ? style.colors.text : D.alpha(style.colors.text, 0.55);
+        s.style.textShadow = j === pg.current ? "0 0 " + Math.round(fs * 0.3) + "px " + D.alpha(style.colors.accent, 0.45) : "none";
       });
       var first = words[0].start, last = words[words.length - 1].end;
       bar.style.opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
@@ -198,7 +225,7 @@
   }
 
   Object.assign(K, {
-    PRESENTER_WIDTH: PRESENTER_WIDTH, resolveStyle: resolveStyle, layout: layout,
+    PRESENTER_WIDTH: PRESENTER_WIDTH, CAPTION_POSITIONS: CAPTION_POSITIONS, resolveStyle: resolveStyle, layout: layout,
     kitFrame: kitFrame, heroFrame: heroFrame, driftSafe: driftSafe, DRIFT_INSET: DRIFT_INSET, view: view, normaliseAnchors: normaliseAnchors, drift: drift,
     shell: shell, mountCaptions: mountCaptions, captionWord: captionWord,
   });

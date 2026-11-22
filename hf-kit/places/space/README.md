@@ -1,0 +1,1 @@
+Outer space: Earth's limb from orbit with the Sun, the Moon and a space station; or a ringed gas giant, an icy moon and a probe in deep space; variants earth-orbit, deep-space; anchors planet, moon, craft, star, open; path orbit.

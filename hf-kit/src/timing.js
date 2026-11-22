@@ -7,6 +7,15 @@
 
   var FADE = 0.25; // seconds, cue fade in/out
   var DEFAULT_LIMITS = { maxZoom: 2.5, maxPanPerSec: 0.35, maxZoomPerSec: 0.6 };
+  /* World scenes (places, Task 4): a bold but calm camera. Zoom 0.6x (pull-out reveal: the whole
+   * 3840 x 2160 world fills the frame) to 5x (a push-in on one detail). The pan limit is the kit's
+   * (0.35 origin widths x zoom per second at the eased peak: over the 3840-px world at frame scale 1
+   * that is about 0.7 frame widths a second, energetic but never a whip pan). Zoom may change by
+   * up to 1.6 per second at the eased peak (about 0.53 on average), so a push-in from 1x to 2.5x
+   * takes 2.8 s and a full 1x -> 5x dive 7.5 s; cut is instant. minZoom is only set here: the kit
+   * camera (DEFAULT_LIMITS) still never zooms out past 1. */
+  var WORLD_LIMITS = { minZoom: 0.6, maxZoom: 5, maxPanPerSec: 0.35, maxZoomPerSec: 1.6 };
+  var LAG_TOL = 0.002; // a follow is "on target" when it lags by less than this (origin widths x zoom)
 
   /* Seconds for `at` = {word:i} (that word's start) or {t:sec}. words = one scene's array. */
   function wordTime(words, at, sceneId) {
@@ -38,16 +47,22 @@
     return null;
   }
 
-  /* camera shots.json entries [{at, frame}] -> [{t, frame}] using one scene's words, sorted by
-   * time (stable). Throws `scene <id>: camera key <k> ...` (k = position in the input) for a
-   * malformed frame or, when `anchors` is given, an unknown anchor name. */
+  function camKeyTime(k, words, sceneId) {
+    return k && typeof k.t === "number" && !k.at ? k.t : wordTime(words, k && k.at, sceneId);
+  }
+
+  /* camera shots.json entries [{at, frame, cut?}] (or {t, frame, cut?} with t in seconds) ->
+   * [{t, frame, cut?}] using one scene's words, sorted by time (stable). cut: true makes the key
+   * an instant cut (see cameraAt). Throws `scene <id>: camera key <k> ...` (k = position in the
+   * input) for a malformed frame or cut or, when `anchors` is given, an unknown anchor name. */
   function resolveCamera(keys, words, sceneId, anchors) {
     return (keys || []).map(function (k, idx) {
       var bad = checkFrame(k && k.frame, anchors);
+      if (!bad && k.cut !== undefined && typeof k.cut !== "boolean") bad = "has a malformed cut (true or false)";
       if (bad) throw new Error("scene " + sceneId + ": camera key " + idx + " " + bad);
-      return { t: wordTime(words, k.at, sceneId), frame: k.frame, _i: idx };
+      return { t: camKeyTime(k, words, sceneId), frame: k.frame, cut: k.cut === true, _i: idx };
     }).sort(function (a, b) { return a.t - b.t || a._i - b._i; })
-      .map(function (k) { return { t: k.t, frame: k.frame }; });
+      .map(function (k) { var o = { t: k.t, frame: k.frame }; if (k.cut) o.cut = true; return o; });
   }
 
   function anchorOf(anchors, name) {
@@ -57,7 +72,7 @@
   }
 
   function clampZoom(z, lim) {
-    return Math.min(lim.maxZoom, Math.max(1, z));
+    return Math.min(lim.maxZoom, Math.max(lim.minZoom === undefined ? 1 : lim.minZoom, z));
   }
 
   /* Shortest duration an eased move may take without breaking the limits (peak speed counted). */
@@ -118,12 +133,24 @@
     var segs = [];
     var t0 = keys[0].t, i0 = info[0];
     var f0 = makeFollower(t0, i0.target(t0), i0.target, function () { return i0.zoom; }, lim, false);
-    segs.push({ S: t0, E: t0, zoom: function () { return i0.zoom; }, pos: i0.tracking ? f0.at : function () { return i0.target(t0); } });
+    segs.push({ S: t0, E: t0, zoom: function () { return i0.zoom; }, pos: i0.tracking ? f0.at : function () { return i0.target(t0); },
+      follower: i0.tracking ? f0 : null, target: i0.target });
 
     for (var k = 1; k < n; k++) {
       var prev = segs[k - 1], S = prev.E, ki = info[k], kp = info[k - 1];
       var nominalEnd = Math.max(keys[k].t, S);
-      var from = prev.pos(S), zFrom = prev.zoom(S), zTo = ki.zoom, seg;
+      var from, zFrom, zTo = ki.zoom, seg;
+      if (keys[k].cut) { // instant: snap at the key's own time, interrupting any move still running
+        var T = keys[k].t;
+        for (var j = 0; j < k; j++) { if (segs[j].E > T) segs[j].E = T; if (segs[j].S > T) segs[j].S = T; }
+        seg = (function (T, ki, zTo) {
+          var p0 = ki.target(T), fc = ki.tracking ? makeFollower(T, p0, ki.target, function () { return zTo; }, lim, false) : null;
+          return { S: T, E: T, cut: true, zoom: function () { return zTo; }, pos: fc ? fc.at : function () { return p0; }, follower: fc, target: ki.target };
+        })(T, ki, zTo);
+        segs.push(seg);
+        continue;
+      }
+      from = prev.pos(S); zFrom = prev.zoom(S);
       if (!ki.tracking && !kp.tracking) {
         var to = ki.target(S);
         var E = Math.max(nominalEnd, S + minDuration({ x: from.x, y: from.y, zoom: zFrom }, { x: to.x, y: to.y, zoom: zTo }, lim));
@@ -153,7 +180,7 @@
           }
           End = Math.max(zEnd, S + j * STEP);
         }
-        seg = { S: S, E: End, pos: fol.at, zoom: zoomAt };
+        seg = { S: S, E: End, pos: fol.at, zoom: zoomAt, follower: ki.tracking ? fol : null, target: ki.target };
       }
       segs.push(seg);
     }
@@ -162,7 +189,7 @@
 
   function getBuilt(keys, anchors, limits) {
     var lim = Object.assign({}, DEFAULT_LIMITS, limits || {});
-    var a = anchors || NONE, lk = JSON.stringify([lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec]);
+    var a = anchors || NONE, lk = JSON.stringify([lim.minZoom, lim.maxZoom, lim.maxPanPerSec, lim.maxZoomPerSec]);
     var byA = cache.get(keys);
     if (!byA) cache.set(keys, (byA = new WeakMap()));
     var byL = byA.get(a);
@@ -183,6 +210,10 @@
    *   start, step cap maxPanPerSec/zoom, 0.5 s speed ramp-up) chasing the anchor path. The
    *   follower keeps tracking after the last key, so a fast anchor lags behind instead of
    *   breaking the pan limit. A move into a static target ends when the follower arrives.
+   * - A key with cut: true is instant: at its own time t the camera snaps to the key's pose (no
+   *   slew, no ease), interrupting any move still running; a cut onto a moving anchor then follows
+   *   it. Later moves chain from the cut.
+   * Zoom is clamped to [limits.minZoom (default 1), limits.maxZoom]; WORLD_LIMITS allow 0.6 to 5.
    * Before the first key the first pose is held. */
   function cameraAt(keys, t, anchors, limits) {
     if (!keys || !keys.length) return { x: 0.5, y: 0.5, zoom: 1 };
@@ -202,11 +233,21 @@
 
   /* Seconds by which the camera finishes after the scene ends (0 if none). The build step
    * (Task 6) fails a scene whose overrun is > 0.25 s and warns when it is above 0 but not
-   * more than 0.25 s. */
+   * more than 0.25 s. When the last key follows a moving anchor, the camera is only finished once
+   * it is on its target (lag below LAG_TOL): a target faster than the pan limit allows at that
+   * zoom keeps the camera lagging, and that lag counts as overrun (up to MAX_ARRIVAL s). */
   function cameraOverrun(keys, anchors, limits, sceneDuration) {
+    if (!keys || !keys.length) return 0;
     var sched = cameraSchedule(keys, anchors, limits);
-    if (!sched.length) return 0;
-    return Math.max(0, sched[sched.length - 1].end - sceneDuration);
+    var over = sched.length ? Math.max(0, sched[sched.length - 1].end - sceneDuration) : 0;
+    var segs = getBuilt(keys, anchors, limits), last = segs[segs.length - 1];
+    if (last.follower) {
+      var lagAt = function (t) { var p = last.pos(t), q = last.target(t); return Math.hypot(p.x - q.x, p.y - q.y) * last.zoom(t); };
+      var t = Math.max(sceneDuration, last.S), limit = t + MAX_ARRIVAL;
+      while (lagAt(t) >= LAG_TOL && t < limit) t += STEP;
+      over = Math.max(over, t - sceneDuration);
+    }
+    return over;
   }
 
   /* Cues visible at t: [{target, opacity, progress, cue}] for every cue whose start <= t.
@@ -251,6 +292,7 @@
     cameraOverrun: cameraOverrun,
     easeInOutCubic: easeInOutCubic,
     CAMERA_LIMITS: DEFAULT_LIMITS,
+    WORLD_LIMITS: WORLD_LIMITS,
   };
   root.HFKitTiming = api;
   if (root.HFKit) Object.assign(root.HFKit, api);

@@ -6,6 +6,15 @@ import "../src/draw.js";
 import "../src/world/place.js";
 import "../places/countryside/place.js";
 import "../places/lab/place.js";
+import "../places/city-street/place.js";
+import "../places/home/place.js";
+import "../places/classroom/place.js";
+import "../places/forest/place.js";
+import "../places/ocean/place.js";
+import "../places/space/place.js";
+import "../places/inside-body/place.js";
+import "../places/sky-fantasy/place.js";
+import "../places/rooftop-night/place.js";
 
 const K = globalThis.HFKit;
 const KIT = new URL("../", import.meta.url);
@@ -13,7 +22,18 @@ const WORLD = { width: 3840, height: 2160 };
 const EXPECT = {
   countryside: { variants: ["day", "sunset", "night"], anchors: ["rail-near", "rail-far", "bridge", "lake", "barn", "sky"], paths: ["rail"] },
   lab: { variants: ["bright", "dim"], anchors: ["bench", "screen", "door", "window"], paths: ["bench-top"] },
+  "city-street": { variants: ["day", "night"], anchors: ["sidewalk", "crosswalk", "shop-door", "bus-stop", "road", "sky"], paths: ["sidewalk", "road"] },
+  home: { variants: ["day", "evening"], anchors: ["sofa", "table", "kitchen", "window", "door", "floor"], paths: ["floor"] },
+  classroom: { variants: ["day", "afternoon"], anchors: ["board", "desk", "front", "window", "seats"], paths: ["aisle"] },
+  forest: { variants: ["day", "night"], anchors: ["trail", "clearing", "log", "stream", "tree", "canopy"], paths: ["trail"] },
+  ocean: { variants: ["surface", "underwater"], anchors: ["surface", "boat", "deep", "reef", "seabed"], paths: ["current"] },
+  space: { variants: ["earth-orbit", "deep-space"], anchors: ["planet", "moon", "craft", "star", "open"], paths: ["orbit"] },
+  "inside-body": { variants: ["organs", "scan"], anchors: ["heart", "lungs", "vessel", "stomach", "liver", "trachea"], paths: ["bloodstream"] },
+  "sky-fantasy": { variants: ["day", "twilight"], anchors: ["island", "waterfall", "tower", "balloon", "sky", "cloud-sea"], paths: ["flight"] },
+  "rooftop-night": { variants: ["clear", "rain"], anchors: ["ledge", "telescope", "door", "tank", "skyline", "sky"], paths: ["roof"] },
 };
+// night-time variants: the actor is clearly darker and cooler, with a rim from the moon or a lamp
+const NIGHT = new Set(["night", "dim", "clear", "rain"]);
 
 test("place.js is a kit script after draw.js and exposes the contract helpers", () => {
   const s = K.SCRIPTS;
@@ -44,7 +64,7 @@ for (const [name, want] of Object.entries(EXPECT)) {
       assert.match(l.tint, /^#[0-9A-Fa-f]{6}$/, variant);
       assert.ok(l.amount >= 0 && l.amount <= 1, variant);
       if (l.rim !== undefined) assert.match(l.rim, /^#[0-9A-Fa-f]{6}$/, variant);
-      if (variant === "night" || variant === "dim") {
+      if (NIGHT.has(variant)) {
         // clearly darker and cooler, with a soft rim from the moon / the lamp
         const [r, , b] = [1, 3, 5].map((i) => parseInt(l.tint.slice(i, i + 2), 16));
         assert.ok(l.amount >= 0.5 && b > r && l.rim, variant + " is not dark, cool and rim-lit");
@@ -62,6 +82,12 @@ for (const [name, want] of Object.entries(EXPECT)) {
     assert.deepEqual(p.meta.variants, want.variants);
     for (const a of want.anchors) assert.ok(p.meta.anchors.includes(a), "anchor " + a);
     for (const a of want.paths) assert.ok(p.meta.paths.includes(a), "path " + a);
+  });
+
+  test(`${name}: at least 2 variants, 4 anchors and 1 path; an actor scale`, () => {
+    const m = K.places[name].meta;
+    assert.ok(m.variants.length >= 2 && m.anchors.length >= 4 && m.paths.length >= 1, name);
+    assert.ok(m.actorScale > 0.2 && m.actorScale < 3, "actorScale " + m.actorScale);
   });
 
   test(`${name}: an unknown variant throws before anything is drawn`, () => {
@@ -107,10 +133,41 @@ test("parallax: the ground layer maps world to screen with the camera; other lay
 });
 
 test("places are offline and deterministic (no network, Math.random, Date.now or timers)", () => {
-  for (const f of ["src/world/place.js", "places/countryside/place.js", "places/lab/place.js"]) {
+  for (const f of ["src/world/place.js", ...Object.keys(EXPECT).map((n) => `places/${n}/place.js`)]) {
     const src = readFileSync(new URL(f, KIT), "utf8");
     assert.doesNotMatch(src, /https?:\/\/(?!www\.w3\.org)/, f);
     assert.doesNotMatch(src, /Math\.random|Date\.now|setTimeout|setInterval|requestAnimationFrame/, f);
+  }
+});
+
+test("inside-body: anchors are anatomically sensible (front view: the body's left is the viewer's right)", () => {
+  const p = K.places["inside-body"];
+  const mid = p.meta.midline;
+  assert.ok(Math.abs(mid - 1920) < 200, "body centred in the world");
+  for (const variant of p.meta.variants) {
+    const a = Object.fromEntries(Object.entries(p.anchorsFor({ variant }).anchors).map(([k, f]) => [k, f(0)]));
+    // heart: just left of the body's midline (viewer's right), between the lungs, above the diaphragm
+    assert.ok(a.heart.x > mid && a.heart.x - mid < 260, "heart slightly to the body's left");
+    // lungs: the anchor is in the right lung (viewer's left), level with the heart, above the stomach and liver
+    assert.ok(a.lungs.x < mid - 250 && Math.abs(a.lungs.y - a.heart.y) < 260, "lung beside the heart");
+    assert.ok(a.lungs.y < a.stomach.y - 300 && a.lungs.y < a.liver.y - 200, "lungs above the abdomen");
+    // stomach: upper abdomen, body's left (viewer's right), below the heart; liver: body's right, opposite
+    assert.ok(a.stomach.x > mid + 100 && a.stomach.y > a.heart.y + 300, "stomach left upper abdomen");
+    assert.ok(a.liver.x < mid - 100 && a.liver.y > a.heart.y + 150 && a.liver.y < a.stomach.y + 200, "liver right upper abdomen");
+    // trachea: on the midline above the heart; vessel: the aorta, near the midline
+    assert.ok(Math.abs(a.trachea.x - mid) < 60 && a.trachea.y < a.heart.y - 250, "trachea above the heart");
+    assert.ok(Math.abs(a.vessel.x - mid) < 220, "vessel (aorta) near the midline");
+    // the bloodstream path leaves the heart
+    const path = p.anchorsFor({ variant }).paths.bloodstream;
+    assert.ok(Math.hypot(path[0].x - a.heart.x, path[0].y - a.heart.y) < 200, "bloodstream starts at the heart");
+  }
+});
+
+test("ocean: surface above the deep water, the reef and the seabed in both variants", () => {
+  const p = K.places.ocean;
+  for (const variant of ["surface", "underwater"]) {
+    const a = Object.fromEntries(Object.entries(p.anchorsFor({ variant }).anchors).map(([k, f]) => [k, f(0)]));
+    assert.ok(a.boat.y <= a.surface.y + 40 && a.surface.y < a.deep.y && a.deep.y < a.reef.y && a.reef.y <= a.seabed.y, variant);
   }
 });
 

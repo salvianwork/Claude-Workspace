@@ -1,0 +1,1 @@
+Downtown street from the near sidewalk: shopfronts across the road, the city behind, cars, a zebra crossing, a bus shelter; variants day, night; anchors sidewalk, crosswalk, shop-door, bus-stop, road, sky; path sidewalk, road.

@@ -264,3 +264,100 @@ test("HFKit re-exports timing in both load orders", async () => {
     [globalThis.HFKit, globalThis.HFKitTiming] = saved;
   }
 });
+
+// ---- world camera (Task 4): zoom 0.6x-5x, cuts, overrun of a lagging follow ----------------
+
+const WL = globalThis.HFKitTiming.WORLD_LIMITS;
+
+test("WORLD_LIMITS: zoom 0.6x-5x, the kit pan limit, zoom rate at most 1.6 per second", () => {
+  assert.equal(globalThis.HFKit.WORLD_LIMITS, WL);
+  assert.equal(WL.minZoom, 0.6);
+  assert.equal(WL.maxZoom, 5);
+  assert.equal(WL.maxPanPerSec, LIM.maxPanPerSec, "keeps the existing pan limit");
+  assert.ok(WL.maxZoomPerSec > LIM.maxZoomPerSec && WL.maxZoomPerSec <= 1.6, `zoom rate ${WL.maxZoomPerSec}`);
+  // the kit default is unchanged (schema-1 scenes keep their calm camera)
+  assert.deepEqual(globalThis.HFKitTiming.CAMERA_LIMITS, { maxZoom: 2.5, maxPanPerSec: 0.35, maxZoomPerSec: 0.6 });
+});
+
+test("world camera: zoom 6 is clamped to 5, zoom 0.3 to 0.6; the kit camera still never goes below 1", () => {
+  const anchors = { a: { x: 0.5, y: 0.5 } };
+  const k6 = [{ t: 0, frame: { focus: "a", zoom: 6 } }];
+  assert.equal(cameraAt(k6, 1, anchors, WL).zoom, 5);
+  assert.equal(cameraAt([{ t: 0, frame: { focus: "a", zoom: 0.3 } }], 1, anchors, WL).zoom, 0.6);
+  assert.equal(cameraAt([{ t: 0, frame: { focus: "a", zoom: 0.3 } }], 1, anchors, LIM).zoom, 1);
+  // a pull-out to 0.6 and a push-in to 5 obey the world limits and never jump
+  const keys = [{ t: 0, frame: "wide" }, { t: 1, frame: { focus: "a", zoom: 0.6 } }, { t: 2, frame: { focus: "a", zoom: 5 } }];
+  const dt = 0.002;
+  let prev = cameraAt(keys, 0, anchors, WL);
+  for (let t = dt; t < 12; t += dt) {
+    const c = cameraAt(keys, t, anchors, WL);
+    assert.ok(Math.abs(c.zoom - prev.zoom) / dt <= WL.maxZoomPerSec * 1.01, `zoom rate at ${t}`);
+    assert.ok(c.zoom >= 0.6 - 1e-9 && c.zoom <= 5 + 1e-9);
+    prev = c;
+  }
+  assert.ok(Math.abs(prev.zoom - 5) < 1e-9);
+});
+
+test("world camera: zoom 5 following a moving anchor stays within the pan limit; its overrun is reported", () => {
+  // a slow target (world-normalised 0.02/s): the follower keeps up, no overrun
+  const slow = { run: (t) => ({ x: 0.3 + 0.02 * t, y: 0.5 }) };
+  const keys = [{ t: 0, frame: "wide" }, { t: 1, frame: { follow: "run", zoom: 5 } }];
+  let prev = cameraAt(keys, 0, slow, WL), maxPan = 0;
+  const dt = 0.002;
+  for (let t = dt; t < 10; t += dt) {
+    const c = cameraAt(keys, t, slow, WL);
+    maxPan = Math.max(maxPan, (Math.hypot(c.x - prev.x, c.y - prev.y) * Math.max(c.zoom, prev.zoom)) / dt);
+    assert.ok(Math.abs(c.zoom - prev.zoom) / dt <= WL.maxZoomPerSec * 1.01);
+    prev = c;
+  }
+  assert.ok(maxPan <= WL.maxPanPerSec * 1.01, `pan ${maxPan}`);
+  assert.ok(cameraOverrun(keys, slow, WL, 10) <= 0.25, "slow target: overrun " + cameraOverrun(keys, slow, WL, 10));
+  // a fast target (0.2/s at zoom 5 = 1 frame width per second): the camera lags, and the lag is
+  // reported as an overrun (> 0.25 s), never hidden by a pan faster than the limit
+  const fast = { run: (t) => ({ x: 0.2 + 0.2 * t, y: 0.5 }) };
+  const at5 = [{ t: 0, frame: { follow: "run", zoom: 5 } }]; // already at 5x: only the lag can overrun
+  assert.deepEqual(cameraSchedule(at5, fast, WL), []);
+  const over = cameraOverrun(at5, fast, WL, 4);
+  assert.ok(over > 0.25, "fast target overrun " + over);
+  assert.ok(cameraOverrun(at5, slow, WL, 4) <= 0.25, "slow target at 5x keeps up");
+  prev = cameraAt(at5, 0, fast, WL); maxPan = 0;
+  for (let t = dt; t < 4; t += dt) {
+    const c = cameraAt(at5, t, fast, WL);
+    maxPan = Math.max(maxPan, (Math.hypot(c.x - prev.x, c.y - prev.y) * Math.max(c.zoom, prev.zoom)) / dt);
+    prev = c;
+  }
+  assert.ok(maxPan <= WL.maxPanPerSec * 1.01, `pan ${maxPan}`);
+});
+
+test("resolveCamera accepts {t, frame, cut:true}; a cut changes the view within one frame, no slew, no overrun", () => {
+  const anchors = { a: { x: 0.2, y: 0.3 }, b: { x: 0.85, y: 0.7 } };
+  const keys = resolveCamera([
+    { t: 0, frame: { focus: "a", zoom: 2 } },
+    { at: { t: 2 }, frame: { focus: "b", zoom: 4 }, cut: true },
+  ], words, 3, anchors);
+  assert.deepEqual(keys, [{ t: 0, frame: { focus: "a", zoom: 2 } }, { t: 2, frame: { focus: "b", zoom: 4 }, cut: true }]);
+  const before = cameraAt(keys, 2 - 1 / 30, anchors, WL), after = cameraAt(keys, 2, anchors, WL);
+  assert.ok(Math.abs(before.x - 0.2) < 1e-9 && before.zoom === 2, "holds until the cut");
+  assert.deepEqual(after, { x: 0.85, y: 0.7, zoom: 4 }, "snaps at the cut");
+  assert.equal(cameraOverrun(keys, anchors, WL, 2), 0);
+  assert.deepEqual(cameraSchedule(keys, anchors, WL), [{ start: 2, end: 2 }]);
+  // a cut interrupts a move still running, and later moves chain from the cut
+  const k2 = resolveCamera([
+    { t: 0, frame: "wide" },
+    { t: 0.2, frame: { focus: "a", zoom: 5 } }, // stretched far past t = 1
+    { t: 1, frame: { focus: "b", zoom: 1.5 }, cut: true },
+    { t: 4, frame: { focus: "b", zoom: 2 } },
+  ], words, 3, anchors);
+  assert.deepEqual(cameraAt(k2, 1, anchors, WL), { x: 0.85, y: 0.7, zoom: 1.5 });
+  assert.ok(Math.abs(cameraAt(k2, 30, anchors, WL).zoom - 2) < 1e-9);
+  const s = cameraSchedule(k2, anchors, WL);
+  assert.ok(s[0].end <= 1 + 1e-9, "the interrupted move ends at the cut");
+  assert.deepEqual(s[1], { start: 1, end: 1 });
+  // a cut onto a moving anchor lands on it and then follows
+  const mv = { m: (t) => ({ x: 0.4 + 0.01 * t, y: 0.5 }) };
+  const k3 = [{ t: 0, frame: "wide" }, { t: 3, frame: { follow: "m", zoom: 3 }, cut: true }];
+  const c3 = cameraAt(k3, 3, mv, WL);
+  assert.ok(Math.abs(c3.x - 0.43) < 1e-9 && c3.zoom === 3);
+  assert.ok(Math.abs(cameraAt(k3, 5, mv, WL).x - 0.45) < 1e-6);
+  assert.throws(() => resolveCamera([{ t: 0, frame: "wide", cut: "yes" }], words, 3), { message: /^scene 3: camera key 0 .*cut/ });
+});

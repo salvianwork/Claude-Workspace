@@ -87,6 +87,10 @@
     return function (c) { return c; };
   }
 
+  // clouds [x, y, scale]: they drift right and wrap around the span below (off view at both ends)
+  var CLOUDS = [[520, 600, 0.75], [1180, 470, 0.6], [1700, 760, 0.5], [2150, 560, 0.85], [3150, 470, 0.7], [3500, 800, 0.55], [-60, 720, 0.7], [4000, 560, 0.8]];
+  var CLOUD_SPAN = [-700, 4500], BIRD_SPAN = [-400, 4300], MOTE_SPAN = [100, 3800];
+
   // ---- drawing -------------------------------------------------------------------------------
   function cloud(cx, cy, s, pal, id) {
     var out = "";
@@ -139,11 +143,10 @@
     } else {
       s += tag("circle", { cx: sx, cy: sy, r: v === "sunset" ? 150 : 118, fill: pal.sunCore });
     }
-    // clouds (moved in update)
-        // The sky layer (parallax 0.2) only ever shows about x 700..3200, y 400..1700 of itself, so the
-    // sky is composed inside that window (see place.js).
-    var cl = "", spots = [[520, 600, 0.75], [1180, 470, 0.6], [1700, 760, 0.5], [2150, 560, 0.85], [3150, 470, 0.7], [3500, 800, 0.55], [-60, 720, 0.7], [4000, 560, 0.8]];
-    spots.forEach(function (c, i) { cl += cloud(c[0], c[1], c[2], pal, i); });
+    // clouds (moved in update). The sky layer (parallax 0.2) only ever shows about x 700..3200,
+    // y 400..1700 of itself, so the sky is composed inside that window (see place.js).
+    var cl = "";
+    CLOUDS.forEach(function (c, i) { cl += cloud(c[0], c[1], c[2], pal, i); });
     s += tag("g", { "data-part": "clouds", opacity: v === "night" ? 0.7 : 1 }, cl);
     if (v === "day") { // a few birds
       var b = "";
@@ -338,7 +341,7 @@
     s += tag("path", { d: lakePath(-14), fill: "url(#" + P + "-murk)" });
     // lily pads and a frog
     [[1760, 0.9], [1850, 0.7], [2660, 1]].forEach(function (lp) {
-      s += tag("path", { d: "M" + lp[0] + " " + G.water + " m-50 0 a50 12 0 1 0 100 0 l-50 0 Z", fill: tone("#4FA34A"), stroke: tone("#2E6B33"), "stroke-width": 3, transform: "scale(1)" });
+      s += tag("path", { d: "M" + lp[0] + " " + G.water + " m-50 0 a50 12 0 1 0 100 0 l-50 0 Z", fill: tone("#4FA34A"), stroke: tone("#2E6B33"), "stroke-width": 3 });
     });
     s += tag("g", { transform: "translate(1770 " + (G.water - 18) + ")" }, tag("ellipse", { rx: 30, ry: 20, fill: tone("#5DBB4E"), stroke: tone("#1E5E22"), "stroke-width": 4 }) +
       tag("circle", { cx: -14, cy: -18, r: 10, fill: "#fff", stroke: tone("#1E5E22"), "stroke-width": 3 }) + tag("circle", { cx: 12, cy: -18, r: 10, fill: "#fff", stroke: tone("#1E5E22"), "stroke-width": 3 }) +
@@ -462,8 +465,14 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
-      clouds.forEach(function (c, i) { c.e.setAttribute("transform", "translate(" + r2(t * (8 + i * 1.5)) + " 0) " + c.base); });
-      birds.forEach(function (b, i) { b.e.setAttribute("transform", "translate(" + r2(t * 38) + " " + r2(D.wobble(t, i + 3, 0.8) * 14) + ") " + b.base + " scale(1 " + r2(0.75 + 0.35 * Math.sin(t * 7 + i)) + ")"); });
+      clouds.forEach(function (c, i) { // drift right, wrapping round the span (both ends are off view)
+        var x0 = CLOUDS[i][0], x = PL.art.wrap(x0 + t * (8 + i * 1.5), CLOUD_SPAN[0], CLOUD_SPAN[1]);
+        c.e.setAttribute("transform", "translate(" + r2(x - x0) + " 0) " + c.base);
+      });
+      birds.forEach(function (b, i) {
+        var bx = 1450, dx = PL.art.wrap(bx + t * 38, BIRD_SPAN[0], BIRD_SPAN[1]) - bx;
+        b.e.setAttribute("transform", "translate(" + r2(dx) + " " + r2(D.wobble(t, i + 3, 0.8) * 14) + ") " + b.base + " scale(1 " + r2(0.75 + 0.35 * Math.sin(t * 7 + i)) + ")");
+      });
       stars.forEach(function (e, i) { if (i % 5 === 0) e.setAttribute("opacity", r2(starOp[i] * (0.65 + 0.35 * Math.sin(t * 2.2 + i)))); });
       blades.setAttribute("transform", "translate(" + G.windmill.x + " " + (G.windmill.y - 318) + ") rotate(" + r2(t * 28 + 12) + ")");
       fish.forEach(function (f) {
@@ -479,10 +488,11 @@
       });
       motes.forEach(function (m) {
         var w = D.wobble(t, m.s, 0.5), w2 = D.wobble(t, m.s + 50, 0.4);
-        m.e.setAttribute("cx", r2(m.x + w * 60 + t * 6));
+        var mx = PL.art.wrap(m.x + t * 6, MOTE_SPAN[0], MOTE_SPAN[1]), edge = PL.art.wrapFade(mx, MOTE_SPAN[0], MOTE_SPAN[1], 160);
+        m.e.setAttribute("cx", r2(mx + w * 60));
         m.e.setAttribute("cy", r2(m.y + w2 * 40));
         m.e.setAttribute("r", r2(m.r));
-        m.e.setAttribute("opacity", r2(night ? Math.max(0, 0.25 + 0.75 * Math.sin(t * 2 + m.s)) : 0.35 + 0.25 * w));
+        m.e.setAttribute("opacity", r2(edge * (night ? Math.max(0, 0.25 + 0.75 * Math.sin(t * 2 + m.s)) : 0.35 + 0.25 * w)));
       });
     }
     var a = anchorsFor(opts);

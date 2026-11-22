@@ -62,6 +62,10 @@
     };
   }
 
+  // window clouds [x, y, scale] drift right and wrap round CLOUD_SPAN; motes rise and wrap
+  var CLOUDS = [[300, 520, 1], [760, 700, 0.8], [1300, 450, 0.9], [-200, 640, 0.9]];
+  var CLOUD_SPAN = [-900, 2000];
+
   var LOOK = {
     bright: { sky: [[0, "#5AA9E6"], [0.6, "#A8D8F2"], [1, "#FFE9C2"]], lamp: 1, room: function (c) { return c; } },
     dim: { sky: [[0, "#0A1030"], [0.6, "#1B2858"], [1, "#3B4578"]], lamp: 0.25, room: function (c) { return D.mix(D.shade(c, 0.4), "#16306A", 0.48); } },
@@ -74,7 +78,7 @@
     s += tag("rect", { x: -2600, y: -1600, width: 9040, height: 3000, fill: "url(#" + P + "-sky)" });
     if (v === "bright") {
       s += tag("circle", { cx: 860, cy: 380, r: 380, fill: "url(#" + P + "-sun)" }) + tag("circle", { cx: 860, cy: 380, r: 80, fill: "#FFF6D0" });
-      [[300, 520, 1], [760, 700, 0.8], [1300, 450, 0.9], [-200, 640, 0.9]].forEach(function (c, i) {
+      CLOUDS.forEach(function (c, i) {
         s += tag("g", { "data-cloud": i, transform: "translate(" + c[0] + " " + c[1] + ") scale(" + c[2] + ")" },
           tag("ellipse", { cx: 0, cy: 20, rx: 150, ry: 30, fill: "#DCEBF6" }) + tag("ellipse", { cx: -60, cy: 0, rx: 80, ry: 52, fill: "#fff" }) +
           tag("ellipse", { cx: 20, cy: -26, rx: 90, ry: 70, fill: "#fff" }) + tag("ellipse", { cx: 100, cy: 4, rx: 70, ry: 46, fill: "#fff" }) + tag("ellipse", { cx: 0, cy: 18, rx: 140, ry: 26, fill: "#fff" }));
@@ -334,13 +338,16 @@
     var bubG = g.ground.querySelector('[data-part="bubbles"]'), bubbles = D.presets.bubbles(seed + 9, 8);
     var bubEls = bubbles.list.map(function () { return D.el(bubG, "circle", { fill: "#E8FFF4", opacity: 0 }); });
     var moteG = g.front.querySelector('[data-part="motes"]'), MR = D.rng(seed + 21), motes = [];
-    for (var i = 0; i < 16; i++) motes.push({ x: (dim ? 1500 : 500) + MR() * (dim ? 900 : 1300), y: (dim ? 1000 : 1300) + MR() * 600, s: MR() * 100 | 0,
+    for (var i = 0; i < 16; i++) motes.push({ x: (dim ? 1500 : 500) + MR() * (dim ? 900 : 1300), y: (dim ? 1000 : 1300) + MR() * 600, y0: dim ? 1000 : 1300, s: MR() * 100 | 0,
       e: D.el(moteG, "circle", { r: 4, fill: dim ? "#FFE3A0" : "#FFF6D8", opacity: 0 }) });
     var Sc = G.screen, bx = 2520, flaskY = G.bench.top - 2 - 146 - 130 * 0.3;
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
-      clouds.forEach(function (c, i) { c.e.setAttribute("transform", "translate(" + r2(t * (6 + i * 2)) + " 0) " + c.base); });
+      clouds.forEach(function (c, i) {
+        var x0 = CLOUDS[i][0], x = PL.art.wrap(x0 + t * (6 + i * 2), CLOUD_SPAN[0], CLOUD_SPAN[1]);
+        c.e.setAttribute("transform", "translate(" + r2(x - x0) + " 0) " + c.base);
+      });
       var fl = 1 + 0.12 * D.wobble(t, 4, 6);
       flame.setAttribute("transform", flameBase + " scale(" + r2(1 + 0.05 * D.wobble(t, 9, 5)) + " " + r2(fl) + ")");
       var d = "";
@@ -359,9 +366,10 @@
       });
       motes.forEach(function (m) {
         var w = D.wobble(t, m.s, 0.4), w2 = D.wobble(t, m.s + 50, 0.3);
+        var lo = m.y0 - 100, hi = m.y0 + 700, my = PL.art.wrap(m.y - t * 4, lo, hi);
         m.e.setAttribute("cx", r2(m.x + w * 50));
-        m.e.setAttribute("cy", r2(m.y + w2 * 40 - t * 4));
-        m.e.setAttribute("opacity", r2(0.3 + 0.3 * w));
+        m.e.setAttribute("cy", r2(my + w2 * 40));
+        m.e.setAttribute("opacity", r2((0.3 + 0.3 * w) * PL.art.wrapFade(my, lo, hi, 80)));
       });
     }
     var a = anchorsFor(opts);

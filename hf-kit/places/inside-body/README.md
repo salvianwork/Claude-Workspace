@@ -1,0 +1,1 @@
+Front view into the torso: windpipe, lungs, heart, aorta, diaphragm, liver, stomach and intestines (illustrated, or as a glowing scan); variants organs, scan; anchors heart, lungs, vessel, stomach, liver, trachea; path bloodstream.

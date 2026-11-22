@@ -1,0 +1,1 @@
+Floating islands over a sea of clouds: a grassy island with a tree, cottage and waterfall, a rope bridge to a tower island, a hot-air balloon; variants day, twilight; anchors island, waterfall, tower, balloon, sky, cloud-sea; path flight.

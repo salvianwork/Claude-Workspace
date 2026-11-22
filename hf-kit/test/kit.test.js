@@ -15,9 +15,14 @@ test("frames round up like the voice manifest rule", () => {
   assert.equal(kit.frames(3), 90);
 });
 
-test("caption band matches the Remotion layout", () => {
-  assert.equal(kit.captionReserve(), 172);
-  assert.equal(kit.captionTop(), 1080 - 96 - 172);
+test("captions are 60 px by default; the caption band keeps the Remotion rule", () => {
+  assert.equal(kit.tokens.sizes.caption, 60);
+  assert.equal(kit.captionReserve(), Math.round(60 * 1.35 * 2 + 28 + 36)); // 226
+  assert.equal(kit.captionTop(), 1080 - 96 - 226);
+  // the Remotion numbers at the old 40 px size
+  const old = { sizes: { caption: 40 }, safe: 96 };
+  assert.equal(kit.captionReserve(old), 172);
+  assert.equal(kit.captionTop(old), 1080 - 96 - 172);
 });
 
 test("timeline is paused and registered", () => {

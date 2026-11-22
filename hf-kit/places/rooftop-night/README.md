@@ -1,0 +1,1 @@
+A cosy city rooftop at night: the glowing city past a parapet, a stair hut, water tank, telescope, fairy lights, deck chairs; variants clear, rain; anchors ledge, telescope, door, tank, skyline, sky; path roof.

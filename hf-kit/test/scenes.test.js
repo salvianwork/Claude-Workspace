@@ -49,11 +49,36 @@ test("layout keeps the Remotion rule: presenter 22 % / 34 % on his side, never o
   }
 });
 
-test("layout matches the Remotion numbers (small right presenter)", () => {
-  const L = K.layout(undefined, { position: "right", size: "small" });
+test("layout matches the Remotion numbers (small right presenter) at their 40 px captions", () => {
+  const R = { sizes: { caption: 40 } };
+  const L = K.layout(R, { position: "right", size: "small" });
   assert.deepEqual(L.presenterBox, { x: 1474, y: 356, width: 422, height: 456 });
   assert.deepEqual(L.content, { x: 96, y: 96, width: 1338, height: 716 });
-  assert.deepEqual(K.layout().content, { x: 96, y: 96, width: 1728, height: 716 });
+  assert.deepEqual(K.layout(R).content, { x: 96, y: 96, width: 1728, height: 716 });
+});
+
+test("layout at the 60 px default captions: the band grows, content and presenter stand above it", () => {
+  const L = K.layout(undefined, { position: "right", size: "small" });
+  assert.equal(L.captionTop, 1080 - 96 - 226);
+  assert.deepEqual(L.presenterBox, { x: 1474, y: 758 - 456, width: 422, height: 456 });
+  assert.deepEqual(L.content, { x: 96, y: 96, width: 1338, height: 758 - 96 });
+  assert.deepEqual(L.captionBand, { x: 96, y: 758, width: 1728, height: 1080 - 758 });
+  assert.equal(L.captions.position, "bottom");
+});
+
+test("style.json captions {size, position}: size overrides the token, top moves the band up", () => {
+  const s = K.resolveStyle({ captions: { size: 72, position: "top" } });
+  assert.equal(s.sizes.caption, 72);
+  assert.equal(s.captions.position, "top");
+  assert.equal(K.resolveStyle({}).captions.position, "bottom");
+  assert.throws(() => K.resolveStyle({ captions: { position: "middle" } }), /captions\.position must be "bottom" or "top"/);
+  const L = K.layout({ captions: { position: "top" } }, { position: "left", size: "small" });
+  const reserve = K.captionReserve(K.resolveStyle({}));
+  assert.deepEqual(L.captionBand, { x: 96, y: 0, width: 1728, height: 96 + reserve });
+  assert.equal(L.content.y, 96 + reserve);
+  assert.equal(L.content.y + L.content.height, 1080 - 96);
+  assert.equal(L.captionTop, 1080 - 96, "nothing but the safe margin below the content");
+  assert.ok(L.presenterBox.y >= 96 + reserve && L.presenterBox.y + L.presenterBox.height <= 1080);
 });
 
 test("resolveStyle fills missing tokens from the default look", () => {

@@ -20,7 +20,7 @@
       heading: '"Poppins", "Inter", sans-serif',
       body: '"Inter", "Poppins", sans-serif',
     },
-    sizes: { title: 104, heading: 64, body: 40, caption: 40 },
+    sizes: { title: 104, heading: 64, body: 40, caption: 60 }, // captions 60 px (was 40; Remotion keeps 40)
     safe: 96, // text never comes closer than this to a frame edge
   };
 
@@ -58,7 +58,7 @@
     "src/kit.js", "src/timing.js",
     "src/presenter/look.js", "src/presenter/motion.js", "src/presenter/poses.js", "src/presenter/parts.js", "src/presenter/figure.js",
     "src/actor/rig.js", "src/actor/host.js", "src/actor/actor.js",
-    "src/draw.js", "src/world/place.js", "src/icons.js", "src/shell.js", "src/stage.js",
+    "src/draw.js", "src/world/place.js", "src/world/effects.js", "src/world/overlays.js", "src/icons.js", "src/shell.js", "src/stage.js",
     "src/blocks/kinetic-center-build.js", "src/blocks/transitions.js",
     "src/scenes/common.js", "src/scenes/title.js", "src/scenes/steps.js", "src/scenes/compare.js", "src/scenes/chart.js",
     "src/scenes/kinetic.js", "src/scenes/recap.js", "src/scenes/diagram.js",
