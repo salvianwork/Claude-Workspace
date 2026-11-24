@@ -1,7 +1,7 @@
 # Feedback Notebook — Design (short)
 
 **Date:** 2026-11-24
-**Status:** Waiting for owner approval
+**Status:** Approved by owner 2026-11-24
 **Builds on:** `2026-11-19-video-agent-team-design.md`, `2026-11-21-world-kit-and-video-types-design.md`
 
 ## Intent
