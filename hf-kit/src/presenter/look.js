@@ -16,9 +16,9 @@
     hairColor: "#3B2416", // dark brown curly hair
     eyeColor: "#3A2418",
     glasses: "lime-thick", // thick lime-green acetate frames (the host's signature)
-    glassesColor: "#B9E83A", // translucent lime acetate (drawn at 0.9 opacity)
-    glassesEdge: "#7FB51F",
-    glassesLight: "#E2FA8A",
+    glassesColor: "#9CD62B", // translucent lime acetate (drawn at 0.95 opacity)
+    glassesEdge: "#5E9A14",
+    glassesLight: "#D4F57A",
     outfits: {
       // Navy blazer over a light-blue collared shirt, no tie: the default "documentary host".
       blazer: {

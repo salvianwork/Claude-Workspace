@@ -242,7 +242,7 @@
     if (!on) return h("g", { "data-part": "glasses", display: "none" }, []);
     var tw = LENS_TOP_W / 2, bw = LENS_BOT_W / 2, ih = LENS_IH / 2, T = RIM_T, TT = RIM_TOP;
     var inner = roundPoly([[-tw, -ih, 2.5], [tw, -ih, 2.5], [bw, ih, 6], [-bw, ih, 6]]);
-    var lime = pal.glasses, edge = pal.glassesEdge, light = pal.glassesLight, op = 0.93;
+    var lime = pal.glasses, edge = pal.glassesEdge, light = pal.glassesLight, op = 0.95;
     var kids = [];
     [-1, 1].forEach(function (sd) {
       var cx = sd * EYE_X, ox = tw + T;

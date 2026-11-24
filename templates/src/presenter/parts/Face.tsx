@@ -181,7 +181,7 @@ const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
   const T = RIM_T;
   const TT = RIM_TOP;
   const inner = roundPoly([[-tw, -ih, 2.5], [tw, -ih, 2.5], [bw, ih, 6], [-bw, ih, 6]]);
-  const op = 0.93;
+  const op = 0.95;
   const ox = tw + T;
   return (
     <g data-glasses="lime-thick">

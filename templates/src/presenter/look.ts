@@ -14,9 +14,9 @@ export const LOOK = {
   eyeColor: "#3A2418",
   /** Flat square translucent lime acetate frames, the host's signature (owner update 2026-11-24). */
   glasses: "lime-thick" as "lime-thick" | false,
-  glassesColor: "#B9E83A",
-  glassesEdge: "#7FB51F",
-  glassesLight: "#E2FA8A",
+  glassesColor: "#9CD62B",
+  glassesEdge: "#5E9A14",
+  glassesLight: "#D4F57A",
   outfits: {
     /** Navy blazer over a light-blue collared shirt, no tie: the default "documentary host". */
     blazer: {

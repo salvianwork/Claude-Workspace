@@ -34,9 +34,9 @@ test("same look values as templates/src/presenter/look.ts", () => {
   assert.equal(P.LOOK.hairColor, "#3B2416");
   assert.equal(P.LOOK.eyeColor, "#3A2418");
   assert.equal(P.LOOK.glasses, "lime-thick");
-  assert.equal(P.LOOK.glassesColor, "#B9E83A");
-  assert.equal(P.LOOK.glassesEdge, "#7FB51F");
-  assert.equal(P.LOOK.glassesLight, "#E2FA8A");
+  assert.equal(P.LOOK.glassesColor, "#9CD62B");
+  assert.equal(P.LOOK.glassesEdge, "#5E9A14");
+  assert.equal(P.LOOK.glassesLight, "#D4F57A");
   assert.equal(P.LOOK.outfits.blazer.jacket, "#1F2A44");
   assert.equal(P.LOOK.outfits.blazer.shirt, "#CFE3F5");
   assert.equal(P.LOOK.outfits.labcoat.jacket, "#E8ECF1");
