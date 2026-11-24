@@ -12,11 +12,9 @@
   /* The presenter's look. Colours are hex. No orange in his clothes: orange stays reserved for
    * on-screen highlights. Same values as the Remotion look.ts. */
   P.LOOK = {
-    skinTone: "#E3B28A", // light warm tan
+    skinTone: "#F0CDAE", // light warm peach
     hairColor: "#3B2416", // dark brown curly hair
     eyeColor: "#3A2418",
-    glasses: true, // thin dark frames
-    glassesColor: "#1B2130",
     outfits: {
       // Navy blazer over a light-blue collared shirt, no tie: the default "documentary host".
       blazer: {
@@ -81,7 +79,6 @@
     pal.tongue = "#D9746A";
     pal.blush = "#E2725B";
     pal.pen = "#2B3A55";
-    pal.glasses = look.glassesColor;
     return pal;
   }
 

@@ -271,7 +271,7 @@ function pageBuild(spec) {
 
   if (spec.kind === "host") {
     el(sheet, "h1", "", "Host: outfits × poses");
-    el(sheet, "div", "sub", "Rendered through HFKit.rig / mountActor. Fixed face: curly hair, glasses, skin #E3B28A.");
+    el(sheet, "div", "sub", "Rendered through HFKit.rig / mountActor. Fixed face: curly hair, no glasses, skin #F0CDAE.");
     const grid = el(sheet, "div", "grid");
     let id = 0;
     const cell = (parent, label, outfit, state) => {

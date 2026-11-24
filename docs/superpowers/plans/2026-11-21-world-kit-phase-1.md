@@ -1,5 +1,7 @@
 # World Kit — Phase 1 Implementation Plan
 
+> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace slide-style scenes with drawn **world scenes**: a full-body host who keeps his face, a places library, effects and data tags inside the picture, a `moves` vocabulary that makes "show, don't tell" checkable, bigger captions and a bolder camera. The agents make **explainer** and **what-if** videos in the new look.

@@ -1,5 +1,7 @@
 # Video Agent Team Implementation Plan
 
+> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A `/make-video "<topic>"` command in Claude Code that runs five agents (Story, Voice, Design, Animator, Reviewer) with a review gate after every step and two owner checkpoints, and outputs a 1–3 minute narrated MP4 with music and sound effects.

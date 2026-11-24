@@ -121,7 +121,6 @@
   // ---------- face ----------
 
   var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
-  var LENS_W = 56, LENS_H = 40, LENS_Y = EYE_Y + 2;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
     var cx = side * EYE_X;
@@ -219,29 +218,7 @@
     ]);
   }
 
-  /* Thin dark frames with a faint lens glint; the eyes and brows stay clear. */
-  function glassesNode(pal, on) {
-    var lens = function (cx, extra) {
-      return h("rect", Object.assign({ x: cx - LENS_W / 2, y: LENS_Y - LENS_H / 2, width: LENS_W, height: LENS_H, rx: 13 }, extra));
-    };
-    var kids = [];
-    [-1, 1].forEach(function (sd) {
-      kids.push(h("g", {}, [
-        lens(sd * EYE_X, { fill: "#DCEBFF", opacity: 0.1 }),
-        h("path", { d: "M " + (sd * EYE_X - 18) + " " + (LENS_Y + 8) + " L " + (sd * EYE_X - 6) + " " + (LENS_Y - 12), stroke: "#FFFFFF", "stroke-width": 3, "stroke-linecap": "round", opacity: 0.22 }),
-        lens(sd * EYE_X, { fill: "none", stroke: pal.glasses, "stroke-width": 3.6 }),
-        // temple arm towards the ear
-        h("path", { d: "M " + sd * (EYE_X + LENS_W / 2) + " " + (LENS_Y - 10) + " L " + sd * 84 + " " + (LENS_Y - 14), stroke: pal.glasses, "stroke-width": 3.6, "stroke-linecap": "round" }),
-      ]));
-    });
-    kids.push(h("path", {
-      d: "M " + (-EYE_X + LENS_W / 2) + " " + (LENS_Y - 6) + " Q 0 " + (LENS_Y - 14) + " " + (EYE_X - LENS_W / 2) + " " + (LENS_Y - 6),
-      fill: "none", stroke: pal.glasses, "stroke-width": 3.6, "stroke-linecap": "round",
-    }));
-    return h("g", { "data-part": "glasses", display: show(on) }, kids);
-  }
-
-  function faceNode(pal, face, mouth, blink, gazeX, gazeY, glasses) {
+  function faceNode(pal, face, mouth, blink, gazeX, gazeY) {
     return h("g", { "data-part": "face" }, [
       h("ellipse", { cx: -54, cy: 262, rx: 16, ry: 9, fill: pal.blush, opacity: face.blush }),
       h("ellipse", { cx: 56, cy: 262, rx: 15, ry: 9, fill: pal.blush, opacity: face.blush * 0.85 }),
@@ -255,7 +232,6 @@
         h("ellipse", { cx: -2, cy: 258, rx: 5, ry: 3.5, fill: pal.skinLight, opacity: 0.6 }),
       ]),
       mouthNode(pal, face, mouth),
-      glassesNode(pal, glasses),
     ]);
   }
 

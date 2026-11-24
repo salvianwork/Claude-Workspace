@@ -7,11 +7,6 @@ const EYE_Y = 226;
 const EYE_RX = 13.5;
 const EYE_RY = 13.5;
 
-/** Glasses: rounded-rectangle lenses, centred on the eyes, below the brows. */
-const LENS_W = 56;
-const LENS_H = 40;
-const LENS_Y = EYE_Y + 2;
-
 const Eye: React.FC<{
   pal: Palette;
   side: -1 | 1;
@@ -146,32 +141,6 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
   );
 };
 
-/** Thin dark frames with a faint lens glint; the eyes and brows stay clear. */
-const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
-  const lens = (cx: number) => ({ x: cx - LENS_W / 2, y: LENS_Y - LENS_H / 2, width: LENS_W, height: LENS_H, rx: 13 });
-  return (
-    <g>
-      {[-1, 1].map((sd) => (
-        <g key={sd}>
-          <rect {...lens(sd * EYE_X)} fill="#DCEBFF" opacity={0.1} />
-          {/* glint */}
-          <path
-            d={`M ${sd * EYE_X - 18} ${LENS_Y + 8} L ${sd * EYE_X - 6} ${LENS_Y - 12}`}
-            stroke="#FFFFFF"
-            strokeWidth={3}
-            strokeLinecap="round"
-            opacity={0.22}
-          />
-          <rect {...lens(sd * EYE_X)} fill="none" stroke={pal.glasses} strokeWidth={3.6} />
-          {/* temple arm towards the ear */}
-          <path d={`M ${sd * (EYE_X + LENS_W / 2)} ${LENS_Y - 10} L ${sd * 84} ${LENS_Y - 14}`} stroke={pal.glasses} strokeWidth={3.6} strokeLinecap="round" />
-        </g>
-      ))}
-      <path d={`M ${-EYE_X + LENS_W / 2} ${LENS_Y - 6} Q 0 ${LENS_Y - 14} ${EYE_X - LENS_W / 2} ${LENS_Y - 6}`} fill="none" stroke={pal.glasses} strokeWidth={3.6} strokeLinecap="round" />
-    </g>
-  );
-};
-
 export const Face: React.FC<{
   pal: Palette;
   face: FaceParams;
@@ -179,9 +148,8 @@ export const Face: React.FC<{
   blink: number;
   gazeX: number;
   gazeY: number;
-  glasses: boolean;
   uid: string;
-}> = ({ pal, face, mouth, blink, gazeX, gazeY, glasses, uid }) => (
+}> = ({ pal, face, mouth, blink, gazeX, gazeY, uid }) => (
   <g>
     {/* blush */}
     <ellipse cx={-54} cy={262} rx={16} ry={9} fill={pal.blush} opacity={face.blush} />
@@ -196,6 +164,5 @@ export const Face: React.FC<{
     <g transform="translate(2 286) scale(1.22) translate(-2 -286)">
       <Mouth pal={pal} face={face} v={mouth} uid={uid} />
     </g>
-    {glasses ? <Glasses pal={pal} /> : null}
   </g>
 );

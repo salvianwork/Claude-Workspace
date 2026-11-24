@@ -118,9 +118,23 @@ test("feet stand at y = 1300 in body units", () => {
 
 test("the host's face constants are exact", () => {
   assert.deepEqual(K.cast.host, {
-    character: "host", face: { hair: "curly", glasses: true, skin: "#E3B28A" }, voice: "am_adam", defaultOutfit: "blazer",
+    character: "host", face: { hair: "curly", skin: "#F0CDAE" }, voice: "am_adam", defaultOutfit: "blazer",
   });
   assert.equal(K.cast.host.face.skin, P.LOOK.skinTone);
+});
+
+test("the host's SVG has no glasses and uses skin #F0CDAE", () => {
+  assert.equal("glasses" in K.cast.host.face, false);
+  for (const outfit of ["blazer", "lab-coat"])
+    for (const st of [base({ outfit }), base({ outfit, cycle: "walk", phase: 0.25, facing: 1 }), base({ outfit, cycle: "run", phase: 0.5, facing: 1 })]) {
+      const svg = K.rig.svg(st, "g");
+      assert.ok(!/glass|lens|temple/i.test(svg), outfit + ": glasses element in the SVG");
+      assert.ok(svg.toUpperCase().includes("#F0CDAE"), outfit + ": skin #F0CDAE");
+      assert.ok(!svg.toUpperCase().includes("#E3B28A"), outfit + ": old skin");
+    }
+  const side = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("neutral", "neutral", 1), mouth: 0, blink: 0, t: 0,
+    side: "center", width: 434, height: 288, still: true });
+  assert.ok(!/glass/i.test(side) && side.toUpperCase().includes("#F0CDAE"));
 });
 
 test("cast.extra(n) is stable, varied and never the host's face", () => {

@@ -915,15 +915,14 @@ export function starPoster(b, x, y, outfit = "blazer") {
   const hx = cx - 5, hy = iy + ih - 20;
   const face = [
     "..hhHhHh..", ".hHhHhhhh.", "hhHhhHhhhh", "hhkKKKkkhh", "hkKkkkkkzh",
-    "hkGGkkGGzh", "hGKeKKeKGh", ".kKkkkkzz.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
+    "hkkkkkkkzh", "hkKeKKeKkh", ".kKkkkkzz.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
   ];
-  const map = { h: P.hair[2], H: P.hair[3], k: P.skin[2], K: P.skin[3], z: P.skin[1], G: "#3a4258", e: "#1a1020", m: "#a85a4a" };
+  const map = { h: P.hair[2], H: P.hair[3], k: P.skin[2], K: P.skin[3], z: P.skin[1], e: "#1a1020", m: "#a85a4a" };
   face.forEach((row, j) => [...row].forEach((ch, i) => { if (map[ch]) b.set(hx + i, hy + j, map[ch]); }));
   // curls: a few lit and shaded hair pixels around the crown
   for (const [i, j, c] of [[1, -1, 2], [3, -1, 3], [5, -1, 2], [7, -1, 2], [0, 1, 3], [9, 2, 1], [8, -1, 1], [-1, 3, 2], [10, 4, 1]]) {
     b.set(hx + i, hy + j, P.hair[c]);
   }
-  b.set(hx + 2, hy + 6, "#f4e6d8"); // glint on the lens
   selout(b, hx - 2, hy - 2, 14, 15, P.hair[0]);
   // plate with STAR + stars
   const py = y + H - 7;

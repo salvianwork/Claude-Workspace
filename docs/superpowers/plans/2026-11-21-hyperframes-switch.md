@@ -1,5 +1,7 @@
 # HyperFrames Switch Implementation Plan
 
+> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the Remotion template visuals with HyperFrames videos built from a shared kit, word-timed shot lists and 2–4 custom "hero" scenes per video, while the rest of the pipeline stays unchanged.

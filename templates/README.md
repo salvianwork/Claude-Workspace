@@ -29,8 +29,8 @@ outfit for the whole video.
 ## Presenter
 
 A curly-haired presenter drawn in SVG (`src/presenter/`), styled as a calm, trustworthy expert:
-thin dark glasses, a neat short curly crop, a slight confident smile. Change his look in `look.ts`
-(skin, hair, eye colour, glasses, and the colours of both outfits). His clothes never use orange:
+no glasses, a neat short curly crop, a slight confident smile. Change his look in `look.ts`
+(skin, hair, eye colour, and the colours of both outfits). His clothes never use orange:
 orange stays reserved for on-screen highlights.
 
 - **Outfit** (per video, `style.presenterOutfit`): `blazer` = navy blazer over a light-blue collared

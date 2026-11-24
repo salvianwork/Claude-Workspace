@@ -1,5 +1,7 @@
 # Video Agent Team — Design
 
+> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+
 **Date:** 2026-11-19
 **Status:** Waiting for owner approval
 **Runs on:** the owner's Windows PC, in `C:\Users\PC\Documents\Claude Workspace`

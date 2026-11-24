@@ -13,7 +13,7 @@ const POSES = ["idle", "talk", "point-left", "point-right", "think", "surprised"
 const EXPRESSIONS = ["neutral", "happy", "curious", "surprised", "thinking"];
 const OUTFITS = ["blazer", "labcoat"];
 const PARTS = ["torso", "collar", "neck", "head", "face", "hair-back", "hair-front", "eye-left", "eye-right",
-  "brow-left", "brow-right", "nose", "mouth", "glasses", "arm-left", "arm-right"];
+  "brow-left", "brow-right", "nose", "mouth", "arm-left", "arm-right"];
 
 test("kit exposes the presenter and mountPresenter", () => {
   assert.equal(globalThis.HFKit.presenter, P);
@@ -30,17 +30,17 @@ test("same names as the Remotion schema", () => {
 });
 
 test("same look values as templates/src/presenter/look.ts", () => {
-  assert.equal(P.LOOK.skinTone, "#E3B28A");
+  assert.equal(P.LOOK.skinTone, "#F0CDAE");
   assert.equal(P.LOOK.hairColor, "#3B2416");
   assert.equal(P.LOOK.eyeColor, "#3A2418");
-  assert.equal(P.LOOK.glassesColor, "#1B2130");
+  assert.equal("glasses" in P.LOOK, false);
   assert.equal(P.LOOK.outfits.blazer.jacket, "#1F2A44");
   assert.equal(P.LOOK.outfits.blazer.shirt, "#CFE3F5");
   assert.equal(P.LOOK.outfits.labcoat.jacket, "#E8ECF1");
   assert.equal(P.LOOK.outfits.labcoat.shirt, "#2A9D8F");
   const pal = P.palette(P.LOOK, "blazer");
-  assert.equal(pal.skin, "#E3B28A");
-  assert.equal(pal.skinShade, P.mix("#E3B28A", "#1A0E14", 0.2));
+  assert.equal(pal.skin, "#F0CDAE");
+  assert.equal(pal.skinShade, P.mix("#F0CDAE", "#1A0E14", 0.2));
   assert.equal(P.mix("#000000", "#FFFFFF", 0.5), "#808080");
 });
 

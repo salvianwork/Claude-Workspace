@@ -28,8 +28,7 @@ Make videos for **TikTok and YouTube Shorts** (the owner's main targets).
 - Bolder eyebrows, eyes and mouth shapes, so expressions read at phone size.
 - Softer body shapes: a slight waist taper, a less boxy casual sweater, softer and bendier
   arms.
-- **Signature accent: green glasses frames** (owner's choice). Replace the current grey
-  frames on every outfit.
+- **No glasses (owner decision 2026-11-24)**, and skin #F0CDAE. The host's face is curly hair, no glasses.
 - Show the owner a **before/after sheet first**, and wait for approval before applying.
 - Optional, to consider in design: a real three-quarter torso (non-symmetric lapels) for
   close-ups.

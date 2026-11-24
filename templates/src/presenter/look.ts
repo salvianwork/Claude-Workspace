@@ -6,15 +6,12 @@ import type { PresenterOutfit } from "../schema";
  * No orange in his clothes: orange stays reserved for on-screen highlights.
  */
 export const LOOK = {
-  /** Light warm tan skin (owner asked for a lighter tone). */
-  skinTone: "#E3B28A",
+  /** Light warm peach skin (#F0CDAE, owner update 2026-11-24). */
+  skinTone: "#F0CDAE",
   /** Dark brown curly hair. */
   hairColor: "#3B2416",
   /** Iris colour. */
   eyeColor: "#3A2418",
-  /** Thin dark frames. */
-  glasses: true,
-  glassesColor: "#1B2130",
   outfits: {
     /** Navy blazer over a light-blue collared shirt, no tie: the default "documentary host". */
     blazer: {
@@ -102,7 +99,6 @@ export const palette = (look: Look, outfit: PresenterOutfit = "blazer") => {
     tongue: "#D9746A",
     blush: "#E2725B",
     pen: "#2B3A55",
-    glasses: look.glassesColor,
   };
 };
 

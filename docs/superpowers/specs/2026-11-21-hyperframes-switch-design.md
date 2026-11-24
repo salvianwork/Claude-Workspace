@@ -1,5 +1,7 @@
 # HyperFrames Switch — Design
 
+> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+
 **Date:** 2026-11-21
 **Status:** Waiting for owner approval
 **Builds on:** `2026-11-19-video-agent-team-design.md` (pipeline) and
