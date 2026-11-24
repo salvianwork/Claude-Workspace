@@ -81,14 +81,14 @@
     box-shadow: inset 3px 3px 0 var(--lo), inset -3px -3px 0 var(--hi), 1px 1px 0 var(--c-ink); }
   .btn:focus-visible { outline: 4px solid var(--c-waiting); outline-offset: 3px; }
   .btn:disabled { filter: grayscale(.8) brightness(.7); cursor: not-allowed; }
-  .btn.approve, .btn.accept { --face: var(--c-approve); --hi: var(--c-approve-hi); --lo: var(--c-approve-lo); }
-  .btn.changes, .btn.directions { --face: var(--c-changes); --hi: var(--c-changes-hi); --lo: var(--c-changes-lo); }
-  .btn.cancel { --face: var(--c-danger); --hi: var(--c-danger-hi); --lo: var(--c-danger-lo); }
+  .btn.approve, .btn.accept, .btn.keep-all { --face: var(--c-approve); --hi: var(--c-approve-hi); --lo: var(--c-approve-lo); }
+  .btn.changes, .btn.directions, .btn.choose { --face: var(--c-changes); --hi: var(--c-changes-hi); --lo: var(--c-changes-lo); }
+  .btn.cancel, .btn.skip { --face: var(--c-danger); --hi: var(--c-danger-hi); --lo: var(--c-danger-lo); }
   .btn.play { min-height: 50px; font-size: 18px; padding: 8px 10px; }
   .btn.play.playing { --face: var(--c-waiting); --hi: #fff1a8; --lo: #9a7414; color: var(--c-ink); text-shadow: none; }
   .decisions { display: flex; flex-wrap: wrap; gap: 18px 20px; }
   .decisions .btn { flex: 1 1 auto; }
-  .decisions .btn.cancel { flex: 0 0 auto; }
+  .decisions .btn.cancel, .decisions .btn.skip { flex: 0 0 auto; }
   .box code { color: var(--c-waiting); }
   .decisions .btn.armed { outline: 4px dashed var(--c-waiting); outline-offset: 3px; }
   #reply-wrap label { display: block; color: var(--c-label); font-weight: 700; margin-bottom: 6px; }

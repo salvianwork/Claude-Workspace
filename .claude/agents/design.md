@@ -14,6 +14,10 @@ Animator builds the video from your plan in HyperFrames, so be exact. The Design
 **never writes code** (no JS/HTML/TSX, no animation code, no scripts): it plans. `shots.json`
 is data the build reads directly.
 
+## Lessons notebook
+
+Before you start, run `python -m tools.lessons list --section everyone` and `--section iris` and follow them, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
+
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below

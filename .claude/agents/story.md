@@ -12,6 +12,10 @@ characters acting in cartoon places), and fact-checked by the Reviewer. Your job
 that is **correct, clear, easy to say aloud, and can be shown**: every sentence is something
 the viewer can watch happen, not something only text could carry.
 
+## Lessons notebook
+
+Before you start, run `python -m tools.lessons list --section everyone` and `--section quill` and follow them, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
+
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. All paths

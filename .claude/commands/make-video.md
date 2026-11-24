@@ -206,7 +206,7 @@ Anything else = changes.
 The owner can answer in the chat, as always, or on the **studio board** (a local web page the
 owner may have open, `python -m tools.dashboard`). The board is optional: when it is not
 running, everything below still works and the owner simply answers in the chat. Every
-checkpoint (`gate-1`, `gate-1-changed-lines`, `gate-2`, `stuck-gate-<n>`, `final`) and every
+checkpoint (`gate-1`, `gate-1-changed-lines`, `gate-2`, `stuck-gate-<n>`, `final`, `lessons`) and every
 clarifying question (`question`) goes through these steps, in this order:
 
 1. **Record** the checkpoint's status update (`--state waiting_owner`, or `--state failed` for
@@ -271,14 +271,16 @@ clarifying question (`question`) goes through these steps, in this order:
 6. **Chat reply → decision.** `gate-1`, `gate-1-changed-lines`, `gate-2`, `final`: approve
    (as above; at `final` also "nothing more is needed", "done") → `approve`; anything else →
    `changes`. `stuck-gate-<n>`: `accept`, `cancel`, or else `directions`. `question`: `answer`.
+   `lessons`: "all", "keep all", "yes" → `keep-all`; "skip", "none", "no" → `skip`; lesson
+   numbers such as `1,3` → `choose` with the numbers as the text.
 7. **Decision → the flow below.** `approve` → the checkpoint's **approve** path. `changes` and
    `directions` → the answer's text is the owner's reply: follow the checkpoint's **Changes** /
    **directions** path with it (that path saves the owner feedback file, see "Saving owner
    feedback"; save it once).
    `accept` → **accept** anyway. `cancel` → **cancel**. `answer` → the text is the owner's
    answer to your question: go back to the checkpoint whose answer led to the question and
-   carry on there with it. If the text of `changes`, `directions` or `answer` is empty, ask
-   the owner what they want (a `question`).
+   carry on there with it. If the text of `changes`, `directions`, `answer` or `choose` is empty,
+   ask the owner what they want (a `question`).
 
 **Clarifying questions.** Whenever this file says to ask the owner something during a run
 (which part of a voice reply goes where, confirming that later steps are redone, whether to
@@ -388,8 +390,10 @@ waiter and end your turn.
    change in the sound (e.g. "different music", "fewer effects").`, then
    `…or answer on the studio board.` Start the waiter and end your turn (4.0). The
    `Notification` hook tells the owner the video is ready.
-   **approve** (or "nothing more is needed") → save the new props and places (below, 6.1), then
-   record both, then print `🎬 Finished: <full path to the video>` and stop.
+   **approve** (or "nothing more is needed") → if the answer has any text, save it to
+   `<run_dir>/review/final-comments.md` (the final-video comments). Then save the new props and
+   places (below, 6.1), then the lessons step (6.2), then record, then print
+   `🎬 Finished: <full path to the video>` and stop.
 
    **6.1 Save the new props and places (after approval, before done).** List the run's new
    drawings for the libraries: hero props (`new_prop`, older schema-1 runs) and places
@@ -397,7 +401,7 @@ waiter and end your turn.
    ```bash
    python -c "import json, sys; s = json.load(open(sys.argv[1], encoding='utf-8'))['scenes']; n = ['prop ' + p for p in sorted({x['prop'] for x in s if x.get('kind') == 'hero' and x.get('new_prop')})] + ['place ' + p for p in sorted({x['place'] for x in s if x.get('kind') == 'world' and x.get('new_place')})]; print(', '.join(n) or 'none')" "<run_dir>/03-design/shots.json"
    ```
-   `none` → go straight to "record". Otherwise run this loop, round `r` = 1, 2, 3 (the events
+   `none` → go straight to 6.2. Otherwise run this loop, round `r` = 1, 2, 3 (the events
    keep the names `saving props` and `gate props`; they cover the places too):
    1. Record and print `▶ [4/4] <Name> (Animator) is working…`, then start `animator` with
       `note: owner approved the final video — save the new props and places` (and, from round 2,
@@ -417,12 +421,62 @@ waiter and end your turn.
       `feedback_file: <run_dir>/review/gate-props-round-<r>.md`. **FIX** at round 3 → stuck:
       section 5 with `n` = 4 and `s` = `animator`, using `review/gate-props-round-3.md` in place
       of `review/gate-<n>-round-3.md` (in `--detail` and `--link`). There, **accept** → go on to
-      "record"; **directions** → save `review/owner-gate-4-<k>.md` and run this loop again from
+      6.2; **directions** → save `review/owner-gate-4-<k>.md` and run this loop again from
       round 1 with that file as `feedback_file` (first move the old `gate-props-round-*.md`
       files away as in "Starting a new cycle", with `props` as the gate); **cancel** as in section 5.
-   4. **PASS** → record, then go on to "record":
+   4. **PASS** → record, then go on to 6.2:
       ```bash
       python -m tools.pipeline.status update "<run_dir>" --agent reviewer --event "gate props PASS" --detail "review/gate-props-round-<r>.md"
+      ```
+
+   **6.2 Lessons from this video (after the props and places, before done).** Sage proposes
+   lessons for the notebook `lessons.md` and the owner chooses which to keep. Nothing is written
+   to `lessons.md` without the owner's answer.
+   1. **Skip** this whole step (go to step 6 with `k` = 0) when the run has no
+      `<run_dir>/review/owner-gate-*` files and no final-video comments
+      (`<run_dir>/review/final-comments.md`). There was no owner feedback to learn from.
+   2. Otherwise record and print `🔍 Sage is checking the owner's feedback for lessons…`, then
+      start `reviewer` with `gate: lessons` and `note: owner approved the final video — propose
+      lessons`. It writes `review/lessons-proposed.md` and ends with
+      `DONE <path> PASS`: check the reply and the file (section 2; the file has no `# Gate`
+      line, so only check that it exists and is not empty). A failed attempt: start it once more.
+      After the second failure skip this step (go to step 6 with `k` = 0).
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent reviewer --step animator --state reviewing --event "review started" --detail "gate lessons"
+      ```
+      Then record the proposal:
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent reviewer --step animator --state reviewing --event "lessons proposed" --detail "review/lessons-proposed.md"
+      ```
+   3. If the file says `none`, **skip** (go to step 6 with `k` = 0).
+   4. Otherwise record, open the request (4.0) and show the owner each proposed lesson (the lines
+      `N. [key] <rule>`, with its `(replaces <key>#<n>)` note if it has one) in the chat, then
+      `⏸ Waiting for you: keep all, choose some (reply with the numbers, e.g. 1,3), or skip.`
+      Ask the same in the chat when the board is closed.
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent reviewer --step animator --state waiting_owner --event "waiting for owner" --detail "lessons"
+      ```
+      ```bash
+      python -m tools.dashboard.answers request "<run_dir>" --checkpoint lessons --title "Lessons from this video" --body "Sage proposes lessons for the notebook that every future video follows. Keep all of them, choose some by number, or skip." --options keep-all,choose,skip --link "Proposed lessons=review/lessons-proposed.md"
+      ```
+   5. On the answer (4.0 steps 5 to 7):
+      - `keep-all` → for each proposed lesson run the command below;
+      - `choose` → the same, only for the lesson numbers in the answer text (for example `1,3`);
+      - `skip` → save nothing.
+
+      Per lesson: `<key>` is the `[key]` and `<rule>` the text after it, without the
+      `(replaces …)` note. If it has that note, add ` --replace <key#n>` (the same key as the
+      lesson). Inside the double quotes put a `\` before every `"`, `$` and backtick.
+      ```bash
+      python -m tools.lessons add --section <key> --text "<rule>" --run "<run_dir>" [--replace <key#n>]
+      ```
+      It prints `added`, `replaced` or `already there` (all fine); count the first two as kept.
+      On `error: …`, tell the owner which lesson was not saved and go on with the others.
+      `<k>` = how many were added or replaced.
+   6. Record (also for every skip above, with `k` = 0, so a resumed run never asks again), then
+      tell the owner `📓 Saved <k> lessons to lessons.md.` when `k` > 0:
+      ```bash
+      python -m tools.pipeline.status update "<run_dir>" --agent animator --step animator --state working --event "lessons saved" --detail "<k> kept"
       ```
 
    **Record** (only now is the run done):
@@ -467,10 +521,20 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
    the current cycle's owner file is the latest `review/owner-gate-*` file named there or in
    the latest history entries.
 3. Continue from there:
+   - The last events belong to the lessons step (6.2): a `review started` event with detail
+     `gate lessons`, `lessons proposed`, a `waiting for owner` event with detail `lessons`, or
+     `lessons saved`. The owner has already approved the final video: do not ask again.
+     `lessons saved` → the step is done and the card is **not asked again**: go to "record".
+     `review started` → if `review/lessons-proposed.md` exists and is not empty, record
+     `lessons proposed` and continue at its step 3; otherwise its step 2.
+     `lessons proposed` → continue at step 3 (`none` → skip). If the card was not opened yet, or
+     is open without an answer, re-open the **same request** (board check, below); if it was
+     answered, use the answer (step 5) and then step 6. A request for the `lessons` checkpoint
+     that already has an answer is never asked a second time.
    - The last events belong to the prop step (6.1): a `saving props` event, a `review started`
      event with detail `gate props`, or `gate props PASS` → continue 6.1 at the recorded round
      (`saving props` → its step 1; `review started` → use `review/gate-props-round-<r>.md` if it
-     has a verdict, else its step 2; `gate props PASS` → "record"). The owner has already
+     has a verdict, else its step 2; `gate props PASS` → 6.2). The owner has already
      approved the final video: do not ask again.
      A `gate 4 stuck` event whose detail is `review/gate-props-round-3.md` is the stuck prop
      step: board check (4), then section 5 step 2, with the choices as in 6.1 step 3.
@@ -479,7 +543,7 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
      use it (section 3, step 3 or 4); otherwise section 3, step 2 at round `r`.
    - `waiting_owner` → show the checkpoint again and wait: the `--detail` of the last
      `waiting for owner` event says which (`gate 1: script`, `gate 2: voice`, `gate 1:
-     changed lines for owner-gate-2-<k>`, or `final video`). First do the board check (4).
+     changed lines for owner-gate-2-<k>`, `final video`, or `lessons`). First do the board check (4).
    - `failed` → if the last event is `cancelled by owner`, ask whether to continue (directions)
      or leave it (a `question`, 4.0); otherwise do the board check (4), then section 5, step 2.
    - step `done` → print `🎬 Done: <full path to run_dir/04-video/out/video.mp4>`, the path to
@@ -491,7 +555,7 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
    ```
    It prints `{"request": …, "answer": …}`. The request belongs to the current checkpoint when
    its `checkpoint` matches (`gate 1: script` → `gate-1`, `gate 1: changed lines …` →
-   `gate-1-changed-lines`, `gate 2: voice` → `gate-2`, `final video` → `final`, `gate <n> stuck`
+   `gate-1-changed-lines`, `gate 2: voice` → `gate-2`, `final video` → `final`, `lessons` → `lessons`, `gate <n> stuck`
    → `stuck-gate-<n>`; or it is a `question`) and its `created` is not earlier than the `time`
    of the last status event.
    - It belongs and `answer` is `null` → print the checkpoint again (4.0 step 3; for a

@@ -22,7 +22,8 @@ from tools.pipeline.fsutil import replace_retry
 
 CHECKPOINTS = {"gate-1", "gate-1-changed-lines", "gate-2", "final", "question", "lessons"}
 STUCK_RE = re.compile(r"^stuck-gate-[1-4]$")
-DECISIONS = {"approve", "changes", "accept", "directions", "cancel", "answer"}
+DECISIONS = {"approve", "changes", "accept", "directions", "cancel", "answer",
+             "keep-all", "choose", "skip"}
 SOURCES = {"board", "chat"}
 
 

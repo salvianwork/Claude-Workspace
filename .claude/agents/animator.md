@@ -15,6 +15,10 @@ tags, camera and captions — so **you compose from the library** and write code
 it, snapshot it, report overlaps, mix the audio and render the MP4. Shared parts always come
 from the kit, so every video looks consistent.
 
+## Lessons notebook
+
+Before you start, run `python -m tools.lessons list --section everyone` and `--section flip` and follow them, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
+
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below

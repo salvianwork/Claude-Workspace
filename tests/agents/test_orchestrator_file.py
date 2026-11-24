@@ -175,12 +175,14 @@ CHECKPOINT_OPTIONS = {
     "stuck-gate-<n>": "accept,directions,cancel",
     "final": "approve,changes",
     "question": "answer",
+    "lessons": "keep-all,choose,skip",
 }
 CHECKPOINT_LINKS = {
     "gate-1": ["01-script/script.md", "review/gate-1-round-<r>.md"],
     "gate-2": ["02-voice/manifest.json"],
     "stuck-gate-<n>": ["review/gate-<n>-round-3.md"],
     "final": ["04-video/out/video.mp4", "04-video/credits.md"],
+    "lessons": ["review/lessons-proposed.md"],
 }
 BOARD_PLACEHOLDERS = {"<id>": "gate-1-1", "<decision>": "approve", "<n>": "1", "<r>": "1",
                       "<k>": "1"}
@@ -408,3 +410,61 @@ def test_final_approval_saves_new_places_with_the_props():
     for needle in ["new_place", "note: owner approved the final video — save the new props and places",
                    "hf-kit/places/", "prop and place library"]:
         assert needle in final, needle
+
+
+# ---- the lessons notebook (feedback notebook, task 2) ----
+
+def _lessons_step() -> str:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    return final.split("**6.2", 1)[1].split("**Record**", 1)[0]
+
+
+def test_lessons_step_comes_after_props_and_before_done():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    final = text.split("## 6.", 1)[1].split("## 7.", 1)[0]
+    order = ['"gate props PASS"', "**6.2", "gate: lessons", '--event "lessons proposed"',
+             "--checkpoint lessons", 'tools.lessons add', '--event "lessons saved"',
+             '--event "owner approved final video"', "--step done --state done"]
+    idx = [final.index(n) for n in order]
+    assert idx == sorted(idx), list(zip(order, idx))
+    # the props step goes on to 6.2, not straight to the record
+    assert "6.2" in final.split("**6.2", 1)[0].split("6.1 Save", 1)[1]
+
+
+def test_lessons_step_rules():
+    step = _lessons_step()
+    for needle in ["review/owner-gate-", "final-video comments", "skip", "none",
+                   "review/lessons-proposed.md", "keep-all", "choose", "--replace",
+                   "--run", "<k> kept", "chat", "reviewer"]:
+        assert needle in step, needle
+
+
+def test_lessons_request_matches_the_spec():
+    cmds = [c for c in answers_commands() if "--checkpoint lessons" in c]
+    assert len(cmds) == 1
+    argv = shlex.split(cmds[0].replace('"<run_dir>"', "RUN"))
+    assert argv[argv.index("--title") + 1] == "Lessons from this video"
+    assert argv[argv.index("--options") + 1] == "keep-all,choose,skip"
+    assert "Proposed lessons=review/lessons-proposed.md" in argv
+
+
+def test_lessons_add_commands_run_against_the_real_cli(tmp_path):
+    from tools.lessons.__main__ import main
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    cmds = re.findall(r"python -m tools\.lessons add [^`\n]*", text)
+    assert cmds
+    notebook_file = tmp_path / "lessons.md"
+    for cmd in cmds:
+        cmd = re.sub(r"\s*\[--replace <key#n>\]", "", cmd)  # the optional part
+        filled = cmd.replace('"<run_dir>"', shlex.quote(str(tmp_path / "run")))
+        filled = filled.replace("<key>", "sage").replace("<rule>", "Check every claim.")
+        argv = shlex.split(filled)[3:] + ["--file", str(notebook_file)]
+        assert main(argv) == 0, cmd
+
+
+def test_resume_does_not_ask_the_lessons_card_twice():
+    resume = MAKE_VIDEO.read_text(encoding="utf-8").split("## 8. Resume", 1)[1]
+    for needle in ["lessons proposed", "lessons saved", "`lessons`", "not asked again",
+                   "same request", "6.2"]:
+        assert needle in resume, needle

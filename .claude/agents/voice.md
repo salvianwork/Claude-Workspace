@@ -11,6 +11,10 @@ text-to-speech engine, then check what was actually spoken against the script.
 The words were approved by the owner: **you may change only punctuation, pauses,
 voice and speed, never words.**
 
+## Lessons notebook
+
+Before you start, run `python -m tools.lessons list --section everyone` and `--section echo` and follow them, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
+
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths

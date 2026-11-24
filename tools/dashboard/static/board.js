@@ -6,14 +6,16 @@ const MAX_ROUNDS = 3;
 const LABELS = {
   approve: "Approve", changes: "Request changes", accept: "Accept anyway",
   directions: "Give directions", cancel: "Cancel", answer: "Send answer",
+  "keep-all": "Keep all", choose: "Choose some", skip: "Skip",
 };
-const ICONS = { approve: "✓", changes: "✎", accept: "✓", directions: "✎", cancel: "✕", answer: "➤" };
+const ICONS = { approve: "✓", changes: "✎", accept: "✓", directions: "✎", cancel: "✕", answer: "➤", "keep-all": "✓", choose: "✎", skip: "✕" };
 const NEEDS_TEXT = {
   changes: "Type what should change first, then press Request changes.",
   directions: "Type your directions first, then press Give directions.",
   answer: "Type your answer first, then press Send answer.",
+  choose: "Type the lesson numbers first (for example 1,3), then press Choose some.",
 };
-const BOX_LABEL = { changes: "Your changes:", directions: "Your directions:", answer: "Your answer:" };
+const BOX_LABEL = { changes: "Your changes:", directions: "Your directions:", answer: "Your answer:", choose: "Lesson numbers:" };
 const KEY_MSG = "Studio key missing — reopen the link printed by <code>python -m tools.dashboard</code>";
 const TRACK = { story: "STORY", owner: "YOU", voice: "VOICE", design: "DESIGN", animator: "ANIMATE" };
 const THING = { story: "script", voice: "voice-over", design: "storyboard", animator: "video" };

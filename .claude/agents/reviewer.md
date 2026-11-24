@@ -11,13 +11,18 @@ write one review file. You never fix the work yourself: you tell the agent exact
 fix. The owner only sees work after you pass it, so be strict on the checklist and quiet
 about taste.
 
+## Lessons notebook
+
+Before you start, run `python -m tools.lessons list --section everyone` and `--section sage` and follow them, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
+
 ## Inputs (given in your prompt)
 
 - `run_dir` — the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`. Paths below are
   relative to it unless they start with `tools/`, `hf-kit/` or `templates/`.
-- `gate` — 1 (Story), 2 (Voice), 3 (Design), 4 (Final video) or `props` (the prop and place
+- `gate` — 1 (Story), 2 (Voice), 3 (Design), 4 (Final video), `props` (the prop and place
   library check after the owner approved the final video; review file
-  `review/gate-props-round-<m>.md`).
+  `review/gate-props-round-<m>.md`) or `lessons` (written `gate: lessons`: the lessons proposal after the
+  owner's final approval; file `review/lessons-proposed.md`).
 - `round` — 1, 2 or 3.
 - `feedback_file` (optional) — owner feedback the agent was asked to address in this round.
   If given, check that every point in it was addressed; an unaddressed point is a must-fix.
@@ -43,6 +48,7 @@ Always read `brief.md` first (topic, owner notes, and the video settings `type:`
 ```
 
 - Write `- none` under an empty section. Include `## Sources (gate 1)` only at gate 1.
+- For `gate: lessons` you write only `review/lessons-proposed.md` (see "Lessons proposal" below).
 - At gate 4 you also save extracted keyframes and single frames in
   `review/frames-gate4-round-<m>/` (this folder is allowed; nothing else besides the review file).
 
@@ -77,6 +83,7 @@ python -m tools.pipeline.checks story "<run_dir>/01-script/script.md"
 It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
 
 **Must-fix if:**
+- [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the quill section) and check that the work follows `lessons.md` (Everyone plus the Quill section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
 - [ ] **A factual claim is wrong or unsupported.** Web-search **every** key claim (`[S1]`,
   `[S2]`, …) with WebSearch (open pages with WebFetch when the snippet is not enough). Prefer
   encyclopaedias, universities, government agencies, peer-reviewed or major science outlets.
@@ -137,6 +144,7 @@ python -c "import sys; from tools.pipeline.script import parse_script as p; from
 ```
 
 **Must-fix if:**
+- [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the echo section) and check that the work follows `lessons.md` (Everyone plus the Echo section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
 - [ ] **A word is missing, wrong, or mispronounced**: a `missing:` / `wrong: … heard as …` /
   `extra:` problem that is a real audio error. Ignore pure spelling quirks of the transcript
   (homophones like "two"/"too", "colour"/"color", a number written differently) — note them
@@ -189,6 +197,7 @@ python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); [p
 ```
 
 **Must-fix if:**
+- [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the iris section) and check that the work follows `lessons.md` (Everyone plus the Iris section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
 - [ ] **`shots validate` reports any problem** — copy each line into a must-fix item (e.g. a
   move naming an anchor the place does not have, a beat with no moves, 3 step-ins).
 - [ ] **A kit `warning:` is not explained**: every warning line (a `use` strike that **slips**
@@ -418,6 +427,7 @@ earlier videos are not this run's work and are fine. A folder named after one of
 places (`hf-kit/places/<name>/`) or props (`hf-kit/props/<name>/`) must not exist yet.
 
 **Must-fix if:**
+- [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the flip section) and check that the work follows `lessons.md` (Everyone plus the Flip section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
 - [ ] **`hyperframes check` is not clean**: `04-video/render.log` is missing, has an `error:`
   line, a `warning:` line the storyboard's `Kit warnings` do not explain (always for
   `camera timing NOT checked`), or does not end with `video written`.
@@ -501,7 +511,34 @@ git status --short hf-kit/
   `git status --short hf-kit/`), is a must-fix. Untracked place or prop folders and README lines
   of other names were saved by earlier videos: ignore them.
 
+### Lessons proposal (after the owner's final approval)
+
+When `gate: lessons` is given, the owner has approved the final video. There is no verdict and no
+rounds: write only `review/lessons-proposed.md`. Read every `review/owner-gate-*.md` file and the
+final-video comments (`review/final-comments.md`, if it exists), plus
+`python -m tools.lessons list` for the lessons already in the notebook.
+
+Write **at most 5** numbered lessons, one per line, each as `N. [key] <rule>`, where `key` is
+`everyone`, `quill`, `echo`, `iris`, `flip` or `sage`:
+
+```markdown
+1. [iris] Show a step-by-step process as one scene per step, never in a single crowded scene.
+2. [everyone] Use "about" before every rounded number.
+```
+
+- Phrase each as a **general rule** for future videos: one line, at most 160 characters, no
+  e-mail addresses and no URLs. Leave out one-off fixes ("scene 3 needs a bigger arrow").
+- Use `everyone` only for a rule that applies to all agents.
+- If a lesson contradicts one already in the notebook, say so at the end of its line:
+  `(replaces sage#2)`.
+- If the notebook already has more than 40 lessons, add a last section `Suggested clean-up` with
+  merge or removal suggestions (for example `merge iris#3 and iris#5`).
+- Write the single word `none` instead when nothing in the owner's feedback is a lasting rule.
+
+Never edit `lessons.md` yourself: the orchestrator saves what the owner chooses.
+
 ---
 
 When done, reply with exactly: DONE <review file path> PASS|FIX
 (e.g. `DONE videos/2026-11-19-how-solar-panels-work/review/gate-1-round-1.md FIX`) — nothing else.
+For `gate: lessons`: reply `DONE <run_dir>/review/lessons-proposed.md PASS` — nothing else (the word `PASS` only keeps the format; there is no verdict).

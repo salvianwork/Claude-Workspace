@@ -432,3 +432,43 @@ def test_props_gate_also_covers_places():
               "hf-kit/places/README.md", "HFKit.places", "(cd hf-kit && npm test)",
               "git status --short hf-kit/"]:
         assert s in gate, f"the props gate must mention {s!r}"
+
+
+# ---- the lessons notebook (feedback notebook, task 2) ----
+
+LESSON_KEYS = {"story": "quill", "voice": "echo", "design": "iris", "animator": "flip",
+               "reviewer": "sage"}
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_agent_reads_the_lessons_first(name):
+    _, body = parse(name)
+    key = LESSON_KEYS[name]
+    sentence = (f"Before you start, run `python -m tools.lessons list --section everyone` and "
+                f"`--section {key}` and follow them, unless this video's brief, the owner's notes "
+                "or `feedback_file` say otherwise.")
+    assert sentence in body
+    assert "python -m tools.lessons list --section everyone" in body
+    # before the inputs: read at the start
+    assert body.index(sentence) < body.index("## Inputs")
+
+
+def test_reviewer_gate_checklists_check_the_lessons():
+    _, body = parse("reviewer")
+    for start, end, section_name in [("## Gate 1 ", "## Gate 2 ", "Quill"),
+                                     ("## Gate 2 ", "## Gate 3 ", "Echo"),
+                                     ("## Gate 3 ", "## Gate 4 ", "Iris"),
+                                     ("## Gate 4 ", "### Prop library check", "Flip")]:
+        gate = section(body, start, end)
+        assert "the work follows `lessons.md`" in gate, start
+        assert f"Everyone plus the {section_name} section" in gate, start
+
+
+def test_reviewer_proposes_lessons_after_final_approval():
+    _, body = parse("reviewer")
+    part = section(body, "### Lessons proposal (after the owner's final approval)", "\n---\n")
+    for s in ["gate: lessons", "review/lessons-proposed.md", "at most 5", "none",
+              "review/owner-gate-", "final-video comments", "N. [key] <rule>",
+              "replaces sage#2", "40", "merge", "general rule", "one-off"]:
+        assert s in part, s
+    assert "gate: lessons" in section(body, "## Inputs", "## Output")
