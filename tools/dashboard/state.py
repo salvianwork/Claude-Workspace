@@ -127,7 +127,7 @@ def _owner_text(event: str, detail: str, agent: str) -> str | None:
     if not _is_waiting(event):
         return None
     low = detail.lower()
-    for key, what in (("changed lines", "changed lines approval"), ("script", "script approval"),
+    for key, what in (("lessons", "lessons from this video"), ("changed lines", "changed lines approval"), ("script", "script approval"),
                       ("voice", "voice approval"), ("final", "final video"), ("video", "final video"),
                       ("question", "a question")):
         if key in low:

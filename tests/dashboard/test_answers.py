@@ -20,6 +20,11 @@ def test_request_ids_increment(tmp_path):
     assert answers.read_request(tmp_path)["id"] == "gate-2-1"
 
 
+def test_lessons_checkpoint_accepted(tmp_path):
+    r = req(tmp_path, "lessons", options=("approve", "changes"))
+    assert r["id"] == "lessons-1" and r["checkpoint"] == "lessons"
+
+
 def test_first_answer_wins(tmp_path):
     r = req(tmp_path)
     answers.write_answer(tmp_path, r["id"], "approve")

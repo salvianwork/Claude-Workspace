@@ -213,6 +213,8 @@ def test_waiting_events_read_as_waiting_for_you():
     ("animator", "final video", "final video"),
     ("orchestrator", "question", "a question"),
     ("animator", "", "final video"),
+    ("reviewer", "lessons", "lessons from this video"),
+    ("orchestrator", "gate 3: lessons for the notebook", "lessons from this video"),
 ])
 def test_waiting_event_wording(tmp_path, agent, detail, want):
     run = tmp_path / "r"
