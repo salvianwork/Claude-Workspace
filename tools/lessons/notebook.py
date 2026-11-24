@@ -156,6 +156,8 @@ def add(path, key, text, run_dir, today, replace=None) -> str:
 
     if replace is not None:
         n = _parse_replace(replace, key, len(rows))
+        if any(_norm(l.text) == _norm(text) for i, (_, l) in enumerate(rows, 1) if i != n):
+            raise LessonError("the replacement text is already another lesson in this section")
         lines[rows[n - 1][0]] = new_line
         _write(path, "".join(lines))
         return "replaced"
@@ -179,6 +181,24 @@ def add(path, key, text, run_dir, today, replace=None) -> str:
             lines.insert(s + 1, new_line)
     _write(path, "".join(lines))
     return "added"
+
+
+def remove(path, key, number) -> str:
+    """Delete lesson `number` (1-based) of section `key`; every other byte stays."""
+    path = Path(path)
+    if key not in SECTIONS:
+        raise LessonError(f"unknown section {key!r}; use one of: {', '.join(SECTIONS)}")
+    if not path.exists():
+        raise LessonError(f"{path.name} does not exist")
+    lines = _read(path).splitlines(keepends=True)
+    idx = _index(lines)
+    rows = _lesson_rows(lines, idx[key]) if key in idx else []
+    if not 1 <= number <= len(rows):
+        raise LessonError(f"section {key!r} has {len(rows)} lesson(s); there is no #{number}")
+    at = rows[number - 1][0]
+    del lines[at]
+    _write(path, "".join(lines))
+    return "removed"
 
 
 def check(path) -> list[str]:

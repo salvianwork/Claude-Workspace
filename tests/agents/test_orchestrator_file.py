@@ -468,3 +468,20 @@ def test_resume_does_not_ask_the_lessons_card_twice():
     for needle in ["lessons proposed", "lessons saved", "`lessons`", "not asked again",
                    "same request", "6.2"]:
         assert needle in resume, needle
+
+
+def test_resume_has_a_branch_for_the_lessons_waiting_event():
+    resume = MAKE_VIDEO.read_text(encoding="utf-8").split("## 8. Resume", 1)[1]
+    branch = resume.split("`waiting for owner` (detail `lessons`)", 1)[1].split("`lessons proposed` →", 1)[0]
+    for needle in ["board check (4)", "step 5 of 6.2", "same request id"]:
+        assert needle in branch, needle
+
+
+def test_cleanup_suggestions_are_not_lessons_and_use_remove():
+    step = _lessons_step()
+    for needle in ["Suggested clean-up", "not lessons", "never run `add`", "yes/no",
+                   "tools.lessons remove --section <key> --number <n>"]:
+        assert needle in step, needle
+    reviewer = (MAKE_VIDEO.parent.parent / "agents" / "reviewer.md").read_text(encoding="utf-8")
+    assert "These lines are not lessons" in reviewer
+    assert "style only" in reviewer

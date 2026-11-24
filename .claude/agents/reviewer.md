@@ -528,11 +528,14 @@ Write **at most 5** numbered lessons, one per line, each as `N. [key] <rule>`, w
 
 - Phrase each as a **general rule** for future videos: one line, at most 160 characters, no
   e-mail addresses and no URLs. Leave out one-off fixes ("scene 3 needs a bigger arrow").
+- Lessons are about **style only**: no names (of the owner or anyone else) and no personal
+  details.
 - Use `everyone` only for a rule that applies to all agents.
 - If a lesson contradicts one already in the notebook, say so at the end of its line:
   `(replaces sage#2)`.
 - If the notebook already has more than 40 lessons, add a last section `Suggested clean-up` with
-  merge or removal suggestions (for example `merge iris#3 and iris#5`).
+  merge or removal suggestions (for example `merge iris#3 and iris#5`). These lines are not lessons: do not number them
+  like lessons; the orchestrator never `add`s them.
 - Write the single word `none` instead when nothing in the owner's feedback is a lasting rule.
 
 Never edit `lessons.md` yourself: the orchestrator saves what the owner chooses.

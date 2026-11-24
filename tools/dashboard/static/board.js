@@ -38,7 +38,7 @@ const CLAPPER = (() => {
 
 const S = {
   el: null, key: "", runs: [], run: null, userPicked: false, state: null, loaded: false,
-  sent: {}, sending: false, msg: null, armed: null, armTimer: null, seen: new Set(), first: true,
+  sent: {}, sending: false, msg: null, armed: null, armTimer: null, chosen: null, seen: new Set(), first: true,
   cache: {}, playing: null, audio: null, chime: true, lastReqId: null, timer: null, busy: false,
   offline: false, parts: {},
 };
@@ -303,9 +303,12 @@ function renderControls(st) {
   setHTML(P.decisions, opts.map((o) =>
     `<button class="btn decision ${o}${S.armed === o ? " armed" : ""}" data-act="decide" data-decision="${o}"${S.sending ? " disabled" : ""}><span aria-hidden="true">${ICONS[o]}</span>${LABELS[o]}</button>`
   ).join(""));
-  const need = opts.find((o) => BOX_LABEL[o]);
+  const isLessons = str(req.checkpoint) === "lessons";
+  // On the lessons card the "Lesson numbers:" label shows only once Choose some is picked.
+  const need = opts.find((o) => BOX_LABEL[o] && !(isLessons && o === "choose" && S.chosen !== req.id));
   P.label.textContent = need ? BOX_LABEL[need] : "Note (optional):";
-  P.reply.placeholder = need ? `Needed for ${LABELS[need]} — e.g. “make scene 3 simpler for kids”` : "Optional note";
+  P.reply.placeholder = isLessons ? "e.g. 1,3"
+    : need ? `Needed for ${LABELS[need]} — e.g. “make scene 3 simpler for kids”` : "Optional note";
   P.reply.disabled = S.sending;
   setHTML(P.msg, S.msg ? `<span class="${S.msg.err ? "err" : ""}">${S.msg.html}</span>` : "");
   P.msg.className = "msg" + (S.msg && S.msg.err ? " err" : "");
@@ -345,6 +348,7 @@ async function decide(decision) {
   if (!req || S.sending) return;
   const text = S.parts.reply.value.trim();
   if (NEEDS_TEXT[decision] && !text) {
+    if (decision === "choose") { S.chosen = req.id; render(); }
     S.parts.reply.classList.add("need");
     S.parts.reply.focus();
     return setMsg(NEEDS_TEXT[decision], true);

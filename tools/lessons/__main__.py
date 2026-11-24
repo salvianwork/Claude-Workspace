@@ -1,4 +1,4 @@
-"""python -m tools.lessons list|add|check  (see tools/lessons/notebook.py)"""
+"""python -m tools.lessons list|add|remove|check  (see tools/lessons/notebook.py)"""
 from __future__ import annotations
 
 import argparse
@@ -15,11 +15,13 @@ ROOT = Path(__file__).resolve().parents[2]
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m tools.lessons")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("list", "add", "check"):
+    for name in ("list", "add", "remove", "check"):
         sp = sub.add_parser(name)
         sp.add_argument("--file", default=str(ROOT / "lessons.md"))
-        if name in ("list", "add"):
-            sp.add_argument("--section", required=name == "add")
+        if name in ("list", "add", "remove"):
+            sp.add_argument("--section", required=name in ("add", "remove"))
+        if name == "remove":
+            sp.add_argument("--number", type=int, required=True)
         if name == "add":
             sp.add_argument("--text", required=True)
             sp.add_argument("--run")
@@ -38,6 +40,8 @@ def main(argv=None) -> int:
         elif a.cmd == "add":
             print(notebook.add(path, a.section, a.text, Path(a.run) if a.run else None,
                                date.today().isoformat(), replace=a.replace))
+        elif a.cmd == "remove":
+            print(notebook.remove(path, a.section, a.number))
         else:
             problems = notebook.check(path)
             for p in problems:

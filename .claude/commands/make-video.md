@@ -473,6 +473,18 @@ waiter and end your turn.
       It prints `added`, `replaced` or `already there` (all fine); count the first two as kept.
       On `error: …`, tell the owner which lesson was not saved and go on with the others.
       `<k>` = how many were added or replaced.
+
+      If `lessons-proposed.md` has a `Suggested clean-up` section: its lines are suggestions for
+      tidying the notebook, **not lessons**, so never run `add` for them. After keep, choose or
+      skip, show them to the owner and ask a yes/no question (a `question`, 4.0, in the chat or
+      on the board): `Apply these clean-up suggestions to lessons.md?` On yes, apply each removal
+      with the command below (for several removals in one section, start with the highest number
+      so the numbers do not shift); a merge is a `remove` of the extra lines plus, if needed, one
+      `add` or `--replace` with the merged text. On no, change nothing. The owner can always edit
+      `lessons.md` by hand.
+      ```bash
+      python -m tools.lessons remove --section <key> --number <n>
+      ```
    6. Record (also for every skip above, with `k` = 0, so a resumed run never asks again), then
       tell the owner `📓 Saved <k> lessons to lessons.md.` when `k` > 0:
       ```bash
@@ -527,6 +539,9 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
      `lessons saved` → the step is done and the card is **not asked again**: go to "record".
      `review started` → if `review/lessons-proposed.md` exists and is not empty, record
      `lessons proposed` and continue at its step 3; otherwise its step 2.
+     `waiting for owner` (detail `lessons`) → board check (4): if the request is answered, use
+     the answer and continue from step 5 of 6.2; if it is still open, re-arm the waiter for the
+     **same request id** (do not open a new request).
      `lessons proposed` → continue at step 3 (`none` → skip). If the card was not opened yet, or
      is open without an answer, re-open the **same request** (board check, below); if it was
      answered, use the answer (step 5) and then step 6. A request for the `lessons` checkpoint

@@ -170,3 +170,56 @@ def test_committed_template():
     assert [l for l in lines if l.startswith("## ")] == HEADINGS
     assert check(ROOT / "lessons.md") == []
     assert all(not v for v in load(ROOT / "lessons.md").values())
+
+
+def test_replace_refuses_text_that_duplicates_another_lesson(tmp_path):
+    p = tmp_path / "lessons.md"
+    add(p, "sage", "Check captions.", None, "2026-11-24")
+    add(p, "sage", "Check numbers.", None, "2026-11-24")
+    before = p.read_bytes()
+    with pytest.raises(LessonError):
+        add(p, "sage", "check  captions.", None, "2026-11-24", replace="sage#2")
+    assert p.read_bytes() == before
+    # replacing a lesson with its own text is still fine
+    assert add(p, "sage", "Check captions.", None, "2026-11-24", replace="sage#1") == "replaced"
+
+
+def test_add_with_missing_heading_appends_it_and_keeps_earlier_bytes(tmp_path):
+    p = tmp_path / "lessons.md"
+    original = "# Lessons\r\nmy note \xe9\r\n\r\n## Everyone\r\n- keep me\r\n"
+    p.write_bytes(original.encode("utf-8"))
+    assert add(p, "iris", "One scene per step.", None, "2026-11-24") == "added"
+    data = p.read_bytes()
+    assert data.startswith(original.encode("utf-8"))
+    assert load(p)["iris"][0].text == "One scene per step."
+    assert b"## Iris (design)" in data
+
+
+def test_remove_keeps_every_other_byte(tmp_path):
+    p = tmp_path / "lessons.md"
+    original = ("# Lessons\r\nhand note\r\n\r\n## Everyone\r\n- one\r\n- two\r\n- three\r\n\r\n"
+                "## Sage (review)\r\n- keep\r\n")
+    p.write_bytes(original.encode("utf-8"))
+    assert notebook.remove(p, "everyone", 2) == "removed"
+    assert p.read_bytes() == original.replace("- two\r\n", "").encode("utf-8")
+    assert not (tmp_path / "lessons.md.tmp").exists()
+
+
+@pytest.mark.parametrize("key,n", [("everyone", 0), ("everyone", 2), ("echo", 1), ("nope", 1)])
+def test_remove_bad_target_errors_file_unchanged(tmp_path, key, n):
+    p = tmp_path / "lessons.md"
+    add(p, "everyone", "Only one.", None, "2026-11-24")
+    before = p.read_bytes()
+    with pytest.raises(LessonError):
+        notebook.remove(p, key, n)
+    assert p.read_bytes() == before
+
+
+def test_remove_cli(tmp_path):
+    p = tmp_path / "lessons.md"
+    add(p, "flip", "Ease every move.", None, "2026-11-24")
+    r = run_cli("remove", "--file", str(p), "--section", "flip", "--number", "1")
+    assert r.returncode == 0 and r.stdout.strip() == "removed"
+    assert load(p)["flip"] == []
+    r = run_cli("remove", "--file", str(p), "--section", "flip", "--number", "1")
+    assert r.returncode == 1 and r.stderr.startswith("error:")
