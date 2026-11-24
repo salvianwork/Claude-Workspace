@@ -1,6 +1,6 @@
 # Clipping Phase — Ready-to-Use Brief
 
-**Status:** Idea agreed in conversation (2026-11-24). Not designed or built yet.
+**Status:** Future idea — not scheduled (owner, 2026-11-24). Not designed or built yet. Start only when the owner asks.
 **Use:** When you want to start this phase, open Claude Code in this project and paste the
 prompt in the box at the bottom. Everything Claude needs is in this file and the repo.
 
