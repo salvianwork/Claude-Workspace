@@ -5,7 +5,21 @@
 (function (root) {
   "use strict";
 
-  var CANVAS = { width: 1920, height: 1080, fps: 30 };
+  /* Output sizes by shots.json `format` (schema 2; schema 1 is always landscape). */
+  var FORMATS = Object.freeze({ vertical: Object.freeze({ width: 1080, height: 1920 }), landscape: Object.freeze({ width: 1920, height: 1080 }) });
+  var FPS = 30;
+
+  /* The canvas is per composition: HFKit.CANVAS = {width, height, fps}, set by setCanvas (called by
+   * mountComposition from data.canvas; default 1920 x 1080). Kit modules read HFKit.CANVAS when
+   * they mount or compute, never a copy cached at load time. Returns the new canvas. */
+  function setCanvas(size) {
+    var s = size === undefined || size === null ? FORMATS.landscape : size;
+    var ok = function (v) { return typeof v === "number" && v > 0 && Math.floor(v) === v; };
+    if (!s || typeof s !== "object" || !ok(s.width) || !ok(s.height))
+      throw new Error("HFKit.setCanvas: needs {width, height} in whole px (got " + JSON.stringify(size) + ")");
+    root.HFKit.CANVAS = { width: s.width, height: s.height, fps: FPS };
+    return root.HFKit.CANVAS;
+  }
 
   /* Default look: the Remotion templates' dark navy + warm orange. */
   var tokens = {
@@ -33,12 +47,12 @@
   /* Top edge of the caption band: only captions may go below it. */
   function captionTop(t) {
     t = t || tokens;
-    return CANVAS.height - t.safe - captionReserve(t);
+    return root.HFKit.CANVAS.height - t.safe - captionReserve(t);
   }
 
   /* Frames for a duration in seconds (ceil, guarded against float noise like 2.1 * 30). */
   function frames(seconds) {
-    return Math.ceil(Math.round(seconds * CANVAS.fps * 1e6) / 1e6);
+    return Math.ceil(Math.round(seconds * FPS * 1e6) / 1e6);
   }
 
   /* A paused GSAP timeline registered for the HyperFrames runtime under `id`. */
@@ -69,7 +83,9 @@
   root.HFKit = {
     version: "0.1.0",
     SCRIPTS: SCRIPTS,
-    CANVAS: CANVAS,
+    CANVAS: { width: FORMATS.landscape.width, height: FORMATS.landscape.height, fps: FPS },
+    FORMATS: FORMATS,
+    setCanvas: setCanvas,
     tokens: tokens,
     captionReserve: captionReserve,
     captionTop: captionTop,

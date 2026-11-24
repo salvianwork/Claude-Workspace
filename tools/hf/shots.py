@@ -3,6 +3,7 @@
     python -m tools.hf.shots validate <run_dir> [--no-modules] [--allow-step-ins]
 
 `"schema": 2` (world scenes) is checked by validate_shots / review_shots too; see _structure_world:
+an optional top-level `format`, vertical (1080 x 1920, the default) or landscape (1920 x 1080);
 type explainer or what-if (story, action and other come in a later phase); audience all-ages
 (default), teens or adults; a top-level `cast` with the host; every scene `kind: "world"` in a
 place from hf-kit/places/ (or `new_place: true` with 04-video/hf/scenes/place-<name>.js present
@@ -14,7 +15,7 @@ walking / running out of the side slot) in 1-2 scenes (`--allow-step-ins` relaxe
 warnings (a strike that slips past its word, a head cut by the frame, a camera that ends late by
 less than 0.25 s) are printed as warnings; a camera overrun above 0.25 s is an error.
 
-Schema 1 (no "schema"):
+Schema 1 (no "schema"): always landscape (a `format` other than landscape is an error).
 
 Checks: the pinned schema; 2-4 hero scenes; scene ids match the voice manifest and words.json;
 every `at.word` / `until.word` (cues and camera keys) is a word index of that scene; a hero's
@@ -49,6 +50,9 @@ LATER_TYPES = ("story", "action", "other")
 AUDIENCES = ("all-ages", "teens", "adults")
 STEP_INS = (1, 2)
 STEP_IN_MOVES = ("walk_to", "run_to")
+# Output sizes by `format` (the same values as HFKit.FORMATS in hf-kit/src/kit.js)
+FORMATS = {"vertical": {"width": 1080, "height": 1920}, "landscape": {"width": 1920, "height": 1080}}
+DEFAULT_FORMAT = "vertical"  # schema 2 without `format`; schema 1 is always landscape
 _NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 
 
@@ -91,6 +95,30 @@ def schema_of(shots) -> int | None:
     return v if v in (1, 2) and not isinstance(v, bool) else None
 
 
+def format_of(shots) -> str:
+    """The video's format: schema 1 is always landscape; schema 2 is its `format` (default
+    vertical). An unknown value (an error in validation) counts as the default."""
+    if schema_of(shots) != 2:
+        return "landscape"
+    f = shots.get("format", DEFAULT_FORMAT)
+    return f if isinstance(f, str) and f in FORMATS else DEFAULT_FORMAT
+
+
+def canvas_of(shots) -> dict:
+    """{width, height} of the composition for this shots.json (see format_of)."""
+    return dict(FORMATS[format_of(shots)])
+
+
+def _format_errors(shots: dict, schema: int) -> list[str]:
+    if "format" not in shots:
+        return []
+    f = shots["format"]
+    if schema == 1:
+        return [] if f == "landscape" else [
+            f'format: schema 1 videos are always landscape (got {json.dumps(f)}); vertical needs "schema": 2']
+    return [] if isinstance(f, str) and f in FORMATS else [f"format must be vertical or landscape (got {json.dumps(f)})"]
+
+
 def _structure(shots: dict, words: dict, manifest: dict, props_dir: Path,
                scenes_dir: Path | None, hero_count: bool, step_ins: bool = True,
                places_dir: Path | None = None) -> tuple[list[str], list[dict]]:
@@ -100,10 +128,13 @@ def _structure(shots: dict, words: dict, manifest: dict, props_dir: Path,
     schema = schema_of(shots)
     if schema is None:
         return [f"shots.json: schema must be 2 (world scenes) or absent (schema 1), got {shots.get('schema')!r}"], []
+    fmt = _format_errors(shots, schema)
     if schema == 2:
         places = Path(places_dir) if places_dir is not None else Path(props_dir).parent / "places"
-        return _structure_world(shots, words, manifest, places, scenes_dir, step_ins)
-    return _structure_hero(shots, words, manifest, props_dir, scenes_dir, hero_count)
+        errs, node = _structure_world(shots, words, manifest, places, scenes_dir, step_ins)
+    else:
+        errs, node = _structure_hero(shots, words, manifest, props_dir, scenes_dir, hero_count)
+    return fmt + errs, node
 
 
 def _common(shots: dict, words: dict, manifest: dict, errs: list[str]):
@@ -333,13 +364,16 @@ def _structure_world(shots: dict, words: dict, manifest: dict, places_dir: Path,
     return errs, node_scenes
 
 
-def _node_check(node_scenes: list[dict], style: dict | None, kit_dir: Path, cast=None) -> list[dict]:
+def _node_check(node_scenes: list[dict], style: dict | None, kit_dir: Path, cast=None,
+                canvas: dict | None = None) -> list[dict]:
+    """`canvas` = {width, height} the kit checks in (HFKit.setCanvas; default landscape)."""
     if not node_scenes:
         return []
     node = shutil.which("node")
     if node is None:
         raise ShotsError("node not found: install Node.js 22+ (needed to check scenes with the kit)")
-    req = {"kit": str(Path(kit_dir).resolve()), "style": style, "scenes": node_scenes}
+    req = {"kit": str(Path(kit_dir).resolve()), "style": style, "scenes": node_scenes,
+           "canvas": canvas or FORMATS["landscape"]}
     if cast is not None:
         req["cast"] = cast
     r = subprocess.run([node, str(NODE_HELPER)], input=json.dumps(req), capture_output=True, text=True,
@@ -361,7 +395,7 @@ def kit_check(shots: dict, words: dict, manifest: dict, props_dir: Path = PROPS_
     checks only)."""
     _, node_scenes = _structure(shots, words, manifest, props_dir, scenes_dir, False, False,
                                 Path(kit_dir) / "places")
-    return _node_check(node_scenes, style, kit_dir, _cast_of(shots))
+    return _node_check(node_scenes, style, kit_dir, _cast_of(shots), canvas_of(shots))
 
 
 def _scoped(sid: int, msg: str) -> str:
@@ -379,7 +413,7 @@ def review_shots(shots: dict, words: dict, manifest: dict, props_dir: Path = PRO
                                    not allow_step_ins, Path(kit_dir) / "places")
     warns: list[str] = []
     world = schema_of(shots) == 2
-    for r in _node_check(node_scenes, style, kit_dir, _cast_of(shots)):
+    for r in _node_check(node_scenes, style, kit_dir, _cast_of(shots), canvas_of(shots)):
         if world:
             errs += [e for e in (_scoped(r["id"], x) for x in r["errors"]) if e not in errs]
             warns += [_scoped(r["id"], w) for w in r["warnings"]]

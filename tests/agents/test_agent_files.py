@@ -222,6 +222,9 @@ def test_design_example_is_a_valid_world_shot_list():
                    for i in range(n_words)]} for s in shots["scenes"]]}
     manifest = {"scenes": [{"id": s["id"], "file": f"scene-{s['id']:02d}.wav", "duration_s": n_words * 0.4 + 2}
                            for s in shots["scenes"]]}
+    # schema 2 is vertical by default; the example has no `format` yet and is framed for landscape
+    # (the vertical recipe comes with the agents' --format work): check it as the format it was made for
+    shots.setdefault("format", "landscape")
     errs, warns = review_shots(shots, words, manifest, PROPS_DIR, scenes_dir=None, style=None)
     assert errs == [] and warns == [], (errs, warns)
 

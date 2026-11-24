@@ -17,7 +17,7 @@
  *
  * Layers (back to front): sky, far, mid, ground, front, with parallax factors
  * 0.2 / 0.45 / 0.75 / 1 / 1.15. HFKit.placeLayers(el, idPrefix) builds them as five world-sized
- * <svg>s stacked in `el` (el is the 1920 x 1080 frame; the caller clips it). Actors go between
+ * <svg>s stacked in `el` (el is the canvas-sized frame; the caller clips it). Actors go between
  * `ground` and `front` (insert them before layers.front).
  *
  * Camera and parallax: update(t, cam) takes cam = {x, y, zoom}, the world-space point at the
@@ -27,7 +27,7 @@
  *
  *   layer camera   cx = REF.x + (cam.x - REF.x) * f,  cy = REF.y + (cam.y - REF.y) * f
  *   layer zoom     z  = cam.zoom ^ f
- *   screen point   (p.x - cx) * z + 960,  (p.y - cy) * z + 540
+ *   screen point   (p.x - cx) * z + W / 2,  (p.y - cy) * z + H / 2   (W x H = HFKit.CANVAS)
  *
  * So the ground (f = 1) is the plain camera, the sky barely moves or grows, and the front layer
  * slides and grows a little more than the ground. Content on a layer with f != 1 only lines up
@@ -44,7 +44,6 @@
   var D = K.draw;
 
   var WORLD = { width: 3840, height: 2160 };
-  var FRAME = { width: 1920, height: 1080 };
   var LAYERS = ["sky", "far", "mid", "ground", "front"];
   var PARALLAX = { sky: 0.2, far: 0.45, mid: 0.75, ground: 1, front: 1.15 };
   var REF = { x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 };
@@ -61,13 +60,13 @@
   /* Screen px of world point p on a layer with parallax factor f (default 1 = ground). */
   function toScreen(p, cam, f) {
     var c = layerCam(cam, f === undefined ? 1 : f);
-    return { x: r3((p.x - c.x) * c.zoom + FRAME.width / 2), y: r3((p.y - c.y) * c.zoom + FRAME.height / 2) };
+    return { x: r3((p.x - c.x) * c.zoom + K.CANVAS.width / 2), y: r3((p.y - c.y) * c.zoom + K.CANVAS.height / 2) };
   }
 
   /* CSS transform of a layer (origin top-left) for the camera. */
   function layerTransform(cam, f) {
     var c = layerCam(cam, f);
-    return "translate(" + r3(FRAME.width / 2) + "px," + r3(FRAME.height / 2) + "px) scale(" + r3(c.zoom * 10000) / 10000 + ") translate(" + r3(-c.x) + "px," + r3(-c.y) + "px)";
+    return "translate(" + r3(K.CANVAS.width / 2) + "px," + r3(K.CANVAS.height / 2) + "px) scale(" + r3(c.zoom * 10000) / 10000 + ") translate(" + r3(-c.x) + "px," + r3(-c.y) + "px)";
   }
 
   function applyCamera(layers, cam) {
@@ -198,12 +197,14 @@
   }
 
   K.place = {
-    WORLD: WORLD, FRAME: FRAME, LAYERS: LAYERS, PARALLAX: PARALLAX, REF: REF,
+    WORLD: WORLD, LAYERS: LAYERS, PARALLAX: PARALLAX, REF: REF,
     layerCam: layerCam, toScreen: toScreen, layerTransform: layerTransform, applyCamera: applyCamera,
     defs: defs, variantOf: variantOf, paint: paint,
     svg: { attrs: attrs, tag: tag, lin: lin, rad: rad, blur: blur, pts: pts, smooth: smooth },
     art: { wrap: wrap, wrapFade: wrapFade, toner: toner, cloud: cloud, tree: tree, stars: stars, glint: glint },
   };
+  /* The frame is the composition canvas (HFKit.CANVAS, read when asked). */
+  Object.defineProperty(K.place, "FRAME", { enumerable: true, get: function () { return K.CANVAS; } });
   K.placeLayers = placeLayers;
   K.places = K.places || {};
 })(typeof globalThis !== "undefined" ? globalThis : window);

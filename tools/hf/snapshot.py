@@ -13,6 +13,10 @@ sampled every 0.5 s of its own time in the browser HyperFrames uses (tools/hf/ov
 or label box (`a`; the title counts as a label) that intersects a face box or another tag or
 label (`b`) is listed once per stretch of time it lasts, at the first sample (`t`, scene time).
 The command exits 1 when the list is not empty.
+
+Both run in the composition's own size (data.json `width` x `height`: 1080 x 1920 for a vertical
+video): `hyperframes snapshot` reads it from the page's root element, and the overlap report opens
+the page at that viewport and checks that the kit mounted in it (HFKit.CANVAS).
 """
 from __future__ import annotations
 
@@ -87,6 +91,12 @@ def _built(run_dir: Path) -> tuple[Path, dict]:
     return comp, json.loads(data_path.read_text(encoding="utf-8"))
 
 
+def canvas(data: dict) -> dict:
+    """{width, height} of a built composition (data.json; landscape when it says nothing)."""
+    c = data.get("canvas") or {"width": data.get("width", 1920), "height": data.get("height", 1080)}
+    return {"width": int(c["width"]), "height": int(c["height"])}
+
+
 def _hit(a: dict, b: dict) -> bool:
     """Boxes {x, y, w, h} share some area (touching edges do not count)."""
     return (min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"]) > 0 and
@@ -128,7 +138,8 @@ def overlap(run_dir: Path, kit_dir: Path = KIT_DIR, step: float = OVERLAP_STEP) 
         node = shutil.which("node")
         if node is None:
             raise HFError("node not found: install Node.js 22+ (needed for the overlap report)")
-        req = {"kit": str(Path(kit_dir).resolve()), "comp": str(comp), "browser": _browser(), "step": step}
+        size = canvas(data)
+        req = {"kit": str(Path(kit_dir).resolve()), "comp": str(comp), "browser": _browser(), "step": step, **size}
         try:
             r = subprocess.run([node, str(OVERLAP_HELPER)], input=json.dumps(req), capture_output=True, text=True,
                                encoding="utf-8", errors="replace", timeout=timeout_for(comp), env=_env())
@@ -140,6 +151,10 @@ def overlap(run_dir: Path, kit_dir: Path = KIT_DIR, step: float = OVERLAP_STEP) 
             raise HFError(f"the overlap report failed (exit {r.returncode}):\n{_tail(r)}")
         if out.get("errors"):
             raise HFError("the composition has errors in the browser:\n" + "\n".join(f"- {e}" for e in out["errors"]))
+        for what in ("viewport", "canvas"):
+            if out.get(what) != size:
+                raise HFError(f"the overlap report ran in a {what} of {out.get(what)}, "
+                              f"not the composition's {size['width']} x {size['height']}")
         before: dict[int, set] = {}
         for smp in out["samples"]:
             now = set()

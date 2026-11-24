@@ -23,7 +23,6 @@
   var K = root.HFKit;
   if (!K || !K.draw) throw new Error("world/overlays.js: load kit.js and draw.js first");
   var D = K.draw, r2 = D.r2;
-  var FRAME = { width: 1920, height: 1080 };
   var SAFE = 96, MAX_WORDS = 4, OUT_CLAMP = 200, OUT_GONE = 280, LEAD = 66;
 
   var NUM = /^[-+~≈]?\d[\d.,]*(%|°[CF]?|x|×)?$/;
@@ -61,6 +60,7 @@
   function make(kind, el, spec, idPrefix) {
     spec = spec || {};
     checkText(kind, spec.text);
+    var FRAME = K.CANVAS; // the composition canvas at mount time (HFKit.setCanvas)
     if (!el || !el.ownerDocument) throw new Error(kind + ": needs an overlay element");
     var isTag = kind === "tag";
     var fs = spec.size || (isTag ? 38 : 34);

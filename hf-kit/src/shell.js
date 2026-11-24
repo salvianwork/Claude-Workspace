@@ -7,7 +7,8 @@
   var K = root.HFKit;
   if (!K || !K.draw) throw new Error("shell.js: load kit.js, timing.js and draw.js first");
   var D = K.draw;
-  var W = K.CANVAS.width, H = K.CANVAS.height;
+  /* The canvas is read per call (HFKit.setCanvas may change it before a composition mounts). */
+  function canvas() { return K.CANVAS; }
 
   var PRESENTER_WIDTH = { large: 0.34, small: 0.22 };
   var PRESENTER_EDGE = 24; // presenter box distance from the frame edge (he is a drawing, not text)
@@ -49,6 +50,7 @@
     var pos = pr.position || "none", size = pr.size || "small";
     if (["left", "right", "none"].indexOf(pos) < 0) throw new Error("layout: unknown presenter position " + pos);
     if (!PRESENTER_WIDTH[size]) throw new Error("layout: unknown presenter size " + size);
+    var W = canvas().width, H = canvas().height;
     var safe = s.safe, onTop = s.captions.position === "top";
     var top = onTop ? H - safe : K.captionTop(s);
     var band = onTop ? { x: safe, y: 0, width: W - 2 * safe, height: safe + K.captionReserve(s) } : { x: safe, y: top, width: W - 2 * safe, height: H - top };
@@ -76,6 +78,7 @@
   /* A frame says how normalised camera poses ({x, y} 0..1 over `origin`, zoom) map to screen:
    * the posed point lands on `center` at `scale` x zoom. */
   function kitFrame() {
+    var W = canvas().width, H = canvas().height;
     return { origin: { x: 0, y: 0, width: W, height: H }, center: { x: W / 2, y: H / 2 }, scale: 1 };
   }
   /* Hero props: the prop's focus region fits the content box at zoom 1 (wide). */
@@ -127,7 +130,7 @@
   function css(e, rules) { for (var k in rules) e.style[k] = rules[k]; return e; }
   function abs(e, b) { return css(e, { position: "absolute", left: b.x + "px", top: b.y + "px", width: b.width + "px", height: b.height + "px" }); }
 
-  /* Build the scene layers inside `el` (a 1920 x 1080 box): background (soft lit gradient,
+  /* Build the scene layers inside `el` (a canvas-sized box, HFKit.CANVAS): background (soft lit gradient,
    * slowly drifting colour glows, faint dot grid), stage (world layer the camera moves),
    * presenter slot and caption slot. Returns {content, presenterBox, captionTop, layout, style,
    * layers: {bg, stage, overlay, presenter, captions}, update(t)}. */
@@ -135,7 +138,7 @@
     opts = opts || {};
     var style = resolveStyle(opts.style);
     var L = layout(style, opts.presenter);
-    var c = style.colors, doc = el.ownerDocument;
+    var c = style.colors, doc = el.ownerDocument, W = canvas().width, H = canvas().height;
     el.innerHTML = "";
     css(el, { position: el.style.position || "absolute", overflow: "hidden", width: W + "px", height: H + "px" });
     if (!el.style.left && !el.style.inset) css(el, { left: "0px", top: "0px" });
@@ -190,7 +193,7 @@
     el.innerHTML = "";
     var bar = doc.createElement("div");
     bar.className = "hf-caption-bar";
-    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (el.clientWidth || W - 2 * style.safe) + "px",
+    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (el.clientWidth || canvas().width - 2 * style.safe) + "px",
       padding: Math.round(fs * 0.16) + "px " + Math.round(fs * 0.6) + "px " + Math.round(fs * 0.2) + "px", borderRadius: "999px",
       background: "rgba(2,6,23,0.72)", boxShadow: "0 10px 34px rgba(2,6,23,0.38), inset 0 0 0 2px rgba(255,255,255,0.06)",
       fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: "1.3", textAlign: "center",

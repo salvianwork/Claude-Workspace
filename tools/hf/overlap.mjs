@@ -4,9 +4,11 @@
 //
 //   node tools/hf/overlap.mjs < request.json > report.json
 //
-// request = {kit: "<hf-kit dir>", comp: "<04-video/hf>", browser: "<Chrome executable>", step: 0.5}
+// request = {kit: "<hf-kit dir>", comp: "<04-video/hf>", browser: "<Chrome executable>", step: 0.5,
+//            width, height}   (the composition size, data.json; default 1920 x 1080)
 // report  = {samples: [{scene, t, boxes: [{kind: "face" | "tag" | "label", id, x, y, w, h}]}],
-//            errors: ["..."]}    t = the scene's own time (s), sampled every `step` s from 0.
+//            errors: ["..."], viewport: {width, height}, canvas: {width, height} (HFKit.CANVAS)}
+//            t = the scene's own time (s), sampled every `step` s from 0.
 // The page is opened from disk (file://); it loads nothing from the network. Each world scene is
 // updated to t (mountComposition's mounted[i].update) and its boxes read with api.boxes(t).
 import { readFileSync } from "node:fs";
@@ -25,14 +27,16 @@ const browser = await puppeteer.launch({
 const errors = [];
 try {
   const page = await browser.newPage();
-  await page.setViewport({ width: 1920, height: 1080 });
+  await page.setViewport({ width: req.width || 1920, height: req.height || 1080 });
   page.on("pageerror", (e) => errors.push(String(e && e.message || e)));
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("request", (r) => { if (/^https?:/.test(r.url())) errors.push("network request: " + r.url()); });
   await page.goto(pathToFileURL(join(req.comp, "index.html")).href, { waitUntil: "load", timeout: 120000 });
   const out = await page.evaluate((step) => {
     const v = window.video;
-    if (!v || !v.mounted) return { samples: [], errors: ["the composition did not mount (no window.video)"] };
+    const size = { viewport: { width: window.innerWidth, height: window.innerHeight },
+      canvas: window.HFKit ? { width: window.HFKit.CANVAS.width, height: window.HFKit.CANVAS.height } : null };
+    if (!v || !v.mounted) return { samples: [], errors: ["the composition did not mount (no window.video)"], ...size };
     const samples = [], errs = [];
     v.mounted.forEach((m, i) => {
       if (!m) { errs.push("a scene failed to mount (scene index " + i + ")"); return; }
@@ -44,7 +48,7 @@ try {
         samples.push({ scene: m.s.id, t: +(k * step).toFixed(3), boxes: m.api.boxes(t) });
       }
     });
-    return { samples, errors: errs };
+    return { samples, errors: errs, ...size };
   }, req.step || 0.5);
   out.errors = errors.concat(out.errors);
   process.stdout.write(JSON.stringify(out));

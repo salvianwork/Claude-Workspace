@@ -1,6 +1,10 @@
 """Check and render a HyperFrames composition with the pinned hf-kit CLI (telemetry off).
 
     python -m tools.hf.render <composition_dir> <out.mp4> [--workers N]
+
+The MP4 is the composition's own size (the root element's data-width x data-height: 1080 x 1920
+for a vertical video, 1920 x 1080 for landscape); a render in any other size is an error (no
+silent switch of format).
 """
 from __future__ import annotations
 
@@ -19,6 +23,7 @@ TIMEOUT_S = 3600  # minimum; a 2-minute video can take 10-30 min on a slow PC
 TIMEOUT_PER_VIDEO_S = 40  # render timeout: max(TIMEOUT_S, 40 x video seconds)
 _ROOT_DURATION = re.compile(r'data-composition-id="main"[^>]*?data-duration="([0-9.]+)"'
                             r'|data-duration="([0-9.]+)"[^>]*?data-composition-id="main"')
+_ROOT_SIZE = re.compile(r'data-composition-id="main"[^>]*?data-width="([0-9]+)"[^>]*?data-height="([0-9]+)"')
 _TAIL = 30
 
 # Files a browser would load as code or styles; everything else (licences, notes) is ignored.
@@ -64,6 +69,33 @@ def video_seconds(composition_dir: Path) -> float:
         return 0.0
     m = _ROOT_DURATION.search(text)
     return float(m.group(1) or m.group(2)) if m else 0.0
+
+
+def composition_size(composition_dir: Path) -> tuple[int, int]:
+    """(width, height) of the composition from the root element (1920 x 1080 if it says nothing)."""
+    try:
+        text = (Path(composition_dir) / "index.html").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        text = ""
+    m = _ROOT_SIZE.search(text)
+    return (int(m.group(1)), int(m.group(2))) if m else (1920, 1080)
+
+
+def check_output_size(composition_dir: Path, out_mp4: Path) -> None:
+    """Raise HFError when the rendered MP4 is not the composition's size (needs ffprobe; skipped
+    without it)."""
+    probe = shutil.which("ffprobe")
+    if probe is None:
+        return
+    r = _run([probe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+              "-of", "csv=p=0", str(out_mp4)], Path(out_mp4).parent, "ffprobe", 120)
+    try:
+        got = tuple(int(v) for v in (r.stdout or "").strip().split(",")[:2])
+    except ValueError:
+        raise HFError(f"ffprobe could not read the size of {out_mp4}:\n{_tail(r)}")
+    want = composition_size(composition_dir)
+    if got != want:
+        raise HFError(f"the render is {got[0]} x {got[1]}, but the composition is {want[0]} x {want[1]}")
 
 
 def timeout_for(composition_dir: Path) -> float:
@@ -133,6 +165,7 @@ def render(composition_dir: Path, out_mp4: Path, *, workers: int | None = None) 
              timeout_for(composition_dir))
     if r.returncode != 0 or not out_mp4.is_file():
         raise HFError(f"hyperframes render failed (exit {r.returncode}):\n{_tail(r)}")
+    check_output_size(composition_dir, out_mp4)
     return {"check": report, "seconds": time.monotonic() - started}
 
 

@@ -47,6 +47,8 @@ class FakeRun:
         self.check = check
 
     def __call__(self, cmd, **kw):
+        if "-show_entries" in cmd:  # render's output size check (ffprobe): the fake mp4 is 1920 x 1080
+            return subprocess.CompletedProcess(cmd, 0, "1920,1080\n", "")
         self.calls.append((cmd, kw))
         if "check" in cmd:
             return subprocess.CompletedProcess(cmd, 0, json.dumps(self.check), "")

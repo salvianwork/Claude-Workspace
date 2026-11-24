@@ -56,7 +56,9 @@
   var K = root.HFKit;
   if (!K || !K.effects || !K.overlays || !K.cameraAt) throw new Error("world/moves.js: load the kit scripts first (timing, effects, overlays)");
 
-  var WORLD = { width: 3840, height: 2160 }, NORM = 3840, FRAME = { width: 1920, height: 1080 };
+  var WORLD = { width: 3840, height: 2160 }, NORM = 3840;
+  // the frame is the composition canvas, read when the moves compile or the camera runs (not cached)
+  function canvas() { return K.CANVAS; }
   var MOTION = { walk: 420, run: 640, ramp: 0.3, turn: 0.25 };
   var DIVE_LIMITS = Object.assign({}, K.WORLD_LIMITS, { maxZoomPerSec: 4 });
   var PULSE_SPEED = { slow: 600, medium: 1100, fast: 1800 }; // world px/s
@@ -132,11 +134,11 @@
   function num(v) { return typeof v === "number" && isFinite(v); }
   function rig() { return K.rig; }
   function worldK() { return (root.HFKitActor && root.HFKitActor.WORLD_K) || 0.3; }
-  function toScreen(p, cam) { return { x: (p.x - cam.x) * cam.zoom + FRAME.width / 2, y: (p.y - cam.y) * cam.zoom + FRAME.height / 2 }; }
-  function unproject(s, cam) { return { x: cam.x + (s.x - FRAME.width / 2) / cam.zoom, y: cam.y + (s.y - FRAME.height / 2) / cam.zoom }; }
+  function toScreen(p, cam) { return { x: (p.x - cam.x) * cam.zoom + canvas().width / 2, y: (p.y - cam.y) * cam.zoom + canvas().height / 2 }; }
+  function unproject(s, cam) { return { x: cam.x + (s.x - canvas().width / 2) / cam.zoom, y: cam.y + (s.y - canvas().height / 2) / cam.zoom }; }
   /* The focus point a camera at zoom z may use, so the view stays inside the world. */
   function clampFocus(p, z) {
-    var hx = FRAME.width / 2 / z, hy = FRAME.height / 2 / z;
+    var hx = canvas().width / 2 / z, hy = canvas().height / 2 / z;
     return { x: clamp(p.x, Math.min(hx, WORLD.width / 2), Math.max(WORLD.width - hx, WORLD.width / 2)), y: clamp(p.y, Math.min(hy, WORLD.height / 2), Math.max(WORLD.height - hy, WORLD.height / 2)) };
   }
   function norm(p) { return { x: p.x / NORM, y: p.y / NORM }; }
@@ -414,7 +416,7 @@
     function sortTrack(tr) { return tr.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return a[0].t - b[0].t || a[1] - b[1]; }).map(function (x) { return x[0]; }); }
     function edgeX(cam, side, scale) { // just outside the frame, in world px
       var half = 360 * WK * scale; // half the drawn figure, so it is fully off frame
-      return side === "left" ? cam.x - FRAME.width / 2 / cam.zoom - half : cam.x + FRAME.width / 2 / cam.zoom + half;
+      return side === "left" ? cam.x - canvas().width / 2 / cam.zoom - half : cam.x + canvas().width / 2 / cam.zoom + half;
     }
     function moveEv(t0, gait, space, from, to, extra) {
       var dist = space === "screen" ? Math.abs(to.x - from.x) : Math.hypot(to.x - from.x, to.y - from.y);
@@ -452,12 +454,12 @@
           var start = sorted[0];
           if (cur.mode === "slot" || start.mode === "slot") {
             var sideS = mv.side || cur.side || start.side;
-            var fx = sideS === "left" ? -420 : FRAME.width + 420;
+            var fx = sideS === "left" ? -420 : canvas().width + 420;
             tr.push({ t: t0, type: "show" });
             e = moveEv(t0, "walk", "screen", { x: fx, scale: slotScale() }, { x: SLOT[start.side], scale: slotScale() }, { side: start.side });
           } else {
             var dest = { x: cur.x, y: cur.y, scale: cur.scale };
-            var side = mv.side || (toScreen(dest, cam).x < FRAME.width / 2 ? "left" : "right");
+            var side = mv.side || (toScreen(dest, cam).x < canvas().width / 2 ? "left" : "right");
             tr.push({ t: t0, type: "show" });
             e = moveEv(t0, "walk", "world", { x: edgeX(cam, side, dest.scale), y: dest.y, scale: dest.scale }, dest);
           }
@@ -467,11 +469,11 @@
         case "exit": {
           if (!cur.visible) { errors.push([p, "\"" + id + "\" is not on stage"]); return; }
           if (cur.mode === "slot") {
-            var sx = (mv.side || cur.side) === "left" ? -420 : FRAME.width + 420;
+            var sx = (mv.side || cur.side) === "left" ? -420 : canvas().width + 420;
             e = moveEv(t0, "walk", "screen", { x: cur.screen.x, scale: slotScale() }, { x: sx, scale: slotScale() }, { side: cur.side });
           } else {
             var here = { x: cur.x, y: cur.y, scale: cur.scale };
-            var sd = mv.side || (toScreen(here, cam).x < FRAME.width / 2 ? "left" : "right");
+            var sd = mv.side || (toScreen(here, cam).x < canvas().width / 2 ? "left" : "right");
             e = moveEv(t0, "walk", "world", here, { x: edgeX(cam, sd, cur.scale), y: cur.y, scale: cur.scale });
           }
           tr.push(e); tr.push({ t: e.t1, type: "hide" }); busy[id] = e.t1; p.done = e.t1;
@@ -587,20 +589,20 @@
     return K.cameraMoveTime({ x: a.x / NORM, y: a.y / NORM, zoom: a.zoom }, { x: b.x / NORM, y: b.y / NORM, zoom: b.zoom }, lim);
   }
   /* The zoom at which an actor of this scale is READABLE: at least 45 % of the frame height. */
-  function readableZoom(scale) { return Math.min(K.WORLD_LIMITS.maxZoom, 0.45 * FRAME.height / (TOP * worldK() * scale)); }
+  function readableZoom(scale) { return Math.min(K.WORLD_LIMITS.maxZoom, 0.45 * canvas().height / (TOP * worldK() * scale)); }
 
   /* Where the camera centres to frame a point: a ground point (an anchor, the pulse) sits a little
    * below the middle, at 55 % of the frame height, so what stands there shows and the caption band
    * stays clear of it; actors are framed by actorFocus below. */
-  var AIM = 0.05 * FRAME.height;
-  function aim(p, zoom, isActor) { return isActor ? { x: p.x, y: p.y } : { x: p.x, y: p.y - AIM / zoom }; }
+  var AIM = 0.05; // x the frame height
+  function aim(p, zoom, isActor) { return isActor ? { x: p.x, y: p.y } : { x: p.x, y: p.y - AIM * canvas().height / zoom }; }
   /* Framing an actor: when he fits (head to feet in 660 px), his feet sit at y 700, just above the
    * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest. */
   var FEET_Y = 700, FIT_H = 660;
   function actorFocus(points, name, t, zoom) {
     var f = points(name, t, "feet"), top = points(name, t, "top");
     if (!f || f.screen) return null;
-    return (f.y - top.y) * zoom <= FIT_H ? { x: f.x, y: f.y - (FEET_Y - FRAME.height / 2) / zoom } : points(name, t, "body");
+    return (f.y - top.y) * zoom <= FIT_H ? { x: f.x, y: f.y - (FEET_Y - canvas().height / 2) / zoom } : points(name, t, "body");
   }
 
   /* Camera keys from the camera moves (plus automatic follows of walkers, `autos`). points(name, t,
@@ -701,7 +703,7 @@
       if (mv.do === "push_in" && target !== null && !tracks[target] && tp && !tp.screen) Object.keys(tracks).forEach(function (id) {
         var a = actorAt(tracks[id], land);
         if (!a.visible || a.mode !== "world" || Math.abs(a.x - tp.x) > 160 || Math.abs(a.y - tp.y) > 120) return;
-        var tall = (TOP + 30) * worldK() * a.scale, fit = (FRAME.height * 0.55 - 40) / tall;
+        var tall = (TOP + 30) * worldK() * a.scale, fit = (canvas().height * 0.55 - 40) / tall;
         if (zoom > fit + 1e-9) { warnings.push([p, "zoom " + zoom + " on \"" + target + "\" crops \"" + id + "\" standing there (at most " + fit.toFixed(2) + " shows all of them; or push_in on \"" + id + "\")"]); p.cropped = (p.cropped || []).concat([id]); }
       });
     });
@@ -716,8 +718,8 @@
         if (!a.visible || a.mode !== "world" || (L.p.cropped || []).indexOf(id) >= 0) return;
         var k = worldK() * a.scale * cam.zoom, f = toScreen(a, cam), HB = rig().headBox({ pose: "idle", expression: "happy", mouth: 0, blink: 0, breath: 0, outfit: "blazer" });
         var x0 = f.x + HB.x * k, x1 = x0 + HB.width * k, y0 = f.y + (HB.y - rig().FEET) * k, y1 = y0 + HB.height * k;
-        var inside = x0 >= 0 && x1 <= FRAME.width && y0 >= 0 && y1 <= FRAME.height;
-        var bodyIn = f.x + 160 * k > 0 && f.x - 160 * k < FRAME.width && f.y > 0 && y0 < FRAME.height; // some of him shows
+        var inside = x0 >= 0 && x1 <= canvas().width && y0 >= 0 && y1 <= canvas().height;
+        var bodyIn = f.x + 160 * k > 0 && f.x - 160 * k < canvas().width && f.y > 0 && y0 < canvas().height; // some of him shows
         if (!inside && bodyIn) warnings.push([L.p, "the frame edge cuts \"" + id + "\"'s head where the camera lands (" + L.t.toFixed(2) + " s): reframe, or zoom out a little"]);
       });
     });

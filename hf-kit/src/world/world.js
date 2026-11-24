@@ -18,7 +18,7 @@
  * them, except a camera overrun, which still renders), so the composition reports it instead of
  * rendering nothing.
  *
- * Layers (back to front), in el (1920 x 1080, clipped): the place's sky / far / mid / ground,
+ * Layers (back to front), in el (the canvas, HFKit.CANVAS, clipped): the place's sky / far / mid / ground,
  * effects (world px, on the ground plane), actors (screen px, sorted by depth), the place's front
  * layer, the inside views of dives, tags / labels / the title, a cut flash, captions.
  *
@@ -39,7 +39,6 @@
   "use strict";
   var K = root.HFKit;
   if (!K || !K.compileMoves || !K.placeLayers) throw new Error("world/world.js: load the kit scripts first (place, moves)");
-  var FRAME = { width: 1920, height: 1080 };
   var mounts = {};
   var FLASH = 0.22;
 
@@ -56,6 +55,7 @@
   function mountWorld(el, scene, ctx) {
     ctx = ctx || {};
     scene = scene || {};
+    var FRAME = K.CANVAS; // the composition canvas at mount time (HFKit.setCanvas)
     var doc = el.ownerDocument, sid = scene.id;
     var words = ctx.words || [];
     var opts = { cast: ctx.cast, duration: ctx.duration };

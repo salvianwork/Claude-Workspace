@@ -187,7 +187,8 @@
   /* Presenter box size for "small" / "large" (same rule as the Remotion theme.ts). */
   function presenterSize(size) {
     var share = size === "large" ? 0.34 : 0.22;
-    var width = Math.round(1920 * share);
+    var cw = root.HFKit && root.HFKit.CANVAS ? root.HFKit.CANVAS.width : 1920; // the canvas at call time
+    var width = Math.round(cw * share);
     var captionTop = root.HFKit && root.HFKit.captionTop ? root.HFKit.captionTop() : 812;
     return { width: width, height: Math.min(captionTop - 24, Math.round(width * 1.08)) };
   }

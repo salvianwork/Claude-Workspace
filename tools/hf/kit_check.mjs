@@ -5,7 +5,7 @@
 //
 //   node tools/hf/kit_check.mjs < request.json > report.json
 //
-// request = {kit: "<hf-kit dir>", style: {...} | null, scenes: [{id, kind, scene?, prop?, module?,
+// request = {kit: "<hf-kit dir>", style: {...} | null, canvas?: {width, height}, scenes: [{id, kind, scene?, prop?, module?,
 //            props?, params?, cues, camera, presenter, transition?, duration, words}]}
 //   module = path of the prop script to load for a hero (library prop.js or the run's
 //   04-video/hf/scenes/scene-<id>.js).
@@ -17,7 +17,9 @@
 //   HFKit.validateWorld (errors, camera overrun > 0.25 s included) and HFKit.compileMoves (its
 //   warnings; an overrun up to 0.25 s warns); a place with meta.notToScale needs a "not to scale"
 //   tag or label. World errors already name their scene ("scene 2 beat 0 move 1 (...)").
-// report  = {scenes: [{id, errors: [...], warnings: [...], overrun: seconds | null}]}
+//   canvas: the composition size (shots.json format; default 1920 x 1080), set with HFKit.setCanvas
+//   after the kit scripts load, so the camera and framing maths run in the video's frame.
+// report  = {scenes: [{id, errors: [...], warnings: [...], overrun: seconds | null, canvas: {width, height}}]}
 // Called by tools/hf/shots.py. Kit files are classic scripts (globalThis.HFKit), loaded with vm.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -34,6 +36,7 @@ load(join(req.kit, "src", "kit.js"));
 for (const s of globalThis.HFKit.SCRIPTS.slice(1)) load(join(req.kit, s));
 const K = globalThis.HFKit;
 const P = K.presenter;
+K.setCanvas(req.canvas);
 
 const loaded = new Map(); // module path -> error message | null
 function loadModule(file) {
@@ -148,7 +151,7 @@ function checkWorld(s, out) {
 
 const report = { scenes: [] };
 for (const s of req.scenes) {
-  const out = { id: s.id, errors: [], warnings: [], overrun: null };
+  const out = { id: s.id, errors: [], warnings: [], overrun: null, canvas: { width: K.CANVAS.width, height: K.CANVAS.height } };
   s.cues = s.cues || [];
   s.camera = s.camera || [];
   if (s.kind !== "world") checkPresenter(s.presenter, out.errors);

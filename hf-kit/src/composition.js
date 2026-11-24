@@ -1,7 +1,10 @@
 /* hf-kit composition runtime: mounts a whole video from the data tools/hf/build.py writes
  * (04-video/hf/data.json, also inlined in index.html) and registers window.__timelines.main.
  *
- *   HFKit.mountComposition(data)   // data = {fps, total, style, presenterOutfit, scenes: [...]}
+ *   HFKit.mountComposition(data)   // data = {fps, total, canvas?, style, presenterOutfit, scenes: [...]}
+ *   data.canvas = {width, height} (tools/hf/build.py writes it for a vertical video, 1080 x 1920);
+ *   without it the canvas is the 1920 x 1080 default. mountComposition calls HFKit.setCanvas first,
+ *   so every scene mounts in the composition's size.
  *   scene = {id, kind: "hero"|"kit"|"world", start, duration, frames, prop?, params?, scene?, props?,
  *            world?, words, cues, camera, presenter, transition, next, mouth}
  *   kind "world" (shots.json schema 2): world = the shots.json scene ({id, place, variant, actors,
@@ -38,6 +41,7 @@
   function mountComposition(data, opts) {
     opts = opts || {};
     var doc = opts.document || root.document;
+    var cv = K.setCanvas(data.canvas);
     var reported = {};
     function report(id, what, e) {
       var msg = "scene-" + id + ": " + what + ": " + (e && e.message ? e.message : String(e));
@@ -51,7 +55,7 @@
       if (!clip) { report(s.id, "mount failed", new Error("no element #scene-" + s.id)); return null; }
       var el = doc.createElement("div");
       el.className = "hf-scene";
-      el.style.cssText = "position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:50% 50%";
+      el.style.cssText = "position:absolute;left:0;top:0;width:" + cv.width + "px;height:" + cv.height + "px;overflow:hidden;transform-origin:50% 50%";
       clip.appendChild(el);
       var parts;
       try {

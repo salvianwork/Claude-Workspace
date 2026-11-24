@@ -1,11 +1,11 @@
 /* hf-kit insides: the close-up views a `dive` cuts to (HFKit.insides). Drawn in screen px
- * (1920 x 1080) in the world style: flat-shaded shapes with soft gradients, simple dark outlines,
+ * (a 1920 x 1080 drawing, fitted to cover the canvas) in the world style: flat-shaded shapes with soft gradients, simple dark outlines,
  * warm light from the top left. Each is a pure function of t (seekable).
  *
  *   HFKit.insides[name] = {meta: {name, description, params: {key: [values]}},
  *                          check(params) -> error string | null,
  *                          mount(el, {params, idPrefix, seed}) -> {update(t), el}}
- *   el: a 1920 x 1080 box; t: seconds since the cut (0 = the first frame inside).
+ *   el: a canvas-sized box; t: seconds since the cut (0 = the first frame inside).
  *
  *   lattice   particles of matter. params.state: solid (packed in a grid, bonded, vibrating),
  *             liquid (close but loose, sliding past each other, a free surface),
@@ -20,7 +20,7 @@
   var K = root.HFKit;
   if (!K || !K.draw) throw new Error("world/insides.js: load kit.js and draw.js first");
   var D = K.draw, r2 = D.r2;
-  var W = 1920, H = 1080, LINE = "#1E1A2E";
+  var W = 1920, H = 1080, LINE = "#1E1A2E"; // the drawing's own px; mountSvg fits it to the canvas
 
   function tag(name, a, inner) {
     var s = "<" + name;
@@ -56,7 +56,11 @@
 
   function mountSvg(el, idPrefix) {
     if (!idPrefix) throw new Error("insides: needs an idPrefix");
-    var svg = D.el(el, "svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, "data-inside": idPrefix });
+    // a canvas other than 1920 x 1080 (vertical) shows the drawing centred, covering the frame
+    // (cropped at the sides); landscape keeps the exact attributes it always had
+    var cv = K.CANVAS, fit = cv.width !== W || cv.height !== H;
+    var svg = D.el(el, "svg", fit ? { width: cv.width, height: cv.height, viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "xMidYMid slice", "data-inside": idPrefix }
+      : { width: W, height: H, viewBox: "0 0 " + W + " " + H, "data-inside": idPrefix });
     svg.style.position = "absolute"; svg.style.left = "0"; svg.style.top = "0";
     return svg;
   }
