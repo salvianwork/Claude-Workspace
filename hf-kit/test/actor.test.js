@@ -118,23 +118,33 @@ test("feet stand at y = 1300 in body units", () => {
 
 test("the host's face constants are exact", () => {
   assert.deepEqual(K.cast.host, {
-    character: "host", face: { hair: "curly", skin: "#F0CDAE" }, voice: "am_adam", defaultOutfit: "blazer",
+    character: "host", face: { hair: "curly", glasses: "lime-thick", skin: "#F0CDAE" }, voice: "am_adam", defaultOutfit: "blazer",
   });
   assert.equal(K.cast.host.face.skin, P.LOOK.skinTone);
 });
 
-test("the host's SVG has no glasses and uses skin #F0CDAE", () => {
-  assert.equal("glasses" in K.cast.host.face, false);
+test("the host's SVG has the thick lime glasses and uses skin #F0CDAE", () => {
+  assert.equal(K.cast.host.face.glasses, "lime-thick");
   for (const outfit of ["blazer", "lab-coat"])
-    for (const st of [base({ outfit }), base({ outfit, cycle: "walk", phase: 0.25, facing: 1 }), base({ outfit, cycle: "run", phase: 0.5, facing: 1 })]) {
+    for (const st of [base({ outfit }), base({ outfit, cycle: "walk", phase: 0.25, facing: 1 }), base({ outfit, cycle: "run", phase: 0.5, facing: 1 }),
+      base({ outfit, cycle: "jump", phase: 0.4 }), base({ outfit, expression: "surprised" }), base({ outfit, expression: "happy" })]) {
       const svg = K.rig.svg(st, "g");
-      assert.ok(!/glass|lens|temple/i.test(svg), outfit + ": glasses element in the SVG");
-      assert.ok(svg.toUpperCase().includes("#F0CDAE"), outfit + ": skin #F0CDAE");
-      assert.ok(!svg.toUpperCase().includes("#E3B28A"), outfit + ": old skin");
+      const up = svg.toUpperCase();
+      assert.ok(/data-part="glasses"[^>]*data-glasses="lime-thick"(?![^>]*display="none")/.test(svg), outfit + ": glasses group");
+      assert.ok(up.includes("#8BD13A") && up.includes("#5E9E1F"), outfit + ": lime frame and edge");
+      assert.ok(up.includes("#F0CDAE"), outfit + ": skin #F0CDAE");
+      assert.ok(!up.includes("#E3B28A"), outfit + ": old skin");
     }
   const side = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("neutral", "neutral", 1), mouth: 0, blink: 0, t: 0,
     side: "center", width: 434, height: 288, still: true });
-  assert.ok(!/glass/i.test(side) && side.toUpperCase().includes("#F0CDAE"));
+  assert.ok(/data-glasses="lime-thick"/.test(side) && side.toUpperCase().includes("#8BD13A") && side.toUpperCase().includes("#F0CDAE"));
+});
+
+test("clean-shaven: no stubble shading on the jaw", () => {
+  const svg = K.rig.svg(base({}), "g");
+  assert.ok(!/stubble/i.test(svg));
+  // the old stubble path (hair colour at opacity 0.13 along the jaw) is gone
+  assert.ok(!svg.includes("C 74 268 44 278 24 276"));
 });
 
 test("cast.extra(n) is stable, varied and never the host's face", () => {
@@ -148,6 +158,12 @@ test("cast.extra(n) is stable, varied and never the host's face", () => {
     assert.notEqual(e.face.skin.toUpperCase(), K.cast.host.face.skin.toUpperCase(), "extra " + n + " has the host's skin");
     assert.ok(K.rig.OUTFITS[e.defaultOutfit], "extra " + n + " outfit");
     faces.add(JSON.stringify(e.face)); skins.add(e.face.skin); hairs.add(e.face.hair); outfits.add(e.defaultOutfit);
+  }
+  // glasses are the host's signature: no extra has them, and the SVG of an extra has no glasses
+  for (let n = 1; n <= 24; n++) {
+    const e = K.cast.extra(n);
+    assert.ok(!("glasses" in e.face), "extra " + n + " has a glasses field");
+    assert.ok(!/data-glasses|#8BD13A/i.test(K.rig.svg(base({ character: e }), "x")), "extra " + n + " draws glasses");
   }
   assert.ok(skins.size >= 4 && hairs.size >= 3 && outfits.size >= 3 && faces.size >= 12, "varied extras");
   // an extra draws differently from the host in the same state

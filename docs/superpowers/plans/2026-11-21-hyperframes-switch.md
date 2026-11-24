@@ -1,6 +1,6 @@
 # HyperFrames Switch Implementation Plan
 
-> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+> 2026-11-24 owner update: skin #F0CDAE; the glasses came back as thick lime-green frames on 2026-11-24 (the text below is the original decision).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

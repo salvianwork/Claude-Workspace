@@ -102,7 +102,7 @@
     var head = h("g", { transform: "translate(0 " + lift + ") rotate(" + tilt + " 0 " + RIG.headPivotY + ")" }, [
       P.parts.hairBack(pal, sway),
       P.parts.head(pal),
-      P.parts.face(pal, props.face, props.mouth || 0, props.blink || 0, pose.gazeX, pose.gazeY),
+      P.parts.face(pal, props.face, props.mouth || 0, props.blink || 0, pose.gazeX, pose.gazeY, look.glasses),
       P.parts.hairFront(pal, sway),
     ]);
 

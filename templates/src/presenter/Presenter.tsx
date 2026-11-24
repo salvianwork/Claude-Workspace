@@ -149,7 +149,7 @@ export const PresenterFigure: React.FC<FigureProps> = ({
     <g transform={`translate(0 ${lift}) rotate(${tilt} 0 ${RIG.headPivotY})`}>
       <HairBack pal={pal} sway={swayFn} />
       <Head pal={pal} uid={uid} />
-      <Face pal={pal} face={face} mouth={mouth} blink={blink} gazeX={pose.gazeX} gazeY={pose.gazeY} uid={uid} />
+      <Face pal={pal} face={face} mouth={mouth} blink={blink} gazeX={pose.gazeX} gazeY={pose.gazeY} glasses={look.glasses} uid={uid} />
       <HairFront pal={pal} sway={swayFn} />
     </g>
   );

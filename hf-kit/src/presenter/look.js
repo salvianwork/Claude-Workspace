@@ -15,6 +15,9 @@
     skinTone: "#F0CDAE", // light warm peach
     hairColor: "#3B2416", // dark brown curly hair
     eyeColor: "#3A2418",
+    glasses: "lime-thick", // thick lime-green acetate frames (the host's signature)
+    glassesColor: "#8BD13A",
+    glassesEdge: "#5E9E1F",
     outfits: {
       // Navy blazer over a light-blue collared shirt, no tie: the default "documentary host".
       blazer: {
@@ -79,6 +82,8 @@
     pal.tongue = "#D9746A";
     pal.blush = "#E2725B";
     pal.pen = "#2B3A55";
+    pal.glasses = look.glassesColor;
+    pal.glassesEdge = look.glassesEdge;
     return pal;
   }
 

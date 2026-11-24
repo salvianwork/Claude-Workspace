@@ -1,6 +1,6 @@
 # Video Agent Team — Design
 
-> 2026-11-24 owner update: skin #F0CDAE, no glasses (the text below is the original decision).
+> 2026-11-24 owner update: skin #F0CDAE; the glasses came back as thick lime-green frames on 2026-11-24 (the text below is the original decision).
 
 **Date:** 2026-11-19
 **Status:** Waiting for owner approval

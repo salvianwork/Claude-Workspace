@@ -1,6 +1,6 @@
 // node scripts/hair-closeup.mjs --out=<png>: head close-ups (about 4x) of the host through the rig,
 // one per pose / cycle frame, side by side on a light backdrop. Used to check the curly hair has no skin
-// gap between the fringe curls and the main mass (compare a run before and after a hair change).
+// gap between the fringe curls and the main mass, and the glasses sit well (expressions think / surprised / happy) (compare a run before and after a hair change).
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
@@ -17,8 +17,8 @@ const out = resolve(a ? a.slice(6) : "hair-closeup.png");
 const STATES = [
   ["idle", { pose: "idle", expression: "neutral" }],
   ["talk", { pose: "talk", expression: "happy" }],
-  ["think", { pose: "think", expression: "curious" }],
-  ["celebrate", { pose: "celebrate", expression: "happy" }],
+  ["think", { pose: "think", expression: "thinking" }],
+  ["surprised", { pose: "surprised", expression: "surprised" }],
   ["walk 0.25", { pose: "idle", cycle: "walk", phase: 0.25, facing: 1 }],
   ["run 0.5", { pose: "idle", cycle: "run", phase: 0.5, facing: 1 }],
 ];
@@ -29,6 +29,7 @@ await page.goto("file://" + join(KIT, "test", "browser", "harness.html"));
 for (const s of SCRIPTS) await page.addScriptTag({ path: s });
 await page.evaluate(({ STATES, W, H }) => {
   const root = document.getElementById("root");
+  document.body.style.margin = "0"; document.documentElement.style.background = "#f6ecdc"; document.body.style.background = "#f6ecdc";
   root.style.background = "#f6ecdc"; root.style.width = W * STATES.length + "px"; root.style.height = H + "px";
   STATES.forEach(([name, st], i) => {
     const cell = document.createElement("div");

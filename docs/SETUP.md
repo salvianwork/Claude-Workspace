@@ -203,7 +203,7 @@ include `am_michael`, `am_fenrir`, `am_puck`, `bm_george`, `bm_fable`
 To switch, ask Claude Code: "change the default voice to am_fenrir". It is one line in
 `tools/voice/synth.py` (`DEFAULT_VOICE`) and the same name in `.claude/agents/voice.md`.
 
-**The presenter's look** (skin #F0CDAE, hair, shirt; no glasses): `templates/src/presenter/look.ts`.
+**The presenter's look** (skin #F0CDAE, hair, shirt, thick lime-green glasses): `templates/src/presenter/look.ts`.
 To see him:
 
 ```

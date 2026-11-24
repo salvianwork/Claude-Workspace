@@ -7,6 +7,14 @@ const EYE_Y = 226;
 const EYE_RX = 13.5;
 const EYE_RY = 13.5;
 
+/** Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
+const LENS_W = 58;
+const LENS_H = 42;
+const LENS_Y = EYE_Y + 1;
+const LENS_R = 15;
+const RIM = 8;
+const RIM_EDGE = 11.5;
+
 const Eye: React.FC<{
   pal: Palette;
   side: -1 | 1;
@@ -141,6 +149,42 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
   );
 };
 
+/** Chunky lime frames (rim on a darker edge), clear lenses with a faint glint, bridge and temple arms. */
+const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
+  const hw = LENS_W / 2;
+  const hh = LENS_H / 2;
+  const lens = (cx: number) => ({ x: cx - hw, y: LENS_Y - hh, width: LENS_W, height: LENS_H, rx: LENS_R });
+  const bridge = `M ${-EYE_X + hw} ${LENS_Y - 7} Q 0 ${LENS_Y - 17} ${EYE_X - hw} ${LENS_Y - 7}`;
+  const round = { fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <g data-glasses="lime-thick">
+      {([-1, 1] as const).map((sd) => {
+        const cx = sd * EYE_X;
+        const arm = `M ${sd * (EYE_X + hw)} ${LENS_Y - 9} L ${sd * 90} ${LENS_Y - 11}`;
+        return (
+          <g key={sd}>
+            <rect {...lens(cx)} fill="#DCEBFF" opacity={0.1} />
+            <path d={`M ${cx - 20} ${LENS_Y + 10} L ${cx - 8} ${LENS_Y - 12}`} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" opacity={0.22} />
+            <path d={arm} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE - 1.5} />
+            <path d={arm} {...round} stroke={pal.glasses} strokeWidth={RIM - 1.5} />
+            <rect {...lens(cx)} fill="none" stroke={pal.glassesEdge} strokeWidth={RIM_EDGE} />
+            <rect {...lens(cx)} fill="none" stroke={pal.glasses} strokeWidth={RIM} />
+            <path
+              d={`M ${cx - hw + 1} ${LENS_Y - 2} Q ${cx - hw + 1} ${LENS_Y - hh + 1} ${cx - hw + 12} ${LENS_Y - hh + 1}`}
+              {...round}
+              stroke="#FFFFFF"
+              strokeWidth={2.4}
+              opacity={0.6}
+            />
+          </g>
+        );
+      })}
+      <path d={bridge} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE - 1} />
+      <path d={bridge} {...round} stroke={pal.glasses} strokeWidth={RIM - 1.5} />
+    </g>
+  );
+};
+
 export const Face: React.FC<{
   pal: Palette;
   face: FaceParams;
@@ -148,8 +192,9 @@ export const Face: React.FC<{
   blink: number;
   gazeX: number;
   gazeY: number;
+  glasses: "lime-thick" | false;
   uid: string;
-}> = ({ pal, face, mouth, blink, gazeX, gazeY, uid }) => (
+}> = ({ pal, face, mouth, blink, gazeX, gazeY, glasses, uid }) => (
   <g>
     {/* blush */}
     <ellipse cx={-54} cy={262} rx={16} ry={9} fill={pal.blush} opacity={face.blush} />
@@ -164,5 +209,6 @@ export const Face: React.FC<{
     <g transform="translate(2 286) scale(1.22) translate(-2 -286)">
       <Mouth pal={pal} face={face} v={mouth} uid={uid} />
     </g>
+    {glasses ? <Glasses pal={pal} /> : null}
   </g>
 );

@@ -1,6 +1,6 @@
 /* hf-kit actor, part 1/3: the full-body rig (HFKit.rig). Pure SVG-string builders, no DOM.
  *
- * The head, face, hair (curly), palette, mouth, arms and the blazer / lab-coat torso
+ * The head, face, hair (curly), glasses, palette, mouth, arms and the blazer / lab-coat torso
  * are the presenter's own parts (src/presenter/*.js); this file adds what a full body needs:
  * legs and shoes, coat tails, two more outfits (casual, explorer), other hair styles for extras,
  * held props, extra poses and the walk / run / jump cycles.
@@ -19,7 +19,7 @@
  *     expression  name in EXPRESSIONS, or a face object (presenter faceAt)
  *     mouth       loudness 0..1;  blink 0..1 (1 = shut);  breath -1..1 (breathing wave)
  *     facing      -1 (screen left), 0 (front), 1 (screen right): stride and gaze direction
- *     character   {face: {hair, skin, hairColor?}, colors?} (default: the host's face)
+ *     character   {face: {hair, glasses?: "lime-thick", skin, hairColor?}, colors?} (default: the host's face)
  *     frame       frame number: adds the pose's living motion, hair sway and head tilt
  *     track       the scene's mouth array (talk gestures follow the voice)
  *     blend       {pose, expression, k}: blend from that pose/expression to this one (k 0..1)
@@ -111,7 +111,7 @@
   var HAIR = ["curly", "short", "long", "bun", "bald"];
 
   /* The host's face when the state names no character (host.js holds the cast entry). */
-  var HOST_FACE = { hair: "curly", skin: P.LOOK.skinTone };
+  var HOST_FACE = { hair: "curly", glasses: "lime-thick", skin: P.LOOK.skinTone };
 
   // ---------- palette ----------
 
@@ -130,6 +130,9 @@
       skinTone: face.skin || P.LOOK.skinTone,
       hairColor: face.hairColor || P.LOOK.hairColor,
       eyeColor: face.eyeColor || P.LOOK.eyeColor,
+      glasses: face.glasses === "lime-thick" ? "lime-thick" : false,
+      glassesColor: P.LOOK.glassesColor,
+      glassesEdge: P.LOOK.glassesEdge,
       outfits: outfits,
     };
     var pal = P.palette(look, o.palette);
@@ -673,7 +676,7 @@
       turnHead(P.parts.head(pal), T),
       // the face features slide toward the turn and narrow a little (three-quarter view)
       h("g", { transform: "translate(" + f2(20 * T) + " 0) scale(" + f2(1 - 0.1 * ta) + " 1)" }, [
-        P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY),
+        P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY, pal.look.glasses),
       ]),
       h("g", { transform: "translate(" + f2(3 * T) + " 0)" }, [hairFront(pal, pal.hairStyle, sway)]),
     ]);

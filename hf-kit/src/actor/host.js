@@ -1,5 +1,5 @@
 /* hf-kit actor, part 2/3: the cast (HFKit.cast). The host is a saved actor with a FIXED face
- * (curly hair, no glasses, skin #F0CDAE) and voice; only the outfit changes per video (blazer by
+ * (curly hair, thick lime-green glasses, skin #F0CDAE) and voice; only the outfit changes per video (blazer by
  * default, lab coat for science / health / tech). Extras are generic, deterministic characters
  * that never share the host's face. Pure data, no DOM. */
 (function (root) {
@@ -15,7 +15,7 @@
 
   var host = freeze({
     character: "host",
-    face: { hair: "curly", skin: "#F0CDAE" },
+    face: { hair: "curly", glasses: "lime-thick", skin: "#F0CDAE" },
     voice: "am_adam",
     defaultOutfit: "blazer",
   });
@@ -23,7 +23,7 @@
   /* Extras' looks. The host's skin tone is not in this list, so no extra can wear his face. */
   var SKINS = ["#F6D9C5", "#EFC6A4", "#D7A27A", "#B57A52", "#94603E", "#70452B", "#F3CDB0", "#C58D62"];
   var HAIR_COLORS = ["#1E1712", "#4A2C1A", "#7A4A28", "#B9853F", "#D8B26A", "#8E3B22", "#9A9A9A", "#2D2A26"];
-  /* No curls: the curly crop is the host's signature. */
+  /* No curls: the curly crop and the lime glasses are the host's signature. */
   var HAIRS = ["short", "long", "bun", "bald", "short", "long", "bun"];
   var OUTFITS = ["casual", "explorer", "lab-coat", "blazer", "casual"];
   var SWEATERS = [

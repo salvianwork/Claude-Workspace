@@ -121,6 +121,9 @@
   // ---------- face ----------
 
   var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
+  /* Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
+  var LENS_W = 58, LENS_H = 42, LENS_Y = EYE_Y + 1, LENS_R = 15;
+  var RIM = 8, RIM_EDGE = 11.5;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
     var cx = side * EYE_X;
@@ -218,7 +221,41 @@
     ]);
   }
 
-  function faceNode(pal, face, mouth, blink, gazeX, gazeY) {
+  /* Chunky lime frames (rim lime on a darker edge), clear lenses with a faint glint, a bridge and
+   * temple arms to the ears. The eyes and brows stay clear. */
+  function glassesNode(pal, on) {
+    if (!on) return h("g", { "data-part": "glasses", display: "none" }, []);
+    var hw = LENS_W / 2, hh = LENS_H / 2;
+    var lens = function (cx, extra) {
+      return h("rect", Object.assign({ x: cx - hw, y: LENS_Y - hh, width: LENS_W, height: LENS_H, rx: LENS_R }, extra));
+    };
+    var edge = pal.glassesEdge, lime = pal.glasses;
+    var line = function (d, w, color, extra) {
+      return h("path", Object.assign({ d: d, fill: "none", stroke: color, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round" }, extra));
+    };
+    var kids = [];
+    [-1, 1].forEach(function (sd) {
+      var cx = sd * EYE_X;
+      var arm = "M " + sd * (EYE_X + hw) + " " + (LENS_Y - 9) + " L " + sd * 90 + " " + (LENS_Y - 11);
+      kids.push(h("g", { "data-part": sd < 0 ? "glasses-left" : "glasses-right" }, [
+        lens(cx, { fill: "#DCEBFF", opacity: 0.1 }),
+        line("M " + (cx - 20) + " " + (LENS_Y + 10) + " L " + (cx - 8) + " " + (LENS_Y - 12), 3, "#FFFFFF", { opacity: 0.22 }),
+        line(arm, RIM_EDGE - 1.5, edge),
+        line(arm, RIM - 1.5, lime),
+        lens(cx, { fill: "none", stroke: edge, "stroke-width": RIM_EDGE }),
+        lens(cx, { fill: "none", stroke: lime, "stroke-width": RIM }),
+        // glint on the frame, top-left corner
+        line("M " + (cx - hw + 1) + " " + (LENS_Y - 2) + " Q " + (cx - hw + 1) + " " + (LENS_Y - hh + 1) + " " + (cx - hw + 12) + " " + (LENS_Y - hh + 1),
+          2.4, "#FFFFFF", { opacity: 0.6 }),
+      ]));
+    });
+    var bridge = "M " + (-EYE_X + hw) + " " + (LENS_Y - 7) + " Q 0 " + (LENS_Y - 17) + " " + (EYE_X - hw) + " " + (LENS_Y - 7);
+    kids.push(line(bridge, RIM_EDGE - 1, edge));
+    kids.push(line(bridge, RIM - 1.5, lime));
+    return h("g", { "data-part": "glasses", "data-glasses": "lime-thick", display: show(on) }, kids);
+  }
+
+  function faceNode(pal, face, mouth, blink, gazeX, gazeY, glasses) {
     return h("g", { "data-part": "face" }, [
       h("ellipse", { cx: -54, cy: 262, rx: 16, ry: 9, fill: pal.blush, opacity: face.blush }),
       h("ellipse", { cx: 56, cy: 262, rx: 15, ry: 9, fill: pal.blush, opacity: face.blush * 0.85 }),
@@ -232,6 +269,7 @@
         h("ellipse", { cx: -2, cy: 258, rx: 5, ry: 3.5, fill: pal.skinLight, opacity: 0.6 }),
       ]),
       mouthNode(pal, face, mouth),
+      glassesNode(pal, glasses),
     ]);
   }
 
@@ -324,11 +362,9 @@
       h("g", { "clip-path": "url(#" + clip + ")" }, [
         // 3/4 feel: the right cheek and jaw turn away from the light
         h("path", { d: "M 86 150 C 70 190 64 240 50 274 C 40 296 20 308 0 312 L 90 330 L 100 150 Z", fill: pal.skinShade, opacity: 0.85 }),
-        h("ellipse", { cx: 0, cy: 318, rx: 70, ry: 16, fill: pal.skinShade, opacity: 0.7 }),
+        h("ellipse", { cx: 0, cy: 318, rx: 70, ry: 16, fill: pal.skinShade, opacity: 0.45 }),
         // shadow of the curls on the forehead
         h("ellipse", { cx: 0, cy: 150, rx: 96, ry: 24, fill: pal.skinShade }),
-        // faint stubble shadow along the jaw: reads as an adult
-        h("path", { d: "M -88 232 C -82 292 -42 318 0 318 C 42 318 82 292 88 232 C 74 268 44 278 24 276 C 14 262 -10 262 -22 276 C -44 278 -74 268 -88 232 Z", fill: pal.hair, opacity: 0.13 }),
         // cheekbone highlight
         h("ellipse", { cx: -50, cy: 236, rx: 18, ry: 12, fill: pal.skinLight, opacity: 0.55 }),
       ]),

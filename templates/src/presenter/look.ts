@@ -12,6 +12,10 @@ export const LOOK = {
   hairColor: "#3B2416",
   /** Iris colour. */
   eyeColor: "#3A2418",
+  /** Thick lime-green acetate frames, the host's signature (owner update 2026-11-24). */
+  glasses: "lime-thick" as "lime-thick" | false,
+  glassesColor: "#8BD13A",
+  glassesEdge: "#5E9E1F",
   outfits: {
     /** Navy blazer over a light-blue collared shirt, no tie: the default "documentary host". */
     blazer: {
@@ -99,6 +103,8 @@ export const palette = (look: Look, outfit: PresenterOutfit = "blazer") => {
     tongue: "#D9746A",
     blush: "#E2725B",
     pen: "#2B3A55",
+    glasses: look.glassesColor,
+    glassesEdge: look.glassesEdge,
   };
 };
 
