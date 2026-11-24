@@ -47,8 +47,8 @@ python -m tools.check_setup
 Write down the time when you start: ________ (the whole video, from `/make-video` to the
 finished film, is the number to report).
 
-Open a terminal in the project folder, run `.venv\Scripts\activate`, then type `claude` in that
-SAME terminal (Claude Code must start inside the `(.venv)` terminal, or it cannot find the voice).
+Open a terminal in the project folder and run `.\studio` (or double-click `studio.cmd`); it starts the studio and Claude Code.
+Fallback: run `.venv\Scripts\activate`, then type `claude` in that SAME terminal (Claude Code must start inside the `(.venv)` terminal, or it cannot find the voice).
 In Claude Code, type:
 
 ```
@@ -113,7 +113,8 @@ Run one what-if video (a short topic is fine), the same way as section 4:
 
 ## 6. The studio dashboard
 
-Open a second terminal in the project folder, run `.venv\Scripts\activate`, then
+Run `.\studio` (or double-click `studio.cmd`); the studio opens in your browser.
+Fallback: open a second terminal in the project folder, run `.venv\Scripts\activate`, then
 `python -m tools.dashboard`. Keep it open for the checks below (you can do them during the
 video from section 4, or with a short topic such as `/make-video "Why the sky is blue"`).
 

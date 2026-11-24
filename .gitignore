@@ -34,3 +34,4 @@ tests/fixtures/hf/world/*/04-video/*
 !tests/fixtures/hf/world/*/04-video/hf/
 tests/fixtures/hf/world/*/04-video/hf/*
 !tests/fixtures/hf/world/*/04-video/hf/scenes/
+.studio/

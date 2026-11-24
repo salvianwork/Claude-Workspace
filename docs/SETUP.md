@@ -65,7 +65,13 @@ What success looks like: you see `(.venv)` at the start of the line, `pip` ends 
 **Every time you open a new terminal** for this project, run `cd "C:\Users\PC\Documents\Claude Workspace"`
 and `.venv\Scripts\activate` first.
 
-**How to start Claude Code (always like this):** open a terminal in the project folder, run
+**The easy way to start everything:** in the project folder, run `.\studio` in PowerShell (or double-click `studio.cmd`).
+It opens the studio in your browser and starts Claude Code in the right environment. Closing Claude stops the studio.
+
+**Fallback, the old way:** open a terminal in the project folder, run
+`.venv\Scripts\activate`, then type `claude` in that SAME terminal. (Details:)
+
+**How to start Claude Code by hand (always like this):** open a terminal in the project folder, run
 `.venv\Scripts\activate`, then type `claude` in that SAME terminal. Claude Code started any
 other way (from the Start menu, or in a terminal without `(.venv)`) cannot find the voice
 engine, and `/make-video` will stop and tell you to do this.
@@ -175,7 +181,9 @@ A yellow warning is fine to ignore. A red cross shows a
 ## 8. Open the studio (optional)
 
 The studio is a small page that shows the team at work and lets you approve with a button.
-In a **second** terminal (with `(.venv)`), run:
+Run `.\studio` (or double-click `studio.cmd`). It starts the studio and Claude Code together.
+
+Fallback, the old way: in a **second** terminal (with `(.venv)`), run:
 
 ```
 cd "C:\Users\PC\Documents\Claude Workspace"
