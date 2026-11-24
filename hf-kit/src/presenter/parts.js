@@ -122,7 +122,7 @@
 
   var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
   /* Flat square translucent lime acetate glasses (wayfarer-square), lenses centred on the eyes. */
-  var LENS_Y = EYE_Y, LENS_IH = 38, LENS_TOP_W = 46, LENS_BOT_W = 42, RIM_T = 6.5, RIM_TOP = 8.5;
+  var LENS_Y = EYE_Y + 1, LENS_IH = 37, LENS_TOP_W = 50, LENS_BOT_W = 45, RIM_T = 8.4, RIM_TOP = 11, RIM_NOSE = 3.5;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
     var cx = side * EYE_X;
@@ -242,13 +242,15 @@
     if (!on) return h("g", { "data-part": "glasses", display: "none" }, []);
     var tw = LENS_TOP_W / 2, bw = LENS_BOT_W / 2, ih = LENS_IH / 2, T = RIM_T, TT = RIM_TOP;
     var inner = roundPoly([[-tw, -ih, 2.5], [tw, -ih, 2.5], [bw, ih, 6], [-bw, ih, 6]]);
-    var outer = roundPoly([[-tw - T, -ih - TT, 4], [tw + T, -ih - TT, 4], [bw + T, ih + T, 9], [-bw - T, ih + T, 9]]);
-    var lime = pal.glasses, edge = pal.glassesEdge, light = pal.glassesLight, op = 0.9;
+    var lime = pal.glasses, edge = pal.glassesEdge, light = pal.glassesLight, op = 0.93;
     var kids = [];
     [-1, 1].forEach(function (sd) {
       var cx = sd * EYE_X, ox = tw + T;
-      var arm = "M " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih - 4) + " L " + sd * 90 + " " + (LENS_Y - ih - 1) + " L " + sd * 90 + " " + (LENS_Y - ih + 5) +
-        " L " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih + 3) + " Z";
+      // the rim is thinner on the nose side so the two rims meet at the bridge without overlapping
+      var tn = RIM_NOSE, lo = sd < 0 ? T : tn, ro = sd < 0 ? tn : T;
+      var outer = roundPoly([[-tw - lo, -ih - TT, 4], [tw + ro, -ih - TT, 4], [bw + ro, ih + (T + tn) / 2, 9], [-bw - lo, ih + (T + tn) / 2, 9]]);
+      var arm = "M " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih - 5) + " L " + sd * 90 + " " + (LENS_Y - ih - 2) + " L " + sd * 90 + " " + (LENS_Y - ih + 7) +
+        " L " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih + 5) + " Z";
       kids.push(h("g", { "data-part": sd < 0 ? "glasses-left" : "glasses-right" }, [
         h("path", { d: arm, fill: lime, opacity: op, stroke: edge, "stroke-width": 1.4, "stroke-linejoin": "round" }),
         h("g", { transform: "translate(" + cx + " " + LENS_Y + ")" }, [
@@ -257,12 +259,12 @@
           h("path", { d: outer, fill: "none", stroke: edge, "stroke-width": 1.6, "stroke-linejoin": "round" }),
           h("path", { d: inner, fill: "none", stroke: light, "stroke-width": 1.5, "stroke-linejoin": "round" }),
           // flat streak on the top bar and the hinge rivet at the outer top corner
-          h("path", { d: "M " + (-tw + 6) + " " + (-ih - TT / 2) + " L " + (tw - 18) + " " + (-ih - TT / 2), stroke: "#FFFFFF", "stroke-width": 1.2, "stroke-linecap": "round", opacity: 0.4 }),
-          h("circle", { cx: sd * (tw + T - 2.8), cy: -ih - TT / 2 + 0.6, r: 1.7, fill: light, stroke: edge, "stroke-width": 0.9 }),
+          h("path", { d: "M " + (-tw + 6) + " " + (-ih - TT / 2) + " L " + (tw - 18) + " " + (-ih - TT / 2), stroke: "#FFFFFF", "stroke-width": 1.4, "stroke-linecap": "round", opacity: 0.4 }),
+          h("circle", { cx: sd * (tw + T - 3.4), cy: -ih - TT / 2 + 0.6, r: 2, fill: light, stroke: edge, "stroke-width": 0.9 }),
         ]),
       ]));
     });
-    kids.push(h("path", { d: "M -9 " + (LENS_Y - ih - 6) + " L 9 " + (LENS_Y - ih - 6) + " L 9 " + (LENS_Y - ih) + " L -9 " + (LENS_Y - ih) + " Z", fill: lime, opacity: op, stroke: edge, "stroke-width": 1.2 }));
+    kids.push(h("path", { d: "M -10 " + (LENS_Y - ih - 8) + " L 10 " + (LENS_Y - ih - 8) + " L 10 " + (LENS_Y - ih + 1) + " L -10 " + (LENS_Y - ih + 1) + " Z", fill: lime, opacity: op, stroke: edge, "stroke-width": 1.2 }));
     return h("g", { "data-part": "glasses", "data-glasses": "lime-thick", display: show(on) }, kids);
   }
 

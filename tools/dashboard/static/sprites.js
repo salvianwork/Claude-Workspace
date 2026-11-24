@@ -914,12 +914,12 @@ export function starPoster(b, x, y, outfit = "blazer") {
   // head: 10 wide x 11 tall, light from the top left
   const hx = cx - 5, hy = iy + ih - 20;
   const face = [
-    "..hhHhHh..", ".hHhHhhhh.", "hhHhhHhhhh", "hhkKKKkkhh", "hkKkkkkkzh",
-    "hkGGGGGGkh", "hkGeGGeGkh", ".kEEkkEEk.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
+    "..hhHhHh..", ".hHhHhhhh.", "hhHhhHhhhh", "hhkKKKkkhh", "hGGGGGGGGh",
+    "hGkkGGkkGh", "hGkeGGekGh", ".GEEEEEEG.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
   ];
   const map = { h: P.hair[2], H: P.hair[3], k: P.skin[2], K: P.skin[3], z: P.skin[1], G: P.glasses[1], E: P.glasses[0], e: "#1a1020", m: "#a85a4a" };
   face.forEach((row, j) => [...row].forEach((ch, i) => { if (map[ch]) b.set(hx + i, hy + j, map[ch]); }));
-  b.set(hx + 2, hy + 5, P.glasses[2]); // glint on the frame
+  b.set(hx + 2, hy + 4, P.glasses[2]); // glint on the top bar
   // curls: a few lit and shaded hair pixels around the crown
   for (const [i, j, c] of [[1, -1, 2], [3, -1, 3], [5, -1, 2], [7, -1, 2], [0, 1, 3], [9, 2, 1], [8, -1, 1], [-1, 3, 2], [10, 4, 1]]) {
     b.set(hx + i, hy + j, P.hair[c]);
