@@ -1,0 +1,1921 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "frames": 795,
+ "total": 26.5,
+ "style": {
+  "colors": {
+   "background": "#0F172A",
+   "surface": "#1E293B",
+   "primary": "#38BDF8",
+   "accent": "#F59E0B",
+   "text": "#F1F5F9"
+  },
+  "fonts": {
+   "heading": "Poppins",
+   "body": "Inter"
+  },
+  "captions": {
+   "size": 60,
+   "position": "bottom"
+  }
+ },
+ "presenterOutfit": "blazer",
+ "warnings": [],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "start": 0.0,
+   "frames": 143,
+   "duration": 4.766666666666667,
+   "words": [
+    {
+     "i": 0,
+     "text": "What",
+     "display": "What",
+     "start": 0.25,
+     "end": 0.388
+    },
+    {
+     "i": 1,
+     "text": "if",
+     "display": "if",
+     "start": 0.388,
+     "end": 0.512
+    },
+    {
+     "i": 2,
+     "text": "the",
+     "display": "the",
+     "start": 0.512,
+     "end": 0.637
+    },
+    {
+     "i": 3,
+     "text": "Moon",
+     "display": "Moon",
+     "start": 0.637,
+     "end": 0.95
+    },
+    {
+     "i": 4,
+     "text": "disappeared",
+     "display": "disappeared?",
+     "start": 0.95,
+     "end": 1.75
+    },
+    {
+     "i": 5,
+     "text": "Imagine",
+     "display": "Imagine",
+     "start": 1.887,
+     "end": 2.4
+    },
+    {
+     "i": 6,
+     "text": "it",
+     "display": "it",
+     "start": 2.4,
+     "end": 2.55
+    },
+    {
+     "i": 7,
+     "text": "simply",
+     "display": "simply",
+     "start": 2.55,
+     "end": 2.875
+    },
+    {
+     "i": 8,
+     "text": "vanished",
+     "display": "vanished",
+     "start": 2.875,
+     "end": 3.275
+    },
+    {
+     "i": 9,
+     "text": "tonight",
+     "display": "tonight.",
+     "start": 3.275,
+     "end": 4.05
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "slide",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.23,
+    0.55,
+    0.85,
+    0.89,
+    0.84,
+    0.65,
+    0.41,
+    0.14,
+    0.32,
+    0.55,
+    0.81,
+    0.8,
+    0.8,
+    0.83,
+    0.85,
+    0.86,
+    0.84,
+    0.82,
+    0.8,
+    0.78,
+    0.71,
+    0.66,
+    0.68,
+    0.69,
+    0.68,
+    0.6,
+    0.64,
+    0.55,
+    0.36,
+    0.18,
+    0.2,
+    0.45,
+    0.63,
+    0.75,
+    0.74,
+    0.72,
+    0.66,
+    0.56,
+    0.35,
+    0.15,
+    0.02,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.26,
+    0.55,
+    0.84,
+    0.86,
+    0.88,
+    0.89,
+    0.88,
+    0.87,
+    0.84,
+    0.7,
+    0.58,
+    0.55,
+    0.68,
+    0.73,
+    0.75,
+    0.72,
+    0.7,
+    0.45,
+    0.34,
+    0.35,
+    0.55,
+    0.69,
+    0.75,
+    0.74,
+    0.46,
+    0.37,
+    0.42,
+    0.68,
+    0.72,
+    0.62,
+    0.55,
+    0.64,
+    0.77,
+    0.84,
+    0.78,
+    0.73,
+    0.69,
+    0.63,
+    0.59,
+    0.53,
+    0.35,
+    0.3,
+    0.31,
+    0.55,
+    0.66,
+    0.75,
+    0.75,
+    0.72,
+    0.64,
+    0.51,
+    0.35,
+    0.18,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 1,
+    "kind": "world",
+    "place": "space",
+    "variant": "earth-orbit",
+    "new_place": false,
+    "facts": [
+     "imagined: the Moon vanishes (a thought experiment, labelled Imagine…)",
+     "not to scale: the Moon is shown near Earth for the picture"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "Earth and the Moon from orbit; the host wonders as the camera pushes in on the Moon",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "open",
+        "zoom": 0.8,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think"
+       },
+       {
+        "do": "label",
+        "target": "moon",
+        "text": "not to scale",
+        "at": {
+         "word": 0
+        },
+        "side": "above",
+        "until": {
+         "word": 8
+        }
+       },
+       {
+        "do": "push_in",
+        "target": "moon",
+        "zoom": 1.4,
+        "at": {
+         "word": 4
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 5
+      },
+      "action": "imagined: the Moon flashes and vanishes, leaving empty space; the host is amazed",
+      "moves": [
+       {
+        "do": "label",
+        "target": "moon",
+        "text": "Imagine…",
+        "side": "below",
+        "at": {
+         "word": 5
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "moon",
+        "at": {
+         "word": 5
+        }
+       },
+       {
+        "do": "custom",
+        "name": "moon-vanish",
+        "at": {
+         "word": 8
+        }
+       },
+       {
+        "do": "sparkle",
+        "target": "moon",
+        "at": {
+         "word": 8
+        },
+        "radius": 260,
+        "count": 14,
+        "color": "#F6F2DC"
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "surprised",
+        "at": {
+         "word": 8
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "surprised",
+        "at": {
+         "word": 9
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "start": 4.766666666666667,
+   "frames": 199,
+   "duration": 6.633333333333334,
+   "words": [
+    {
+     "i": 0,
+     "text": "The",
+     "display": "The",
+     "start": 0.25,
+     "end": 0.325
+    },
+    {
+     "i": 1,
+     "text": "tides",
+     "display": "tides",
+     "start": 0.325,
+     "end": 0.713
+    },
+    {
+     "i": 2,
+     "text": "would",
+     "display": "would",
+     "start": 0.713,
+     "end": 0.887
+    },
+    {
+     "i": 3,
+     "text": "shrink",
+     "display": "shrink.",
+     "start": 0.887,
+     "end": 1.55
+    },
+    {
+     "i": 4,
+     "text": "Only",
+     "display": "Only",
+     "start": 1.688,
+     "end": 1.988
+    },
+    {
+     "i": 5,
+     "text": "the",
+     "display": "the",
+     "start": 1.988,
+     "end": 2.112
+    },
+    {
+     "i": 6,
+     "text": "Sun's",
+     "display": "Sun's",
+     "start": 2.112,
+     "end": 2.475
+    },
+    {
+     "i": 7,
+     "text": "tides",
+     "display": "tides",
+     "start": 2.475,
+     "end": 2.837
+    },
+    {
+     "i": 8,
+     "text": "would",
+     "display": "would",
+     "start": 2.837,
+     "end": 2.95
+    },
+    {
+     "i": 9,
+     "text": "remain",
+     "display": "remain,",
+     "start": 2.95,
+     "end": 3.475
+    },
+    {
+     "i": 10,
+     "text": "a",
+     "display": "a",
+     "start": 3.55,
+     "end": 3.663
+    },
+    {
+     "i": 11,
+     "text": "third",
+     "display": "third",
+     "start": 3.663,
+     "end": 4.0
+    },
+    {
+     "i": 12,
+     "text": "to",
+     "display": "to",
+     "start": 4.0,
+     "end": 4.1
+    },
+    {
+     "i": 13,
+     "text": "a",
+     "display": "a",
+     "start": 4.1,
+     "end": 4.175
+    },
+    {
+     "i": 14,
+     "text": "half",
+     "display": "half",
+     "start": 4.175,
+     "end": 4.463
+    },
+    {
+     "i": 15,
+     "text": "as",
+     "display": "as",
+     "start": 4.463,
+     "end": 4.612
+    },
+    {
+     "i": 16,
+     "text": "big",
+     "display": "big",
+     "start": 4.612,
+     "end": 4.812
+    },
+    {
+     "i": 17,
+     "text": "as",
+     "display": "as",
+     "start": 4.812,
+     "end": 4.95
+    },
+    {
+     "i": 18,
+     "text": "today's",
+     "display": "today's.",
+     "start": 4.95,
+     "end": 5.925
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "slide",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.28,
+    0.44,
+    0.6,
+    0.58,
+    0.71,
+    0.83,
+    0.84,
+    0.83,
+    0.83,
+    0.81,
+    0.69,
+    0.55,
+    0.46,
+    0.44,
+    0.56,
+    0.66,
+    0.64,
+    0.55,
+    0.49,
+    0.56,
+    0.54,
+    0.59,
+    0.69,
+    0.82,
+    0.82,
+    0.74,
+    0.6,
+    0.37,
+    0.16,
+    0.02,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.3,
+    0.6,
+    0.89,
+    0.87,
+    0.85,
+    0.84,
+    0.86,
+    0.76,
+    0.72,
+    0.71,
+    0.71,
+    0.66,
+    0.58,
+    0.62,
+    0.72,
+    0.8,
+    0.84,
+    0.78,
+    0.76,
+    0.73,
+    0.67,
+    0.55,
+    0.33,
+    0.29,
+    0.42,
+    0.67,
+    0.78,
+    0.79,
+    0.78,
+    0.78,
+    0.73,
+    0.6,
+    0.47,
+    0.45,
+    0.6,
+    0.64,
+    0.64,
+    0.64,
+    0.75,
+    0.8,
+    0.79,
+    0.78,
+    0.81,
+    0.8,
+    0.79,
+    0.77,
+    0.74,
+    0.68,
+    0.62,
+    0.55,
+    0.47,
+    0.35,
+    0.19,
+    0.07,
+    0.09,
+    0.35,
+    0.53,
+    0.43,
+    0.18,
+    0.02,
+    0.31,
+    0.6,
+    0.87,
+    0.87,
+    0.85,
+    0.81,
+    0.69,
+    0.44,
+    0.32,
+    0.37,
+    0.62,
+    0.78,
+    0.8,
+    0.67,
+    0.54,
+    0.57,
+    0.71,
+    0.82,
+    0.79,
+    0.64,
+    0.37,
+    0.3,
+    0.41,
+    0.6,
+    0.58,
+    0.42,
+    0.27,
+    0.13,
+    0.32,
+    0.54,
+    0.77,
+    0.63,
+    0.6,
+    0.61,
+    0.64,
+    0.54,
+    0.3,
+    0.29,
+    0.4,
+    0.58,
+    0.67,
+    0.71,
+    0.8,
+    0.82,
+    0.76,
+    0.66,
+    0.54,
+    0.42,
+    0.34,
+    0.24,
+    0.16,
+    0.2,
+    0.3,
+    0.29,
+    0.14,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 2,
+    "kind": "world",
+    "place": "ocean",
+    "variant": "surface",
+    "new_place": false,
+    "facts": [
+     "the Sun also raises tides",
+     "with no Moon, tides would be a third to a half of today's size (the Sun's tide is about 0.46 of the Moon's, so a third of today's spring tides and about half of an average tide)",
+     "time is sped up: each rise and fall of the float stands for a tide of about 12 hours"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "a tide pole in the sea: the water and its float rise and fall over today's full range",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "surface",
+        "zoom": 1.15,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "say",
+        "who": "host"
+       },
+       {
+        "do": "custom",
+        "name": "tide-gauge",
+        "params": {
+         "period": 2.0,
+         "range": 150,
+         "ratio": 0.42,
+         "band": [
+          0.333,
+          0.5
+         ]
+        },
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "label",
+        "target": "boat",
+        "text": "Without the Moon",
+        "side": "above",
+        "at": {
+         "word": 1
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 4
+      },
+      "action": "the rise and fall shrinks to a smaller bob inside the new orange bands, a third to a half of the old range; the host points at it",
+      "moves": [
+       {
+        "do": "point",
+        "who": "host",
+        "target": "surface",
+        "at": {
+         "word": 5
+        }
+       },
+       {
+        "do": "label",
+        "target": "surface",
+        "text": "Tides: 1/3 to 1/2",
+        "side": "right",
+        "at": {
+         "word": 10
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think",
+        "at": {
+         "word": 15
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "slide"
+   }
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "start": 11.4,
+   "frames": 168,
+   "duration": 5.6,
+   "words": [
+    {
+     "i": 0,
+     "text": "Nights",
+     "display": "Nights",
+     "start": 0.275,
+     "end": 0.562
+    },
+    {
+     "i": 1,
+     "text": "would",
+     "display": "would",
+     "start": 0.562,
+     "end": 0.662
+    },
+    {
+     "i": 2,
+     "text": "be",
+     "display": "be",
+     "start": 0.662,
+     "end": 0.8
+    },
+    {
+     "i": 3,
+     "text": "darker",
+     "display": "darker,",
+     "start": 0.8,
+     "end": 1.175
+    },
+    {
+     "i": 4,
+     "text": "too",
+     "display": "too.",
+     "start": 1.238,
+     "end": 1.775
+    },
+    {
+     "i": 5,
+     "text": "With",
+     "display": "With",
+     "start": 1.95,
+     "end": 2.15
+    },
+    {
+     "i": 6,
+     "text": "no",
+     "display": "no",
+     "start": 2.15,
+     "end": 2.325
+    },
+    {
+     "i": 7,
+     "text": "moonlight",
+     "display": "moonlight,",
+     "start": 2.325,
+     "end": 2.725
+    },
+    {
+     "i": 8,
+     "text": "only",
+     "display": "only",
+     "start": 2.775,
+     "end": 3.062
+    },
+    {
+     "i": 9,
+     "text": "the",
+     "display": "the",
+     "start": 3.062,
+     "end": 3.188
+    },
+    {
+     "i": 10,
+     "text": "stars",
+     "display": "stars",
+     "start": 3.188,
+     "end": 3.65
+    },
+    {
+     "i": 11,
+     "text": "would",
+     "display": "would",
+     "start": 3.65,
+     "end": 3.8
+    },
+    {
+     "i": 12,
+     "text": "light",
+     "display": "light",
+     "start": 3.8,
+     "end": 4.025
+    },
+    {
+     "i": 13,
+     "text": "the",
+     "display": "the",
+     "start": 4.025,
+     "end": 4.125
+    },
+    {
+     "i": 14,
+     "text": "way",
+     "display": "way.",
+     "start": 4.125,
+     "end": 4.875
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.24,
+    0.54,
+    0.83,
+    0.87,
+    0.84,
+    0.73,
+    0.51,
+    0.45,
+    0.39,
+    0.53,
+    0.58,
+    0.65,
+    0.62,
+    0.63,
+    0.69,
+    0.67,
+    0.51,
+    0.55,
+    0.69,
+    0.85,
+    0.83,
+    0.74,
+    0.47,
+    0.26,
+    0.23,
+    0.48,
+    0.64,
+    0.46,
+    0.21,
+    0.2,
+    0.38,
+    0.62,
+    0.69,
+    0.78,
+    0.79,
+    0.72,
+    0.61,
+    0.48,
+    0.29,
+    0.13,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.14,
+    0.41,
+    0.68,
+    0.63,
+    0.44,
+    0.43,
+    0.63,
+    0.84,
+    0.87,
+    0.85,
+    0.8,
+    0.78,
+    0.8,
+    0.83,
+    0.85,
+    0.83,
+    0.81,
+    0.8,
+    0.81,
+    0.81,
+    0.8,
+    0.77,
+    0.53,
+    0.31,
+    0.14,
+    0.36,
+    0.59,
+    0.79,
+    0.8,
+    0.77,
+    0.78,
+    0.8,
+    0.74,
+    0.66,
+    0.65,
+    0.64,
+    0.67,
+    0.63,
+    0.63,
+    0.41,
+    0.46,
+    0.57,
+    0.83,
+    0.81,
+    0.78,
+    0.75,
+    0.75,
+    0.71,
+    0.64,
+    0.56,
+    0.41,
+    0.49,
+    0.58,
+    0.63,
+    0.58,
+    0.56,
+    0.69,
+    0.78,
+    0.78,
+    0.67,
+    0.4,
+    0.17,
+    0.16,
+    0.42,
+    0.63,
+    0.66,
+    0.67,
+    0.71,
+    0.74,
+    0.68,
+    0.58,
+    0.47,
+    0.37,
+    0.25,
+    0.14,
+    0.04,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 3,
+    "kind": "world",
+    "place": "forest",
+    "variant": "moonless",
+    "new_place": false,
+    "facts": [
+     "without the Moon there is no moonlight; nights are lit only by the stars (and are darker): a moonless night with the stars and the Milky Way"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "anchor": "trail"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "the host walks the dark forest trail on a moonless night: no Moon in the sky, only the stars and the faint Milky Way",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "log",
+        "zoom": 0.75,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "walk_to",
+        "who": "host",
+        "to": "log",
+        "at": {
+         "word": 0
+        }
+       },
+       {
+        "do": "label",
+        "target": "host",
+        "text": "No moonlight",
+        "side": "above",
+        "at": {
+         "word": 5
+        },
+        "until": {
+         "word": 11
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 8
+      },
+      "action": "the host stops and points up at the stars, the only light on the trail; the camera eases back to show the starry sky",
+      "moves": [
+       {
+        "do": "pull_out",
+        "target": "log",
+        "zoom": 0.62,
+        "at": {
+         "word": 10
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "canopy",
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "curious",
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "happy",
+        "at": {
+         "word": 12
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "start": 17.0,
+   "frames": 142,
+   "duration": 4.733333333333333,
+   "words": [
+    {
+     "i": 0,
+     "text": "And",
+     "display": "And",
+     "start": 0.225,
+     "end": 0.338
+    },
+    {
+     "i": 1,
+     "text": "over",
+     "display": "over",
+     "start": 0.338,
+     "end": 0.55
+    },
+    {
+     "i": 2,
+     "text": "millions",
+     "display": "millions",
+     "start": 0.55,
+     "end": 0.938
+    },
+    {
+     "i": 3,
+     "text": "of",
+     "display": "of",
+     "start": 0.938,
+     "end": 1.025
+    },
+    {
+     "i": 4,
+     "text": "years",
+     "display": "years,",
+     "start": 1.025,
+     "end": 1.55
+    },
+    {
+     "i": 5,
+     "text": "Earth's",
+     "display": "Earth's",
+     "start": 1.65,
+     "end": 1.975
+    },
+    {
+     "i": 6,
+     "text": "tilt",
+     "display": "tilt",
+     "start": 1.975,
+     "end": 2.25
+    },
+    {
+     "i": 7,
+     "text": "could",
+     "display": "could",
+     "start": 2.25,
+     "end": 2.362
+    },
+    {
+     "i": 8,
+     "text": "become",
+     "display": "become",
+     "start": 2.362,
+     "end": 2.737
+    },
+    {
+     "i": 9,
+     "text": "far",
+     "display": "far",
+     "start": 2.737,
+     "end": 3.025
+    },
+    {
+     "i": 10,
+     "text": "less",
+     "display": "less",
+     "start": 3.025,
+     "end": 3.225
+    },
+    {
+     "i": 11,
+     "text": "steady",
+     "display": "steady.",
+     "start": 3.225,
+     "end": 4.05
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.07,
+    0.35,
+    0.61,
+    0.84,
+    0.87,
+    0.9,
+    0.79,
+    0.77,
+    0.76,
+    0.83,
+    0.82,
+    0.84,
+    0.86,
+    0.85,
+    0.82,
+    0.79,
+    0.79,
+    0.79,
+    0.8,
+    0.74,
+    0.66,
+    0.67,
+    0.64,
+    0.62,
+    0.57,
+    0.65,
+    0.73,
+    0.78,
+    0.76,
+    0.73,
+    0.67,
+    0.6,
+    0.55,
+    0.52,
+    0.35,
+    0.17,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.21,
+    0.52,
+    0.83,
+    0.9,
+    0.8,
+    0.49,
+    0.33,
+    0.32,
+    0.44,
+    0.32,
+    0.29,
+    0.39,
+    0.7,
+    0.81,
+    0.82,
+    0.65,
+    0.36,
+    0.14,
+    0.11,
+    0.37,
+    0.55,
+    0.62,
+    0.63,
+    0.61,
+    0.43,
+    0.31,
+    0.37,
+    0.65,
+    0.76,
+    0.76,
+    0.7,
+    0.57,
+    0.35,
+    0.13,
+    0.29,
+    0.58,
+    0.86,
+    0.86,
+    0.82,
+    0.79,
+    0.73,
+    0.71,
+    0.72,
+    0.76,
+    0.72,
+    0.62,
+    0.56,
+    0.57,
+    0.54,
+    0.37,
+    0.46,
+    0.59,
+    0.79,
+    0.65,
+    0.52,
+    0.42,
+    0.39,
+    0.3,
+    0.16,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 4,
+    "kind": "world",
+    "place": "space",
+    "variant": "earth-orbit",
+    "new_place": false,
+    "facts": [
+     "the Moon helps keep Earth's axial tilt (about 23.4 degrees) steady",
+     "without it the tilt could vary much more over millions of years (the size of the swing drawn is illustrative)",
+     "not to scale",
+     "imagined: still the world without the Moon, so no Moon is drawn (moon-vanish with gone: true covers the place's Moon)"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "Earth's spin axis sticks out of the planet, swaying only slightly",
+      "moves": [
+       {
+        "do": "pull_out",
+        "target": "planet",
+        "zoom": 0.6,
+        "from": 0.72,
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think"
+       },
+       {
+        "do": "label",
+        "target": "open",
+        "text": "not to scale",
+        "at": {
+         "word": 0
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "planet",
+        "at": {
+         "word": 5
+        }
+       },
+       {
+        "do": "custom",
+        "name": "moon-vanish",
+        "params": {
+         "gone": true
+        },
+        "at": {
+         "t": 0
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 5
+      },
+      "action": "the axis starts to swing wider and wider as the camera eases back; the host is surprised",
+      "moves": [
+       {
+        "do": "custom",
+        "name": "axis-wobble",
+        "params": {
+         "swing": 6,
+         "base": -9
+        },
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "label",
+        "target": "planet",
+        "text": "Tilt: less steady",
+        "side": "left",
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "surprised",
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "surprised",
+        "at": {
+         "word": 10
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 5,
+   "kind": "world",
+   "start": 21.733333333333334,
+   "frames": 143,
+   "duration": 4.766666666666667,
+   "words": [
+    {
+     "i": 0,
+     "text": "But",
+     "display": "But",
+     "start": 0.225,
+     "end": 0.338
+    },
+    {
+     "i": 1,
+     "text": "the",
+     "display": "the",
+     "start": 0.338,
+     "end": 0.425
+    },
+    {
+     "i": 2,
+     "text": "Moon",
+     "display": "Moon",
+     "start": 0.425,
+     "end": 0.688
+    },
+    {
+     "i": 3,
+     "text": "is",
+     "display": "is",
+     "start": 0.688,
+     "end": 0.762
+    },
+    {
+     "i": 4,
+     "text": "still",
+     "display": "still",
+     "start": 0.762,
+     "end": 1.025
+    },
+    {
+     "i": 5,
+     "text": "here",
+     "display": "here,",
+     "start": 1.025,
+     "end": 1.45
+    },
+    {
+     "i": 6,
+     "text": "keeping",
+     "display": "keeping",
+     "start": 1.575,
+     "end": 1.887
+    },
+    {
+     "i": 7,
+     "text": "our",
+     "display": "our",
+     "start": 1.887,
+     "end": 2.025
+    },
+    {
+     "i": 8,
+     "text": "tides",
+     "display": "tides,",
+     "start": 2.025,
+     "end": 2.45
+    },
+    {
+     "i": 9,
+     "text": "and",
+     "display": "and",
+     "start": 2.487,
+     "end": 2.587
+    },
+    {
+     "i": 10,
+     "text": "our",
+     "display": "our",
+     "start": 2.587,
+     "end": 2.737
+    },
+    {
+     "i": 11,
+     "text": "seasons",
+     "display": "seasons,",
+     "start": 2.737,
+     "end": 3.225
+    },
+    {
+     "i": 12,
+     "text": "steady",
+     "display": "steady.",
+     "start": 3.275,
+     "end": 4.075
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": null,
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.29,
+    0.43,
+    0.48,
+    0.5,
+    0.63,
+    0.86,
+    0.86,
+    0.89,
+    0.89,
+    0.88,
+    0.87,
+    0.84,
+    0.82,
+    0.79,
+    0.71,
+    0.63,
+    0.41,
+    0.39,
+    0.49,
+    0.75,
+    0.84,
+    0.77,
+    0.63,
+    0.52,
+    0.54,
+    0.66,
+    0.79,
+    0.8,
+    0.76,
+    0.65,
+    0.45,
+    0.22,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.07,
+    0.3,
+    0.6,
+    0.77,
+    0.57,
+    0.5,
+    0.54,
+    0.77,
+    0.79,
+    0.78,
+    0.82,
+    0.79,
+    0.51,
+    0.37,
+    0.3,
+    0.56,
+    0.7,
+    0.82,
+    0.83,
+    0.81,
+    0.78,
+    0.76,
+    0.72,
+    0.61,
+    0.47,
+    0.4,
+    0.53,
+    0.7,
+    0.79,
+    0.79,
+    0.76,
+    0.79,
+    0.72,
+    0.62,
+    0.52,
+    0.5,
+    0.53,
+    0.62,
+    0.69,
+    0.76,
+    0.73,
+    0.62,
+    0.55,
+    0.57,
+    0.63,
+    0.62,
+    0.56,
+    0.5,
+    0.45,
+    0.44,
+    0.47,
+    0.51,
+    0.34,
+    0.38,
+    0.51,
+    0.77,
+    0.77,
+    0.6,
+    0.49,
+    0.41,
+    0.32,
+    0.17,
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 5,
+    "kind": "world",
+    "place": "rooftop-night",
+    "variant": "clear",
+    "new_place": false,
+    "facts": [
+     "back in the real world: the Moon is still here",
+     "the Moon drives most of the tides and steadies Earth's tilt, and so the seasons"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "left"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "back in the real world: over a city rooftop at night the bright full Moon shines; the host points up at it",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "sky",
+        "zoom": 0.75,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "sky",
+        "at": {
+         "word": 1
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "happy",
+        "at": {
+         "word": 1
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 6
+      },
+      "action": "the camera pulls back over the moonlit rooftop and the host celebrates",
+      "moves": [
+       {
+        "do": "pull_out",
+        "target": "sky",
+        "zoom": 0.62,
+        "at": {
+         "word": 12
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "celebrate",
+        "at": {
+         "word": 8
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  }
+ ],
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ]
+}

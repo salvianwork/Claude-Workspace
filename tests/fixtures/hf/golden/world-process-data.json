@@ -1,0 +1,1724 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "frames": 738,
+ "total": 24.6,
+ "style": {
+  "colors": {
+   "background": "#0F172A",
+   "surface": "#1E293B",
+   "primary": "#38BDF8",
+   "accent": "#F59E0B",
+   "text": "#F1F5F9"
+  },
+  "fonts": {
+   "heading": "Poppins",
+   "body": "Inter"
+  },
+  "captions": {
+   "size": 60,
+   "position": "bottom"
+  }
+ },
+ "presenterOutfit": "blazer",
+ "warnings": [],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "start": 0.0,
+   "frames": 207,
+   "duration": 6.9,
+   "words": [
+    {
+     "i": 0,
+     "text": "The",
+     "display": "The",
+     "start": 0.25,
+     "end": 0.362
+    },
+    {
+     "i": 1,
+     "text": "Sun",
+     "display": "Sun",
+     "start": 0.362,
+     "end": 0.65
+    },
+    {
+     "i": 2,
+     "text": "warms",
+     "display": "warms",
+     "start": 0.65,
+     "end": 1.0
+    },
+    {
+     "i": 3,
+     "text": "the",
+     "display": "the",
+     "start": 1.0,
+     "end": 1.15
+    },
+    {
+     "i": 4,
+     "text": "sea",
+     "display": "sea,",
+     "start": 1.15,
+     "end": 1.75
+    },
+    {
+     "i": 5,
+     "text": "and",
+     "display": "and",
+     "start": 1.875,
+     "end": 2.0
+    },
+    {
+     "i": 6,
+     "text": "some",
+     "display": "some",
+     "start": 2.0,
+     "end": 2.225
+    },
+    {
+     "i": 7,
+     "text": "water",
+     "display": "water",
+     "start": 2.225,
+     "end": 2.6
+    },
+    {
+     "i": 8,
+     "text": "escapes",
+     "display": "escapes",
+     "start": 2.6,
+     "end": 2.987
+    },
+    {
+     "i": 9,
+     "text": "into",
+     "display": "into",
+     "start": 2.987,
+     "end": 3.163
+    },
+    {
+     "i": 10,
+     "text": "the",
+     "display": "the",
+     "start": 3.163,
+     "end": 3.312
+    },
+    {
+     "i": 11,
+     "text": "air",
+     "display": "air",
+     "start": 3.312,
+     "end": 3.6
+    },
+    {
+     "i": 12,
+     "text": "as",
+     "display": "as",
+     "start": 3.6,
+     "end": 3.712
+    },
+    {
+     "i": 13,
+     "text": "an",
+     "display": "an",
+     "start": 3.712,
+     "end": 3.8
+    },
+    {
+     "i": 14,
+     "text": "invisible",
+     "display": "invisible",
+     "start": 3.8,
+     "end": 4.388
+    },
+    {
+     "i": 15,
+     "text": "gas",
+     "display": "gas,",
+     "start": 4.388,
+     "end": 4.875
+    },
+    {
+     "i": 16,
+     "text": "water",
+     "display": "water",
+     "start": 4.963,
+     "end": 5.35
+    },
+    {
+     "i": 17,
+     "text": "vapour",
+     "display": "vapour.",
+     "start": 5.35,
+     "end": 6.2
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.25,
+    0.51,
+    0.69,
+    0.63,
+    0.55,
+    0.68,
+    0.79,
+    0.88,
+    0.84,
+    0.79,
+    0.76,
+    0.75,
+    0.76,
+    0.8,
+    0.83,
+    0.84,
+    0.83,
+    0.8,
+    0.76,
+    0.7,
+    0.6,
+    0.39,
+    0.18,
+    0.27,
+    0.44,
+    0.6,
+    0.55,
+    0.52,
+    0.52,
+    0.57,
+    0.65,
+    0.73,
+    0.71,
+    0.59,
+    0.43,
+    0.22,
+    0.08,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.26,
+    0.53,
+    0.71,
+    0.66,
+    0.62,
+    0.75,
+    0.82,
+    0.83,
+    0.76,
+    0.72,
+    0.74,
+    0.8,
+    0.86,
+    0.91,
+    0.9,
+    0.84,
+    0.74,
+    0.7,
+    0.72,
+    0.75,
+    0.71,
+    0.68,
+    0.6,
+    0.55,
+    0.51,
+    0.37,
+    0.34,
+    0.42,
+    0.67,
+    0.75,
+    0.48,
+    0.3,
+    0.22,
+    0.47,
+    0.65,
+    0.71,
+    0.62,
+    0.57,
+    0.52,
+    0.6,
+    0.64,
+    0.61,
+    0.5,
+    0.53,
+    0.69,
+    0.81,
+    0.83,
+    0.81,
+    0.77,
+    0.75,
+    0.73,
+    0.74,
+    0.72,
+    0.61,
+    0.61,
+    0.64,
+    0.77,
+    0.79,
+    0.79,
+    0.78,
+    0.73,
+    0.63,
+    0.54,
+    0.62,
+    0.75,
+    0.76,
+    0.63,
+    0.61,
+    0.63,
+    0.62,
+    0.58,
+    0.62,
+    0.68,
+    0.57,
+    0.4,
+    0.27,
+    0.43,
+    0.63,
+    0.82,
+    0.78,
+    0.72,
+    0.62,
+    0.52,
+    0.37,
+    0.26,
+    0.26,
+    0.3,
+    0.31,
+    0.19,
+    0.08,
+    0.0,
+    0.0,
+    0.17,
+    0.42,
+    0.72,
+    0.85,
+    0.89,
+    0.84,
+    0.7,
+    0.62,
+    0.61,
+    0.68,
+    0.65,
+    0.52,
+    0.37,
+    0.48,
+    0.63,
+    0.79,
+    0.7,
+    0.49,
+    0.25,
+    0.1,
+    0.19,
+    0.31,
+    0.32,
+    0.17,
+    0.06,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 1,
+    "kind": "world",
+    "place": "ocean",
+    "variant": "surface",
+    "new_place": false,
+    "facts": [
+     "the Sun's heat makes sea water evaporate",
+     "water vapour is an invisible gas (the wisps only hint where it rises)"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "sunlight warms the sea: a warm glow spreads over the water by the boat",
+      "moves": [
+       {
+        "do": "pull_out",
+        "target": "surface",
+        "zoom": 0.85,
+        "from": 1.15,
+        "at": {
+         "word": 4
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "wave"
+       },
+       {
+        "do": "glow",
+        "target": "surface",
+        "at": {
+         "word": 2
+        },
+        "radius": 700,
+        "rays": 8,
+        "color": "#FFD27A",
+        "duration": 5
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 5
+      },
+      "action": "faint wisps of water vapour rise from the warm sea into the air; the host points at them",
+      "moves": [
+       {
+        "do": "point",
+        "who": "host",
+        "target": "surface",
+        "at": {
+         "word": 7
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "curious",
+        "at": {
+         "word": 14
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think",
+        "at": {
+         "word": 16
+        }
+       },
+       {
+        "do": "smoke",
+        "target": "surface",
+        "at": {
+         "word": 8
+        },
+        "color": "#F4FAFF",
+        "size": 1.3,
+        "rise": 160,
+        "wind": 20,
+        "duration": 4
+       },
+       {
+        "do": "smoke",
+        "target": "boat",
+        "at": {
+         "word": 9
+        },
+        "color": "#F4FAFF",
+        "size": 1.0,
+        "rise": 150,
+        "wind": 30,
+        "duration": 3.5,
+        "seed": 7
+       },
+       {
+        "do": "label",
+        "target": "surface",
+        "text": "Water vapour",
+        "side": "above",
+        "at": {
+         "word": 16
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "start": 6.9,
+   "frames": 160,
+   "duration": 5.333333333333333,
+   "words": [
+    {
+     "i": 0,
+     "text": "The",
+     "display": "The",
+     "start": 0.25,
+     "end": 0.362
+    },
+    {
+     "i": 1,
+     "text": "warm",
+     "display": "warm,",
+     "start": 0.362,
+     "end": 0.7
+    },
+    {
+     "i": 2,
+     "text": "moist",
+     "display": "moist",
+     "start": 0.75,
+     "end": 1.025
+    },
+    {
+     "i": 3,
+     "text": "air",
+     "display": "air",
+     "start": 1.025,
+     "end": 1.225
+    },
+    {
+     "i": 4,
+     "text": "rises",
+     "display": "rises.",
+     "start": 1.225,
+     "end": 1.95
+    },
+    {
+     "i": 5,
+     "text": "As",
+     "display": "As",
+     "start": 2.05,
+     "end": 2.212
+    },
+    {
+     "i": 6,
+     "text": "it",
+     "display": "it",
+     "start": 2.212,
+     "end": 2.3
+    },
+    {
+     "i": 7,
+     "text": "rises",
+     "display": "rises,",
+     "start": 2.3,
+     "end": 2.7
+    },
+    {
+     "i": 8,
+     "text": "the",
+     "display": "the",
+     "start": 2.737,
+     "end": 2.85
+    },
+    {
+     "i": 9,
+     "text": "air",
+     "display": "air",
+     "start": 2.85,
+     "end": 3.075
+    },
+    {
+     "i": 10,
+     "text": "spreads",
+     "display": "spreads",
+     "start": 3.075,
+     "end": 3.425
+    },
+    {
+     "i": 11,
+     "text": "out",
+     "display": "out",
+     "start": 3.425,
+     "end": 3.612
+    },
+    {
+     "i": 12,
+     "text": "and",
+     "display": "and",
+     "start": 3.612,
+     "end": 3.737
+    },
+    {
+     "i": 13,
+     "text": "cools",
+     "display": "cools.",
+     "start": 3.737,
+     "end": 4.625
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.29,
+    0.58,
+    0.83,
+    0.78,
+    0.77,
+    0.82,
+    0.86,
+    0.86,
+    0.84,
+    0.83,
+    0.82,
+    0.79,
+    0.75,
+    0.71,
+    0.71,
+    0.75,
+    0.79,
+    0.82,
+    0.78,
+    0.7,
+    0.5,
+    0.35,
+    0.22,
+    0.35,
+    0.53,
+    0.75,
+    0.84,
+    0.83,
+    0.76,
+    0.71,
+    0.73,
+    0.78,
+    0.79,
+    0.76,
+    0.72,
+    0.68,
+    0.57,
+    0.48,
+    0.46,
+    0.49,
+    0.47,
+    0.38,
+    0.39,
+    0.32,
+    0.23,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.27,
+    0.55,
+    0.74,
+    0.74,
+    0.72,
+    0.64,
+    0.56,
+    0.6,
+    0.77,
+    0.84,
+    0.81,
+    0.8,
+    0.72,
+    0.61,
+    0.55,
+    0.6,
+    0.65,
+    0.62,
+    0.44,
+    0.35,
+    0.44,
+    0.6,
+    0.65,
+    0.63,
+    0.69,
+    0.81,
+    0.85,
+    0.81,
+    0.7,
+    0.61,
+    0.54,
+    0.37,
+    0.18,
+    0.28,
+    0.56,
+    0.83,
+    0.75,
+    0.61,
+    0.51,
+    0.59,
+    0.73,
+    0.83,
+    0.79,
+    0.7,
+    0.5,
+    0.43,
+    0.43,
+    0.57,
+    0.47,
+    0.28,
+    0.19,
+    0.18,
+    0.45,
+    0.6,
+    0.77,
+    0.71,
+    0.64,
+    0.54,
+    0.44,
+    0.33,
+    0.24,
+    0.19,
+    0.26,
+    0.33,
+    0.27,
+    0.12,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 2,
+    "kind": "world",
+    "place": "ocean",
+    "variant": "surface",
+    "new_place": false,
+    "facts": [
+     "warm, moist air rises",
+     "as it rises the air pressure around it drops, so the air expands (spreads out) and cools; the drawing swells and turns from orange to blue as it climbs"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "over the sea beside the boat, a bubble of warm, moist air lifts off the water and starts to climb",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "sky",
+        "zoom": 0.75,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "surface",
+        "at": {
+         "word": 1
+        }
+       },
+       {
+        "do": "custom",
+        "name": "air-parcel",
+        "params": {
+         "rise": 2.7,
+         "r0": 80,
+         "r1": 190
+        },
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "Warm, moist air",
+        "side": "below",
+        "at": {
+         "word": 1
+        },
+        "until": {
+         "word": 6
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 5
+      },
+      "action": "as it rises the bubble swells (little arrows point outward) and turns from warm orange to cool blue",
+      "moves": [
+       {
+        "do": "point",
+        "who": "host",
+        "target": "sky",
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "curious",
+        "at": {
+         "word": 10
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "Spreads out, cools",
+        "side": "above",
+        "at": {
+         "word": 10
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "start": 12.233333333333333,
+   "frames": 191,
+   "duration": 6.366666666666666,
+   "words": [
+    {
+     "i": 0,
+     "text": "Cooled",
+     "display": "Cooled",
+     "start": 0.25,
+     "end": 0.6
+    },
+    {
+     "i": 1,
+     "text": "vapour",
+     "display": "vapour",
+     "start": 0.6,
+     "end": 0.95
+    },
+    {
+     "i": 2,
+     "text": "condenses",
+     "display": "condenses",
+     "start": 0.95,
+     "end": 1.587
+    },
+    {
+     "i": 3,
+     "text": "into",
+     "display": "into",
+     "start": 1.587,
+     "end": 1.837
+    },
+    {
+     "i": 4,
+     "text": "tiny",
+     "display": "tiny",
+     "start": 1.837,
+     "end": 2.225
+    },
+    {
+     "i": 5,
+     "text": "droplets",
+     "display": "droplets.",
+     "start": 2.225,
+     "end": 3.075
+    },
+    {
+     "i": 6,
+     "text": "Billions",
+     "display": "Billions",
+     "start": 3.225,
+     "end": 3.737
+    },
+    {
+     "i": 7,
+     "text": "of",
+     "display": "of",
+     "start": 3.737,
+     "end": 3.812
+    },
+    {
+     "i": 8,
+     "text": "them",
+     "display": "them",
+     "start": 3.812,
+     "end": 4.0
+    },
+    {
+     "i": 9,
+     "text": "together",
+     "display": "together",
+     "start": 4.0,
+     "end": 4.45
+    },
+    {
+     "i": 10,
+     "text": "make",
+     "display": "make",
+     "start": 4.45,
+     "end": 4.638
+    },
+    {
+     "i": 11,
+     "text": "a",
+     "display": "a",
+     "start": 4.638,
+     "end": 4.737
+    },
+    {
+     "i": 12,
+     "text": "cloud",
+     "display": "cloud.",
+     "start": 4.737,
+     "end": 5.65
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.14,
+    0.42,
+    0.73,
+    0.89,
+    0.9,
+    0.87,
+    0.84,
+    0.78,
+    0.68,
+    0.58,
+    0.51,
+    0.64,
+    0.74,
+    0.86,
+    0.78,
+    0.49,
+    0.33,
+    0.38,
+    0.64,
+    0.69,
+    0.42,
+    0.25,
+    0.33,
+    0.6,
+    0.76,
+    0.77,
+    0.66,
+    0.68,
+    0.74,
+    0.86,
+    0.84,
+    0.76,
+    0.58,
+    0.54,
+    0.49,
+    0.62,
+    0.64,
+    0.65,
+    0.58,
+    0.55,
+    0.63,
+    0.69,
+    0.7,
+    0.56,
+    0.53,
+    0.5,
+    0.38,
+    0.17,
+    0.17,
+    0.31,
+    0.43,
+    0.52,
+    0.64,
+    0.76,
+    0.74,
+    0.73,
+    0.73,
+    0.72,
+    0.62,
+    0.47,
+    0.4,
+    0.54,
+    0.75,
+    0.87,
+    0.84,
+    0.72,
+    0.44,
+    0.19,
+    0.03,
+    0.19,
+    0.38,
+    0.5,
+    0.44,
+    0.25,
+    0.1,
+    0.19,
+    0.38,
+    0.48,
+    0.31,
+    0.11,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.12,
+    0.27,
+    0.56,
+    0.76,
+    0.91,
+    0.92,
+    0.88,
+    0.84,
+    0.82,
+    0.83,
+    0.81,
+    0.8,
+    0.77,
+    0.7,
+    0.67,
+    0.71,
+    0.69,
+    0.63,
+    0.62,
+    0.72,
+    0.79,
+    0.74,
+    0.6,
+    0.54,
+    0.53,
+    0.61,
+    0.58,
+    0.58,
+    0.67,
+    0.82,
+    0.85,
+    0.66,
+    0.62,
+    0.62,
+    0.76,
+    0.71,
+    0.66,
+    0.66,
+    0.71,
+    0.76,
+    0.62,
+    0.41,
+    0.38,
+    0.42,
+    0.38,
+    0.15,
+    0.12,
+    0.15,
+    0.39,
+    0.56,
+    0.82,
+    0.83,
+    0.78,
+    0.68,
+    0.59,
+    0.49,
+    0.4,
+    0.32,
+    0.21,
+    0.12,
+    0.03,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 3,
+    "kind": "world",
+    "place": "ocean",
+    "variant": "surface",
+    "new_place": false,
+    "facts": [
+     "cooled water vapour condenses into tiny droplets",
+     "a cloud is made of a huge number of droplets",
+     "a cumulus cloud has a flat base, where rising air has cooled enough for vapour to condense, and a puffy, heaped top"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "where the air cooled, tiny water droplets appear in the sky over the sea",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "sky",
+        "zoom": 0.9,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "sky",
+        "at": {
+         "word": 2
+        }
+       },
+       {
+        "do": "custom",
+        "name": "droplets",
+        "at": {
+         "word": 2
+        },
+        "until": {
+         "word": 6
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "Tiny droplets",
+        "side": "below",
+        "at": {
+         "word": 5
+        },
+        "until": {
+         "word": 9
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 6
+      },
+      "action": "billions of droplets build a real cumulus cloud: a flat base and a puffy top billowing up",
+      "moves": [
+       {
+        "do": "custom",
+        "name": "cumulus",
+        "params": {
+         "grow": 1.6
+        },
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "surprised",
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "celebrate",
+        "at": {
+         "word": 12
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "Cloud",
+        "side": "left",
+        "at": {
+         "word": 12
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "start": 18.6,
+   "frames": 180,
+   "duration": 6.0,
+   "words": [
+    {
+     "i": 0,
+     "text": "The",
+     "display": "The",
+     "start": 0.25,
+     "end": 0.325
+    },
+    {
+     "i": 1,
+     "text": "droplets",
+     "display": "droplets",
+     "start": 0.325,
+     "end": 0.863
+    },
+    {
+     "i": 2,
+     "text": "bump",
+     "display": "bump",
+     "start": 0.863,
+     "end": 1.175
+    },
+    {
+     "i": 3,
+     "text": "together",
+     "display": "together",
+     "start": 1.175,
+     "end": 1.6
+    },
+    {
+     "i": 4,
+     "text": "and",
+     "display": "and",
+     "start": 1.6,
+     "end": 1.725
+    },
+    {
+     "i": 5,
+     "text": "grow",
+     "display": "grow.",
+     "start": 1.725,
+     "end": 2.3
+    },
+    {
+     "i": 6,
+     "text": "When",
+     "display": "When",
+     "start": 2.45,
+     "end": 2.587
+    },
+    {
+     "i": 7,
+     "text": "they",
+     "display": "they",
+     "start": 2.587,
+     "end": 2.725
+    },
+    {
+     "i": 8,
+     "text": "are",
+     "display": "are",
+     "start": 2.725,
+     "end": 2.837
+    },
+    {
+     "i": 9,
+     "text": "too",
+     "display": "too",
+     "start": 2.837,
+     "end": 3.05
+    },
+    {
+     "i": 10,
+     "text": "heavy",
+     "display": "heavy",
+     "start": 3.05,
+     "end": 3.325
+    },
+    {
+     "i": 11,
+     "text": "to",
+     "display": "to",
+     "start": 3.325,
+     "end": 3.462
+    },
+    {
+     "i": 12,
+     "text": "float",
+     "display": "float,",
+     "start": 3.462,
+     "end": 3.8
+    },
+    {
+     "i": 13,
+     "text": "they",
+     "display": "they",
+     "start": 3.837,
+     "end": 3.987
+    },
+    {
+     "i": 14,
+     "text": "fall",
+     "display": "fall",
+     "start": 3.987,
+     "end": 4.275
+    },
+    {
+     "i": 15,
+     "text": "as",
+     "display": "as",
+     "start": 4.275,
+     "end": 4.438
+    },
+    {
+     "i": 16,
+     "text": "rain",
+     "display": "rain.",
+     "start": 4.438,
+     "end": 5.275
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": null,
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.29,
+    0.53,
+    0.68,
+    0.61,
+    0.68,
+    0.83,
+    0.9,
+    0.86,
+    0.76,
+    0.47,
+    0.23,
+    0.25,
+    0.51,
+    0.68,
+    0.47,
+    0.43,
+    0.38,
+    0.51,
+    0.43,
+    0.41,
+    0.56,
+    0.7,
+    0.82,
+    0.73,
+    0.62,
+    0.37,
+    0.16,
+    0.17,
+    0.39,
+    0.6,
+    0.58,
+    0.63,
+    0.71,
+    0.84,
+    0.78,
+    0.72,
+    0.7,
+    0.74,
+    0.76,
+    0.75,
+    0.73,
+    0.71,
+    0.7,
+    0.66,
+    0.52,
+    0.52,
+    0.6,
+    0.8,
+    0.84,
+    0.8,
+    0.71,
+    0.58,
+    0.45,
+    0.28,
+    0.13,
+    0.02,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.28,
+    0.58,
+    0.88,
+    0.88,
+    0.88,
+    0.86,
+    0.86,
+    0.87,
+    0.86,
+    0.58,
+    0.29,
+    0.24,
+    0.4,
+    0.68,
+    0.71,
+    0.81,
+    0.75,
+    0.72,
+    0.72,
+    0.79,
+    0.8,
+    0.72,
+    0.68,
+    0.67,
+    0.57,
+    0.47,
+    0.46,
+    0.51,
+    0.4,
+    0.25,
+    0.22,
+    0.38,
+    0.59,
+    0.79,
+    0.85,
+    0.8,
+    0.69,
+    0.49,
+    0.26,
+    0.07,
+    0.0,
+    0.25,
+    0.51,
+    0.71,
+    0.5,
+    0.28,
+    0.14,
+    0.38,
+    0.64,
+    0.85,
+    0.82,
+    0.77,
+    0.7,
+    0.69,
+    0.69,
+    0.66,
+    0.61,
+    0.52,
+    0.52,
+    0.59,
+    0.72,
+    0.8,
+    0.78,
+    0.72,
+    0.66,
+    0.6,
+    0.51,
+    0.43,
+    0.32,
+    0.21,
+    0.1,
+    0.03,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 4,
+    "kind": "world",
+    "place": "ocean",
+    "variant": "surface",
+    "new_place": false,
+    "facts": [
+     "droplets collide and grow; the cloud turns grey and heavy",
+     "drops too heavy to stay up fall as rain, back into the sea"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "anchor": "boat"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "back on the boat: the cloud beside it turns grey and heavy as its droplets bump together and grow",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "sky",
+        "zoom": 0.7,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "custom",
+        "name": "cumulus",
+        "params": {
+         "grown": true,
+         "dark": 1
+        },
+        "at": {
+         "word": 2
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think",
+        "at": {
+         "word": 2
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 6
+      },
+      "action": "rain falls from the cloud's base back into the sea beside the boat; the host is surprised and shrugs",
+      "moves": [
+       {
+        "do": "point",
+        "who": "host",
+        "target": "sky",
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "custom",
+        "name": "rain",
+        "at": {
+         "word": 14
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "surprised",
+        "at": {
+         "word": 14
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "shrug",
+        "at": {
+         "word": 15
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "Rain",
+        "side": "below",
+        "at": {
+         "word": 16
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  }
+ ],
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ]
+}

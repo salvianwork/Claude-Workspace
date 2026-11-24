@@ -1,0 +1,1570 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "frames": 639,
+ "total": 21.3,
+ "style": {
+  "colors": {
+   "background": "#0F172A",
+   "surface": "#1E293B",
+   "primary": "#38BDF8",
+   "accent": "#F59E0B",
+   "text": "#F1F5F9"
+  },
+  "fonts": {
+   "heading": "Poppins",
+   "body": "Inter"
+  },
+  "captions": {
+   "size": 60,
+   "position": "bottom"
+  }
+ },
+ "presenterOutfit": "blazer",
+ "warnings": [],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "start": 0.0,
+   "frames": 268,
+   "duration": 8.933333333333334,
+   "words": [
+    {
+     "i": 0,
+     "text": "Deep",
+     "display": "Deep",
+     "start": 0.275,
+     "end": 0.487
+    },
+    {
+     "i": 1,
+     "text": "under",
+     "display": "under",
+     "start": 0.487,
+     "end": 0.662
+    },
+    {
+     "i": 2,
+     "text": "a",
+     "display": "a",
+     "start": 0.662,
+     "end": 0.725
+    },
+    {
+     "i": 3,
+     "text": "volcano",
+     "display": "volcano",
+     "start": 0.725,
+     "end": 1.35
+    },
+    {
+     "i": 4,
+     "text": "lies",
+     "display": "lies",
+     "start": 1.35,
+     "end": 1.538
+    },
+    {
+     "i": 5,
+     "text": "a",
+     "display": "a",
+     "start": 1.538,
+     "end": 1.6
+    },
+    {
+     "i": 6,
+     "text": "magma",
+     "display": "magma",
+     "start": 1.6,
+     "end": 2.0
+    },
+    {
+     "i": 7,
+     "text": "chamber",
+     "display": "chamber,",
+     "start": 2.0,
+     "end": 2.55
+    },
+    {
+     "i": 8,
+     "text": "a",
+     "display": "a",
+     "start": 2.65,
+     "end": 2.763
+    },
+    {
+     "i": 9,
+     "text": "pool",
+     "display": "pool",
+     "start": 2.763,
+     "end": 3.087
+    },
+    {
+     "i": 10,
+     "text": "of",
+     "display": "of",
+     "start": 3.087,
+     "end": 3.212
+    },
+    {
+     "i": 11,
+     "text": "molten",
+     "display": "molten",
+     "start": 3.212,
+     "end": 3.625
+    },
+    {
+     "i": 12,
+     "text": "rock",
+     "display": "rock.",
+     "start": 3.625,
+     "end": 4.35
+    },
+    {
+     "i": 13,
+     "text": "As",
+     "display": "As",
+     "start": 4.5,
+     "end": 4.7
+    },
+    {
+     "i": 14,
+     "text": "pressure",
+     "display": "pressure",
+     "start": 4.7,
+     "end": 5.075
+    },
+    {
+     "i": 15,
+     "text": "builds",
+     "display": "builds,",
+     "start": 5.075,
+     "end": 5.625
+    },
+    {
+     "i": 16,
+     "text": "the",
+     "display": "the",
+     "start": 5.7,
+     "end": 5.825
+    },
+    {
+     "i": 17,
+     "text": "magma",
+     "display": "magma",
+     "start": 5.825,
+     "end": 6.225
+    },
+    {
+     "i": 18,
+     "text": "pushes",
+     "display": "pushes",
+     "start": 6.225,
+     "end": 6.6
+    },
+    {
+     "i": 19,
+     "text": "up",
+     "display": "up",
+     "start": 6.6,
+     "end": 6.8
+    },
+    {
+     "i": 20,
+     "text": "through",
+     "display": "through",
+     "start": 6.8,
+     "end": 7.0
+    },
+    {
+     "i": 21,
+     "text": "a",
+     "display": "a",
+     "start": 7.0,
+     "end": 7.112
+    },
+    {
+     "i": 22,
+     "text": "narrow",
+     "display": "narrow",
+     "start": 7.112,
+     "end": 7.5
+    },
+    {
+     "i": 23,
+     "text": "vent",
+     "display": "vent.",
+     "start": 7.5,
+     "end": 8.225
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.24,
+    0.55,
+    0.83,
+    0.82,
+    0.51,
+    0.46,
+    0.52,
+    0.78,
+    0.75,
+    0.74,
+    0.78,
+    0.88,
+    0.8,
+    0.66,
+    0.65,
+    0.74,
+    0.85,
+    0.81,
+    0.55,
+    0.32,
+    0.19,
+    0.34,
+    0.57,
+    0.73,
+    0.79,
+    0.77,
+    0.76,
+    0.75,
+    0.74,
+    0.72,
+    0.73,
+    0.7,
+    0.71,
+    0.73,
+    0.78,
+    0.75,
+    0.68,
+    0.68,
+    0.71,
+    0.77,
+    0.77,
+    0.79,
+    0.82,
+    0.81,
+    0.77,
+    0.58,
+    0.44,
+    0.44,
+    0.58,
+    0.64,
+    0.41,
+    0.37,
+    0.38,
+    0.6,
+    0.65,
+    0.66,
+    0.63,
+    0.56,
+    0.5,
+    0.48,
+    0.5,
+    0.54,
+    0.46,
+    0.27,
+    0.09,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.26,
+    0.42,
+    0.42,
+    0.15,
+    0.07,
+    0.24,
+    0.52,
+    0.74,
+    0.85,
+    0.82,
+    0.8,
+    0.76,
+    0.78,
+    0.76,
+    0.66,
+    0.55,
+    0.57,
+    0.71,
+    0.82,
+    0.84,
+    0.83,
+    0.75,
+    0.56,
+    0.37,
+    0.31,
+    0.48,
+    0.62,
+    0.7,
+    0.66,
+    0.69,
+    0.74,
+    0.8,
+    0.82,
+    0.76,
+    0.64,
+    0.45,
+    0.25,
+    0.11,
+    0.02,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.21,
+    0.49,
+    0.73,
+    0.72,
+    0.44,
+    0.2,
+    0.07,
+    0.33,
+    0.62,
+    0.81,
+    0.74,
+    0.64,
+    0.58,
+    0.67,
+    0.74,
+    0.73,
+    0.59,
+    0.5,
+    0.63,
+    0.78,
+    0.87,
+    0.83,
+    0.78,
+    0.72,
+    0.66,
+    0.58,
+    0.47,
+    0.44,
+    0.49,
+    0.5,
+    0.34,
+    0.12,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.26,
+    0.56,
+    0.84,
+    0.86,
+    0.86,
+    0.87,
+    0.86,
+    0.84,
+    0.78,
+    0.62,
+    0.54,
+    0.59,
+    0.74,
+    0.73,
+    0.46,
+    0.19,
+    0.05,
+    0.3,
+    0.59,
+    0.76,
+    0.69,
+    0.59,
+    0.61,
+    0.66,
+    0.66,
+    0.63,
+    0.69,
+    0.77,
+    0.8,
+    0.54,
+    0.27,
+    0.03,
+    0.01,
+    0.12,
+    0.32,
+    0.58,
+    0.75,
+    0.82,
+    0.84,
+    0.82,
+    0.79,
+    0.75,
+    0.75,
+    0.79,
+    0.8,
+    0.82,
+    0.82,
+    0.8,
+    0.78,
+    0.76,
+    0.75,
+    0.73,
+    0.63,
+    0.46,
+    0.46,
+    0.6,
+    0.75,
+    0.7,
+    0.55,
+    0.41,
+    0.23,
+    0.17,
+    0.15,
+    0.15,
+    0.06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 1,
+    "kind": "world",
+    "place": "volcano",
+    "variant": "day",
+    "new_place": true,
+    "facts": [
+     "the magma chamber lies deep beneath the volcano",
+     "magma is molten rock",
+     "pressure pushes magma up through a narrow vent",
+     "not to scale: a real volcano is thousands of times taller than a person"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "anchor": "foot"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "the whole volcano, cut away: the host at its foot points down at the chamber; the camera pushes down to the glowing pool of molten rock",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "chamber",
+        "zoom": 0.6,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "not to scale",
+        "at": {
+         "word": 0
+        },
+        "until": {
+         "word": 6
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "chamber",
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "push_in",
+        "target": "chamber",
+        "zoom": 1.2,
+        "at": {
+         "word": 7
+        }
+       },
+       {
+        "do": "label",
+        "target": "chamber",
+        "text": "Magma chamber",
+        "side": "above",
+        "at": {
+         "word": 7
+        },
+        "until": {
+         "word": 13
+        }
+       },
+       {
+        "do": "glow",
+        "target": "chamber",
+        "at": {
+         "word": 11
+        },
+        "radius": 520,
+        "color": "#FFB347",
+        "duration": 3
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "curious",
+        "at": {
+         "word": 0
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "talk",
+        "at": {
+         "word": 8
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 13
+      },
+      "action": "pressure pulses through the chamber, then magma climbs the vent toward the crater as the camera rises with it",
+      "moves": [
+       {
+        "do": "rings",
+        "target": "chamber",
+        "at": {
+         "word": 14
+        },
+        "count": 3,
+        "interval": 0.45,
+        "speed": 700,
+        "radius": 650,
+        "squash": 0.5,
+        "color": "#FFB347"
+       },
+       {
+        "do": "custom",
+        "name": "magma-rise",
+        "params": {
+         "duration": 2.0
+        },
+        "at": {
+         "word": 17
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "raise",
+        "at": {
+         "word": 17
+        }
+       },
+       {
+        "do": "pull_out",
+        "target": "vent",
+        "zoom": 0.7,
+        "at": {
+         "word": 23
+        }
+       },
+       {
+        "do": "label",
+        "target": "vent",
+        "text": "Vent",
+        "side": "left",
+        "at": {
+         "word": 22
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think",
+        "at": {
+         "word": 13
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "start": 8.933333333333334,
+   "frames": 234,
+   "duration": 7.8,
+   "words": [
+    {
+     "i": 0,
+     "text": "At",
+     "display": "At",
+     "start": 0.225,
+     "end": 0.338
+    },
+    {
+     "i": 1,
+     "text": "the",
+     "display": "the",
+     "start": 0.338,
+     "end": 0.425
+    },
+    {
+     "i": 2,
+     "text": "crater",
+     "display": "crater",
+     "start": 0.425,
+     "end": 0.738
+    },
+    {
+     "i": 3,
+     "text": "it",
+     "display": "it",
+     "start": 0.738,
+     "end": 0.825
+    },
+    {
+     "i": 4,
+     "text": "bursts",
+     "display": "bursts",
+     "start": 0.825,
+     "end": 1.175
+    },
+    {
+     "i": 5,
+     "text": "out",
+     "display": "out",
+     "start": 1.175,
+     "end": 1.363
+    },
+    {
+     "i": 6,
+     "text": "as",
+     "display": "as",
+     "start": 1.363,
+     "end": 1.5
+    },
+    {
+     "i": 7,
+     "text": "lava",
+     "display": "lava.",
+     "start": 1.5,
+     "end": 2.125
+    },
+    {
+     "i": 8,
+     "text": "The",
+     "display": "The",
+     "start": 2.275,
+     "end": 2.375
+    },
+    {
+     "i": 9,
+     "text": "lava",
+     "display": "lava",
+     "start": 2.375,
+     "end": 2.688
+    },
+    {
+     "i": 10,
+     "text": "flows",
+     "display": "flows",
+     "start": 2.688,
+     "end": 3.075
+    },
+    {
+     "i": 11,
+     "text": "down",
+     "display": "down",
+     "start": 3.075,
+     "end": 3.312
+    },
+    {
+     "i": 12,
+     "text": "the",
+     "display": "the",
+     "start": 3.312,
+     "end": 3.413
+    },
+    {
+     "i": 13,
+     "text": "slopes",
+     "display": "slopes,",
+     "start": 3.413,
+     "end": 3.875
+    },
+    {
+     "i": 14,
+     "text": "cools",
+     "display": "cools",
+     "start": 3.962,
+     "end": 4.412
+    },
+    {
+     "i": 15,
+     "text": "and",
+     "display": "and",
+     "start": 4.412,
+     "end": 4.525
+    },
+    {
+     "i": 16,
+     "text": "hardens",
+     "display": "hardens,",
+     "start": 4.525,
+     "end": 5.075
+    },
+    {
+     "i": 17,
+     "text": "and",
+     "display": "and",
+     "start": 5.15,
+     "end": 5.263
+    },
+    {
+     "i": 18,
+     "text": "the",
+     "display": "the",
+     "start": 5.263,
+     "end": 5.362
+    },
+    {
+     "i": 19,
+     "text": "cone",
+     "display": "cone",
+     "start": 5.362,
+     "end": 5.725
+    },
+    {
+     "i": 20,
+     "text": "grows",
+     "display": "grows",
+     "start": 5.725,
+     "end": 6.037
+    },
+    {
+     "i": 21,
+     "text": "a",
+     "display": "a",
+     "start": 6.037,
+     "end": 6.125
+    },
+    {
+     "i": 22,
+     "text": "new",
+     "display": "new",
+     "start": 6.125,
+     "end": 6.3
+    },
+    {
+     "i": 23,
+     "text": "layer",
+     "display": "layer.",
+     "start": 6.3,
+     "end": 7.125
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.27,
+    0.37,
+    0.44,
+    0.43,
+    0.43,
+    0.41,
+    0.29,
+    0.48,
+    0.75,
+    0.89,
+    0.85,
+    0.77,
+    0.77,
+    0.81,
+    0.86,
+    0.71,
+    0.45,
+    0.16,
+    0.29,
+    0.56,
+    0.85,
+    0.82,
+    0.7,
+    0.59,
+    0.44,
+    0.34,
+    0.34,
+    0.54,
+    0.75,
+    0.83,
+    0.78,
+    0.68,
+    0.61,
+    0.59,
+    0.59,
+    0.55,
+    0.49,
+    0.55,
+    0.66,
+    0.78,
+    0.82,
+    0.79,
+    0.72,
+    0.48,
+    0.38,
+    0.3,
+    0.31,
+    0.17,
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.2,
+    0.51,
+    0.78,
+    0.88,
+    0.87,
+    0.88,
+    0.85,
+    0.7,
+    0.67,
+    0.68,
+    0.68,
+    0.45,
+    0.2,
+    0.13,
+    0.35,
+    0.6,
+    0.82,
+    0.84,
+    0.82,
+    0.78,
+    0.73,
+    0.66,
+    0.54,
+    0.31,
+    0.41,
+    0.58,
+    0.85,
+    0.81,
+    0.74,
+    0.7,
+    0.69,
+    0.7,
+    0.65,
+    0.63,
+    0.6,
+    0.58,
+    0.55,
+    0.6,
+    0.72,
+    0.83,
+    0.81,
+    0.69,
+    0.41,
+    0.17,
+    0.12,
+    0.28,
+    0.47,
+    0.46,
+    0.29,
+    0.11,
+    0.05,
+    0.16,
+    0.4,
+    0.64,
+    0.82,
+    0.85,
+    0.81,
+    0.78,
+    0.75,
+    0.72,
+    0.68,
+    0.61,
+    0.55,
+    0.59,
+    0.69,
+    0.74,
+    0.64,
+    0.47,
+    0.48,
+    0.61,
+    0.79,
+    0.84,
+    0.75,
+    0.57,
+    0.48,
+    0.47,
+    0.57,
+    0.54,
+    0.48,
+    0.5,
+    0.34,
+    0.21,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.23,
+    0.5,
+    0.78,
+    0.83,
+    0.78,
+    0.5,
+    0.35,
+    0.28,
+    0.53,
+    0.69,
+    0.8,
+    0.8,
+    0.77,
+    0.75,
+    0.73,
+    0.72,
+    0.69,
+    0.53,
+    0.49,
+    0.56,
+    0.76,
+    0.82,
+    0.79,
+    0.75,
+    0.66,
+    0.58,
+    0.59,
+    0.66,
+    0.73,
+    0.74,
+    0.75,
+    0.76,
+    0.76,
+    0.7,
+    0.66,
+    0.67,
+    0.75,
+    0.81,
+    0.81,
+    0.75,
+    0.65,
+    0.55,
+    0.44,
+    0.36,
+    0.27,
+    0.15,
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 2,
+    "kind": "world",
+    "place": "volcano",
+    "variant": "day",
+    "new_place": true,
+    "facts": [
+     "magma that bursts out at the surface is called lava",
+     "lava flows down the slopes, cools and hardens",
+     "each eruption adds a new layer to the cone",
+     "not to scale"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "right"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "at the crater the magma bursts out: a fountain of glowing lava and a column of ash; the host is startled",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "crater",
+        "zoom": 0.9,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "say",
+        "who": "host",
+        "until": {
+         "word": 3
+        }
+       },
+       {
+        "do": "custom",
+        "name": "eruption",
+        "params": {
+         "flow": 0.6,
+         "cool": 3.1,
+         "grow": 4.9
+        },
+        "at": {
+         "word": 4
+        }
+       },
+       {
+        "do": "burst",
+        "target": "crater",
+        "at": {
+         "word": 4
+        },
+        "radius": 420,
+        "color": "#FFB347"
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "surprised",
+        "at": {
+         "word": 4
+        }
+       },
+       {
+        "do": "pulse_along",
+        "path": "lava-flow",
+        "from": "crater",
+        "to": "slope",
+        "duration": 2.2,
+        "ease": "inOut",
+        "color": "#FFB347",
+        "at": {
+         "word": 7
+        }
+       },
+       {
+        "do": "tag_follow",
+        "target": "pulse",
+        "text": "Lava",
+        "until": {
+         "word": 14
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "surprised",
+        "at": {
+         "word": 4
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 8
+      },
+      "action": "lava runs down both slopes as the camera pulls back, then darkens as it cools and hardens; the cone grows a new dark layer",
+      "moves": [
+       {
+        "do": "pull_out",
+        "target": "vent",
+        "zoom": 0.65,
+        "at": {
+         "word": 13
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "slope",
+        "at": {
+         "word": 10
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "not to scale",
+        "at": {
+         "word": 14
+        }
+       },
+       {
+        "do": "label",
+        "target": "slope",
+        "text": "New layer",
+        "side": "left",
+        "at": {
+         "word": 21
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "raise",
+        "at": {
+         "word": 19
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "start": 16.733333333333334,
+   "frames": 137,
+   "duration": 4.566666666666666,
+   "words": [
+    {
+     "i": 0,
+     "text": "So",
+     "display": "So",
+     "start": 0.25,
+     "end": 0.375
+    },
+    {
+     "i": 1,
+     "text": "magma",
+     "display": "magma",
+     "start": 0.375,
+     "end": 0.775
+    },
+    {
+     "i": 2,
+     "text": "rises",
+     "display": "rises,",
+     "start": 0.775,
+     "end": 1.375
+    },
+    {
+     "i": 3,
+     "text": "erupts",
+     "display": "erupts",
+     "start": 1.45,
+     "end": 1.85
+    },
+    {
+     "i": 4,
+     "text": "as",
+     "display": "as",
+     "start": 1.85,
+     "end": 2.0
+    },
+    {
+     "i": 5,
+     "text": "lava",
+     "display": "lava,",
+     "start": 2.0,
+     "end": 2.425
+    },
+    {
+     "i": 6,
+     "text": "and",
+     "display": "and",
+     "start": 2.462,
+     "end": 2.575
+    },
+    {
+     "i": 7,
+     "text": "builds",
+     "display": "builds",
+     "start": 2.575,
+     "end": 2.9
+    },
+    {
+     "i": 8,
+     "text": "the",
+     "display": "the",
+     "start": 2.9,
+     "end": 3.0
+    },
+    {
+     "i": 9,
+     "text": "mountain",
+     "display": "mountain.",
+     "start": 3.0,
+     "end": 3.85
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": null,
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.07,
+    0.25,
+    0.55,
+    0.77,
+    0.86,
+    0.83,
+    0.86,
+    0.87,
+    0.86,
+    0.83,
+    0.67,
+    0.53,
+    0.51,
+    0.67,
+    0.81,
+    0.83,
+    0.77,
+    0.77,
+    0.78,
+    0.81,
+    0.79,
+    0.77,
+    0.77,
+    0.68,
+    0.58,
+    0.51,
+    0.58,
+    0.61,
+    0.57,
+    0.42,
+    0.38,
+    0.36,
+    0.28,
+    0.12,
+    0.0,
+    0.0,
+    0.0,
+    0.28,
+    0.56,
+    0.8,
+    0.81,
+    0.82,
+    0.83,
+    0.59,
+    0.3,
+    0.05,
+    0.12,
+    0.31,
+    0.56,
+    0.7,
+    0.72,
+    0.64,
+    0.54,
+    0.58,
+    0.68,
+    0.8,
+    0.82,
+    0.8,
+    0.78,
+    0.75,
+    0.58,
+    0.45,
+    0.44,
+    0.54,
+    0.59,
+    0.47,
+    0.37,
+    0.4,
+    0.53,
+    0.67,
+    0.59,
+    0.5,
+    0.55,
+    0.71,
+    0.81,
+    0.75,
+    0.64,
+    0.51,
+    0.47,
+    0.38,
+    0.26,
+    0.35,
+    0.51,
+    0.76,
+    0.76,
+    0.8,
+    0.8,
+    0.77,
+    0.72,
+    0.55,
+    0.31,
+    0.13,
+    0.13,
+    0.23,
+    0.27,
+    0.17,
+    0.07,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 3,
+    "kind": "world",
+    "place": "volcano",
+    "variant": "dusk",
+    "new_place": true,
+    "facts": [
+     "magma rises, erupts as lava and builds the mountain",
+     "not to scale"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "left"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "at dusk, magma races up the vent, erupts from the crater and runs down the slopes, hardening into a new layer, as the camera pulls back to the whole mountain; the host celebrates",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "vent",
+        "zoom": 0.9,
+        "at": {
+         "t": 0
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "point-right",
+        "at": {
+         "word": 0
+        }
+       },
+       {
+        "do": "custom",
+        "name": "magma-rise",
+        "params": {
+         "duration": 0.9
+        },
+        "at": {
+         "word": 1
+        }
+       },
+       {
+        "do": "custom",
+        "name": "eruption",
+        "params": {
+         "vent": false,
+         "flow": 0.3,
+         "cool": 1.6,
+         "grow": 1.2
+        },
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "burst",
+        "target": "crater",
+        "at": {
+         "word": 3
+        },
+        "radius": 380,
+        "color": "#FFB347"
+       },
+       {
+        "do": "sparkle",
+        "target": "slope",
+        "at": {
+         "word": 7
+        },
+        "radius": 320,
+        "color": "#FFD27A"
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "celebrate",
+        "at": {
+         "word": 7
+        }
+       },
+       {
+        "do": "label",
+        "target": "sky",
+        "text": "not to scale",
+        "at": {
+         "word": 6
+        }
+       },
+       {
+        "do": "pull_out",
+        "target": "vent",
+        "zoom": 0.6,
+        "at": {
+         "word": 9
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  }
+ ],
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ]
+}
