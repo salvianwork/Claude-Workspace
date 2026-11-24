@@ -1,7 +1,7 @@
 # Vertical Short-Form (TikTok / YouTube Shorts) — Design
 
 **Date:** 2026-11-24
-**Status:** Waiting for owner approval (builder check done, §9)
+**Status:** Approved by owner 2026-11-24
 **Builds on:** `2026-11-21-world-kit-and-video-types-design.md` (world kit, phase 1),
 `2026-11-24-feedback-notebook-design.md`; agreed notes in `docs/roadmap/vertical-phase-notes.md`.
 
