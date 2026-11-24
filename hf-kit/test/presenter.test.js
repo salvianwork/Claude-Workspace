@@ -199,3 +199,17 @@ test("mountPresenter builds the svg once and update() only sets attributes", () 
     for (const [k, v] of Object.entries(n.a)) if (v != null) assert.equal(nodes[i].attrs[k], P.attr(v, p.uid), `${n.tag} ${k}`);
   });
 });
+
+test("a solid hair base sits behind the front curls and spans the fringe region (no skin gap)", () => {
+  const svg = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("happy", "happy", 1), mouth: 0, blink: 0, t: 0,
+    side: "center", width: 434, height: 288, still: true });
+  const m = svg.match(/<path data-part="hair-base" d="([^"]+)" fill="#3B2416"/);
+  assert.ok(m, "hair-base path in the hair colour");
+  assert.ok(svg.indexOf('data-part="hair-base"') > svg.indexOf('data-part="face"'), "drawn over the face");
+  assert.ok(svg.indexOf('data-part="hair-base"') < svg.indexOf("<circle", svg.indexOf('data-part="hair-front"')), "drawn under the curls");
+  const nums = m[1].match(/-?\d+(\.\d+)?/g).map(Number);
+  const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+  // covers the band between the main curls (bottom edge y ~ 126) and the fringe curls (centres y ~ 136-148)
+  assert.ok(Math.min(...ys) <= 100 && Math.max(...ys) >= 138, "vertical span");
+  assert.ok(Math.min(...xs) <= -76 && Math.max(...xs) >= 76, "horizontal span");
+});

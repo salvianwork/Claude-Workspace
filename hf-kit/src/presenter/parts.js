@@ -304,13 +304,17 @@
       })));
   }
 
+  /* Solid hair mass behind the front curls (crown down to the fringe centre line), so no skin
+   * shows between the fringe curls and the main curls. Its lower edge stays inside the fringe curls. */
+  var HAIR_BASE = "M -82 98 C -60 84 60 84 82 98 L 76 124 L 70 138 L -64 138 L -76 124 Z";
+
   function hairFrontNode(pal, sway) {
-    var kids = [-1, 1].map(function (s) {
+    var kids = [h("path", { "data-part": "hair-base", d: HAIR_BASE, fill: pal.hair })].concat([-1, 1].map(function (s) {
       return h("path", {
         d: "M " + s * 88 + " 156 L " + s * 74 + " 156 L " + s * 77 + " 196 C " + s * 80 + " 200 " + s * 85 + " 200 " + s * 87 + " 194 Z",
         fill: pal.hair, stroke: pal.hairLine, "stroke-width": 2, "stroke-linejoin": "round",
       });
-    });
+    }));
     CLUSTERS.forEach(function (cl, ci) {
       var curls = [];
       cl.curls.forEach(function (c, i) { curls = curls.concat(curlNodes(c, pal, i + ci)); });
