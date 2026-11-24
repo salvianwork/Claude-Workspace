@@ -7,13 +7,34 @@ const EYE_Y = 226;
 const EYE_RX = 13.5;
 const EYE_RY = 13.5;
 
-/** Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
-const LENS_W = 48;
-const LENS_H = 35;
-const LENS_Y = EYE_Y + 1;
-const LENS_R = 13;
-const RIM = 8;
-const RIM_EDGE = 11.5;
+/** Flat square translucent lime acetate glasses (wayfarer-square), lenses centred on the eyes. */
+const LENS_Y = EYE_Y;
+const LENS_IH = 38;
+const LENS_TOP_W = 46;
+const LENS_BOT_W = 42;
+const RIM_T = 6.5;
+const RIM_TOP = 8.5;
+
+/** Rounded polygon path: points [x, y, radius]. */
+const roundPoly = (pts: [number, number, number][]) => {
+  const n = pts.length;
+  let d = "";
+  pts.forEach((p, i) => {
+    const a = pts[(i + n - 1) % n];
+    const b = pts[(i + 1) % n];
+    const near = (q: [number, number, number]) => {
+      const dx = q[0] - p[0];
+      const dy = q[1] - p[1];
+      const l = Math.sqrt(dx * dx + dy * dy) || 1;
+      const k = Math.min(p[2], l / 2) / l;
+      return [p[0] + dx * k, p[1] + dy * k];
+    };
+    const s0 = near(a);
+    const s1 = near(b);
+    d += `${i ? " L " : "M "}${s0[0].toFixed(2)} ${s0[1].toFixed(2)} Q ${p[0]} ${p[1]} ${s1[0].toFixed(2)} ${s1[1].toFixed(2)}`;
+  });
+  return d + " Z";
+};
 
 const Eye: React.FC<{
   pal: Palette;
@@ -149,41 +170,39 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
   );
 };
 
-/** Chunky lime frames (rim on a darker edge), clear lenses with a faint glint, bridge and temple arms. */
+/** Flat lime acetate frames: each rim is a filled band (outer shape minus the lens opening) in translucent
+ * lime with a lighter inner edge and a thin darker outer edge, a straight bridge, flat temple arms and a
+ * hinge rivet at each outer top corner. Lenses are clear. */
 const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
-  const hw = LENS_W / 2;
-  const hh = LENS_H / 2;
-  const lens = (cx: number) => ({ x: cx - hw, y: LENS_Y - hh, width: LENS_W, height: LENS_H, rx: LENS_R });
-  const bridge = `M ${-EYE_X + hw} ${LENS_Y - 7} Q 0 ${LENS_Y - 17} ${EYE_X - hw} ${LENS_Y - 7}`;
-  const round = { fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const tw = LENS_TOP_W / 2;
+  const bw = LENS_BOT_W / 2;
+  const ih = LENS_IH / 2;
+  const T = RIM_T;
+  const TT = RIM_TOP;
+  const inner = roundPoly([[-tw, -ih, 2.5], [tw, -ih, 2.5], [bw, ih, 6], [-bw, ih, 6]]);
+  const outer = roundPoly([[-tw - T, -ih - TT, 4], [tw + T, -ih - TT, 4], [bw + T, ih + T, 9], [-bw - T, ih + T, 9]]);
+  const op = 0.9;
+  const ox = tw + T;
   return (
     <g data-glasses="lime-thick">
       {([-1, 1] as const).map((sd) => {
         const cx = sd * EYE_X;
-        const top = `M ${cx - hw + LENS_R * 1.1} ${LENS_Y - hh} L ${cx + hw - LENS_R * 1.1} ${LENS_Y - hh}`;
-        const arm = `M ${sd * (EYE_X + hw)} ${LENS_Y - 8} L ${sd * 90} ${LENS_Y - 11}`;
+        const arm = `M ${sd * (EYE_X + ox - 1)} ${LENS_Y - ih - 4} L ${sd * 90} ${LENS_Y - ih - 1} L ${sd * 90} ${LENS_Y - ih + 5} L ${sd * (EYE_X + ox - 1)} ${LENS_Y - ih + 3} Z`;
         return (
           <g key={sd}>
-            <rect {...lens(cx)} fill="#DCEBFF" opacity={0.1} />
-            <path d={`M ${cx - 16} ${LENS_Y + 8} L ${cx - 6} ${LENS_Y - 10}`} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" opacity={0.22} />
-            <path d={arm} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE - 1.5} />
-            <path d={arm} {...round} stroke={pal.glasses} strokeWidth={RIM - 1.5} />
-            <rect {...lens(cx)} fill="none" stroke={pal.glassesEdge} strokeWidth={RIM_EDGE} />
-            <path d={top} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE + 2} />
-            <rect {...lens(cx)} fill="none" stroke={pal.glasses} strokeWidth={RIM} />
-            <path d={top} {...round} stroke={pal.glasses} strokeWidth={RIM + 2} />
-            <path
-              d={`M ${cx - hw + 1} ${LENS_Y - 2} Q ${cx - hw + 1} ${LENS_Y - hh + 1} ${cx - hw + 12} ${LENS_Y - hh + 1}`}
-              {...round}
-              stroke="#FFFFFF"
-              strokeWidth={2.4}
-              opacity={0.6}
-            />
+            <path d={arm} fill={pal.glasses} opacity={op} stroke={pal.glassesEdge} strokeWidth={1.4} strokeLinejoin="round" />
+            <g transform={`translate(${cx} ${LENS_Y})`}>
+              <path d={inner} fill="#DCEBFF" opacity={0.08} />
+              <path d={`${outer} ${inner}`} fill={pal.glasses} opacity={op} fillRule="evenodd" />
+              <path d={outer} fill="none" stroke={pal.glassesEdge} strokeWidth={1.6} strokeLinejoin="round" />
+              <path d={inner} fill="none" stroke={pal.glassesLight} strokeWidth={1.5} strokeLinejoin="round" />
+              <path d={`M ${-tw + 6} ${-ih - TT / 2} L ${tw - 18} ${-ih - TT / 2}`} stroke="#FFFFFF" strokeWidth={1.2} strokeLinecap="round" opacity={0.4} />
+              <circle cx={sd * (tw + T - 2.8)} cy={-ih - TT / 2 + 0.6} r={1.7} fill={pal.glassesLight} stroke={pal.glassesEdge} strokeWidth={0.9} />
+            </g>
           </g>
         );
       })}
-      <path d={bridge} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE - 1} />
-      <path d={bridge} {...round} stroke={pal.glasses} strokeWidth={RIM - 1.5} />
+      <path d={`M -9 ${LENS_Y - ih - 6} L 9 ${LENS_Y - ih - 6} L 9 ${LENS_Y - ih} L -9 ${LENS_Y - ih} Z`} fill={pal.glasses} opacity={op} stroke={pal.glassesEdge} strokeWidth={1.2} />
     </g>
   );
 };

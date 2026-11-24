@@ -131,13 +131,14 @@ test("the host's SVG has the thick lime glasses and uses skin #F0CDAE", () => {
       const svg = K.rig.svg(st, "g");
       const up = svg.toUpperCase();
       assert.ok(/data-part="glasses"[^>]*data-glasses="lime-thick"(?![^>]*display="none")/.test(svg), outfit + ": glasses group");
-      assert.ok(up.includes("#8BD13A") && up.includes("#5E9E1F"), outfit + ": lime frame and edge");
+      assert.ok(up.includes("#B9E83A") && up.includes("#7FB51F") && up.includes("#E2FA8A"), outfit + ": translucent lime frame, edge and inner edge");
+      assert.ok(/fill-rule="evenodd"/.test(svg) && !/stroke-width="1[01]\.5"/.test(svg), outfit + ": flat filled band, not a thick stroke");
       assert.ok(up.includes("#F0CDAE"), outfit + ": skin #F0CDAE");
       assert.ok(!up.includes("#E3B28A"), outfit + ": old skin");
     }
   const side = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("neutral", "neutral", 1), mouth: 0, blink: 0, t: 0,
     side: "center", width: 434, height: 288, still: true });
-  assert.ok(/data-glasses="lime-thick"/.test(side) && side.toUpperCase().includes("#8BD13A") && side.toUpperCase().includes("#F0CDAE"));
+  assert.ok(/data-glasses="lime-thick"/.test(side) && side.toUpperCase().includes("#B9E83A") && side.toUpperCase().includes("#F0CDAE"));
 });
 
 test("clean-shaven: no stubble shading on the jaw", () => {
@@ -163,7 +164,7 @@ test("cast.extra(n) is stable, varied and never the host's face", () => {
   for (let n = 1; n <= 24; n++) {
     const e = K.cast.extra(n);
     assert.ok(!("glasses" in e.face), "extra " + n + " has a glasses field");
-    assert.ok(!/data-glasses|#8BD13A/i.test(K.rig.svg(base({ character: e }), "x")), "extra " + n + " draws glasses");
+    assert.ok(!/data-glasses|#B9E83A/i.test(K.rig.svg(base({ character: e }), "x")), "extra " + n + " draws glasses");
   }
   assert.ok(skins.size >= 4 && hairs.size >= 3 && outfits.size >= 3 && faces.size >= 12, "varied extras");
   // an extra draws differently from the host in the same state

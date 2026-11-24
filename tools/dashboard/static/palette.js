@@ -174,7 +174,7 @@ export const CREW = {
 export const PRESENTER = {
   skin: ["#9a5f48", "#d4a07c", "#f0cdae", "#f9e0c9"],
   hair: ["#160c08", "#2a1810", "#3b2416", "#5a3a24"],
-  glasses: ["#5e9e1f", "#8bd13a", "#d4f59a"], // thick lime frames: edge, frame, glint
+  glasses: ["#7fb51f", "#b9e83a", "#e2fa8a"], // flat square lime acetate frames: edge, frame, light
   outfits: {
     blazer: { jacket: ["#0a0f1d", "#161e33", "#1f2a44", "#2e3d60"], rim: "#8fa6d6",
       shirt: ["#5d7894", "#a8c3de", "#cfe3f5"] },

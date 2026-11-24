@@ -121,9 +121,8 @@
   // ---------- face ----------
 
   var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
-  /* Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
-  var LENS_W = 48, LENS_H = 35, LENS_Y = EYE_Y + 1, LENS_R = 13;
-  var RIM = 8, RIM_EDGE = 11.5;
+  /* Flat square translucent lime acetate glasses (wayfarer-square), lenses centred on the eyes. */
+  var LENS_Y = EYE_Y, LENS_IH = 38, LENS_TOP_W = 46, LENS_BOT_W = 42, RIM_T = 6.5, RIM_TOP = 8.5;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
     var cx = side * EYE_X;
@@ -221,40 +220,49 @@
     ]);
   }
 
-  /* Chunky lime frames (rim lime on a darker edge), clear lenses with a faint glint, a bridge and
-   * temple arms to the ears. The eyes and brows stay clear. */
+  /* Rounded polygon path: points [[x, y, radius], ...]. */
+  function roundPoly(pts) {
+    var n = pts.length, d = "";
+    pts.forEach(function (p, i) {
+      var a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
+      var near = function (q) {
+        var dx = q[0] - p[0], dy = q[1] - p[1], l = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(p[2], l / 2) / l;
+        return [p[0] + dx * k, p[1] + dy * k];
+      };
+      var s0 = near(a), s1 = near(b);
+      d += (i ? " L " : "M ") + s0[0].toFixed(2) + " " + s0[1].toFixed(2) + " Q " + p[0] + " " + p[1] + " " + s1[0].toFixed(2) + " " + s1[1].toFixed(2);
+    });
+    return d + " Z";
+  }
+
+  /* Flat lime acetate frames: each rim is a filled band (outer shape minus the lens opening) in
+   * translucent lime with a lighter inner edge and a thin darker outer edge, a straight bridge,
+   * flat temple arms to the ears and a hinge rivet at each outer top corner. Lenses are clear. */
   function glassesNode(pal, on) {
     if (!on) return h("g", { "data-part": "glasses", display: "none" }, []);
-    var hw = LENS_W / 2, hh = LENS_H / 2;
-    var lens = function (cx, extra) {
-      return h("rect", Object.assign({ x: cx - hw, y: LENS_Y - hh, width: LENS_W, height: LENS_H, rx: LENS_R }, extra));
-    };
-    var edge = pal.glassesEdge, lime = pal.glasses;
-    var line = function (d, w, color, extra) {
-      return h("path", Object.assign({ d: d, fill: "none", stroke: color, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round" }, extra));
-    };
+    var tw = LENS_TOP_W / 2, bw = LENS_BOT_W / 2, ih = LENS_IH / 2, T = RIM_T, TT = RIM_TOP;
+    var inner = roundPoly([[-tw, -ih, 2.5], [tw, -ih, 2.5], [bw, ih, 6], [-bw, ih, 6]]);
+    var outer = roundPoly([[-tw - T, -ih - TT, 4], [tw + T, -ih - TT, 4], [bw + T, ih + T, 9], [-bw - T, ih + T, 9]]);
+    var lime = pal.glasses, edge = pal.glassesEdge, light = pal.glassesLight, op = 0.9;
     var kids = [];
     [-1, 1].forEach(function (sd) {
-      var cx = sd * EYE_X;
-      var top = "M " + (cx - hw + LENS_R * 1.1) + " " + (LENS_Y - hh) + " L " + (cx + hw - LENS_R * 1.1) + " " + (LENS_Y - hh);
-      var arm = "M " + sd * (EYE_X + hw) + " " + (LENS_Y - 8) + " L " + sd * 90 + " " + (LENS_Y - 11);
+      var cx = sd * EYE_X, ox = tw + T;
+      var arm = "M " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih - 4) + " L " + sd * 90 + " " + (LENS_Y - ih - 1) + " L " + sd * 90 + " " + (LENS_Y - ih + 5) +
+        " L " + sd * (EYE_X + ox - 1) + " " + (LENS_Y - ih + 3) + " Z";
       kids.push(h("g", { "data-part": sd < 0 ? "glasses-left" : "glasses-right" }, [
-        lens(cx, { fill: "#DCEBFF", opacity: 0.1 }),
-        line("M " + (cx - 16) + " " + (LENS_Y + 8) + " L " + (cx - 6) + " " + (LENS_Y - 10), 3, "#FFFFFF", { opacity: 0.22 }),
-        line(arm, RIM_EDGE - 1.5, edge),
-        line(arm, RIM - 1.5, lime),
-        lens(cx, { fill: "none", stroke: edge, "stroke-width": RIM_EDGE }),
-        line(top, RIM_EDGE + 2, edge),
-        lens(cx, { fill: "none", stroke: lime, "stroke-width": RIM }),
-        line(top, RIM + 2, lime),
-        // glint on the frame, top-left corner
-        line("M " + (cx - hw + 1) + " " + (LENS_Y - 2) + " Q " + (cx - hw + 1) + " " + (LENS_Y - hh + 1) + " " + (cx - hw + 12) + " " + (LENS_Y - hh + 1),
-          2.4, "#FFFFFF", { opacity: 0.6 }),
+        h("path", { d: arm, fill: lime, opacity: op, stroke: edge, "stroke-width": 1.4, "stroke-linejoin": "round" }),
+        h("g", { transform: "translate(" + cx + " " + LENS_Y + ")" }, [
+          h("path", { d: inner, fill: "#DCEBFF", opacity: 0.08 }),
+          h("path", { d: outer + " " + inner, fill: lime, opacity: op, "fill-rule": "evenodd" }),
+          h("path", { d: outer, fill: "none", stroke: edge, "stroke-width": 1.6, "stroke-linejoin": "round" }),
+          h("path", { d: inner, fill: "none", stroke: light, "stroke-width": 1.5, "stroke-linejoin": "round" }),
+          // flat streak on the top bar and the hinge rivet at the outer top corner
+          h("path", { d: "M " + (-tw + 6) + " " + (-ih - TT / 2) + " L " + (tw - 18) + " " + (-ih - TT / 2), stroke: "#FFFFFF", "stroke-width": 1.2, "stroke-linecap": "round", opacity: 0.4 }),
+          h("circle", { cx: sd * (tw + T - 2.8), cy: -ih - TT / 2 + 0.6, r: 1.7, fill: light, stroke: edge, "stroke-width": 0.9 }),
+        ]),
       ]));
     });
-    var bridge = "M " + (-EYE_X + hw) + " " + (LENS_Y - 7) + " Q 0 " + (LENS_Y - 17) + " " + (EYE_X - hw) + " " + (LENS_Y - 7);
-    kids.push(line(bridge, RIM_EDGE - 1, edge));
-    kids.push(line(bridge, RIM - 1.5, lime));
+    kids.push(h("path", { d: "M -9 " + (LENS_Y - ih - 6) + " L 9 " + (LENS_Y - ih - 6) + " L 9 " + (LENS_Y - ih) + " L -9 " + (LENS_Y - ih) + " Z", fill: lime, opacity: op, stroke: edge, "stroke-width": 1.2 }));
     return h("g", { "data-part": "glasses", "data-glasses": "lime-thick", display: show(on) }, kids);
   }
 

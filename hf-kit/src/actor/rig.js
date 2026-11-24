@@ -133,6 +133,7 @@
       glasses: face.glasses === "lime-thick" ? "lime-thick" : false,
       glassesColor: P.LOOK.glassesColor,
       glassesEdge: P.LOOK.glassesEdge,
+      glassesLight: P.LOOK.glassesLight,
       outfits: outfits,
     };
     var pal = P.palette(look, o.palette);
