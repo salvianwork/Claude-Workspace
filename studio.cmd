@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 if not exist ".venv\Scripts\python.exe" (
-    echo Run the setup first (docs/SETUP.md)
+    echo Run the setup first: see docs\SETUP.md
     pause
     exit /b 1
 )

@@ -148,6 +148,8 @@ def test_studio_cmd_launcher():
     assert "cd /d" in text
     assert r".venv\Scripts\python.exe -m tools.start" in text
     assert "%*" in text
-    assert "Run the setup first (docs/SETUP.md)" in text
+    assert "Run the setup first: see docs\\SETUP.md" in text
+    # no bare ")" inside the if-block echo (cmd would end the block early)
+    assert "(docs/SETUP.md)" not in text
     assert raw.count(b"\r\n") == raw.count(b"\n"), "studio.cmd must use CRLF endings"
     assert "*.cmd text eol=crlf" in (REPO / ".gitattributes").read_text()
