@@ -122,7 +122,7 @@
 
   var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
   /* Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
-  var LENS_W = 58, LENS_H = 42, LENS_Y = EYE_Y + 1, LENS_R = 15;
+  var LENS_W = 48, LENS_H = 35, LENS_Y = EYE_Y + 1, LENS_R = 13;
   var RIM = 8, RIM_EDGE = 11.5;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
@@ -236,14 +236,17 @@
     var kids = [];
     [-1, 1].forEach(function (sd) {
       var cx = sd * EYE_X;
-      var arm = "M " + sd * (EYE_X + hw) + " " + (LENS_Y - 9) + " L " + sd * 90 + " " + (LENS_Y - 11);
+      var top = "M " + (cx - hw + LENS_R * 1.1) + " " + (LENS_Y - hh) + " L " + (cx + hw - LENS_R * 1.1) + " " + (LENS_Y - hh);
+      var arm = "M " + sd * (EYE_X + hw) + " " + (LENS_Y - 8) + " L " + sd * 90 + " " + (LENS_Y - 11);
       kids.push(h("g", { "data-part": sd < 0 ? "glasses-left" : "glasses-right" }, [
         lens(cx, { fill: "#DCEBFF", opacity: 0.1 }),
-        line("M " + (cx - 20) + " " + (LENS_Y + 10) + " L " + (cx - 8) + " " + (LENS_Y - 12), 3, "#FFFFFF", { opacity: 0.22 }),
+        line("M " + (cx - 16) + " " + (LENS_Y + 8) + " L " + (cx - 6) + " " + (LENS_Y - 10), 3, "#FFFFFF", { opacity: 0.22 }),
         line(arm, RIM_EDGE - 1.5, edge),
         line(arm, RIM - 1.5, lime),
         lens(cx, { fill: "none", stroke: edge, "stroke-width": RIM_EDGE }),
+        line(top, RIM_EDGE + 2, edge),
         lens(cx, { fill: "none", stroke: lime, "stroke-width": RIM }),
+        line(top, RIM + 2, lime),
         // glint on the frame, top-left corner
         line("M " + (cx - hw + 1) + " " + (LENS_Y - 2) + " Q " + (cx - hw + 1) + " " + (LENS_Y - hh + 1) + " " + (cx - hw + 12) + " " + (LENS_Y - hh + 1),
           2.4, "#FFFFFF", { opacity: 0.6 }),

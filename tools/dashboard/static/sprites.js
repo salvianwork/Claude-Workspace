@@ -915,7 +915,7 @@ export function starPoster(b, x, y, outfit = "blazer") {
   const hx = cx - 5, hy = iy + ih - 20;
   const face = [
     "..hhHhHh..", ".hHhHhhhh.", "hhHhhHhhhh", "hhkKKKkkhh", "hkKkkkkkzh",
-    "hGGGGGGGGh", "hGKeGGeKGh", ".EEEkkEEE.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
+    "hkGGGGGGkh", "hkGeGGeGkh", ".kEEkkEEk.", ".kkkmmkzz.", "..kkkkzz..", "...zzzz...",
   ];
   const map = { h: P.hair[2], H: P.hair[3], k: P.skin[2], K: P.skin[3], z: P.skin[1], G: P.glasses[1], E: P.glasses[0], e: "#1a1020", m: "#a85a4a" };
   face.forEach((row, j) => [...row].forEach((ch, i) => { if (map[ch]) b.set(hx + i, hy + j, map[ch]); }));

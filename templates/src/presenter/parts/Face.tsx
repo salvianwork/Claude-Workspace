@@ -8,10 +8,10 @@ const EYE_RX = 13.5;
 const EYE_RY = 13.5;
 
 /** Thick lime-green acetate glasses: rounded-rectangle lenses centred on the eyes. */
-const LENS_W = 58;
-const LENS_H = 42;
+const LENS_W = 48;
+const LENS_H = 35;
 const LENS_Y = EYE_Y + 1;
-const LENS_R = 15;
+const LENS_R = 13;
 const RIM = 8;
 const RIM_EDGE = 11.5;
 
@@ -160,15 +160,18 @@ const Glasses: React.FC<{ pal: Palette }> = ({ pal }) => {
     <g data-glasses="lime-thick">
       {([-1, 1] as const).map((sd) => {
         const cx = sd * EYE_X;
-        const arm = `M ${sd * (EYE_X + hw)} ${LENS_Y - 9} L ${sd * 90} ${LENS_Y - 11}`;
+        const top = `M ${cx - hw + LENS_R * 1.1} ${LENS_Y - hh} L ${cx + hw - LENS_R * 1.1} ${LENS_Y - hh}`;
+        const arm = `M ${sd * (EYE_X + hw)} ${LENS_Y - 8} L ${sd * 90} ${LENS_Y - 11}`;
         return (
           <g key={sd}>
             <rect {...lens(cx)} fill="#DCEBFF" opacity={0.1} />
-            <path d={`M ${cx - 20} ${LENS_Y + 10} L ${cx - 8} ${LENS_Y - 12}`} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" opacity={0.22} />
+            <path d={`M ${cx - 16} ${LENS_Y + 8} L ${cx - 6} ${LENS_Y - 10}`} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" opacity={0.22} />
             <path d={arm} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE - 1.5} />
             <path d={arm} {...round} stroke={pal.glasses} strokeWidth={RIM - 1.5} />
             <rect {...lens(cx)} fill="none" stroke={pal.glassesEdge} strokeWidth={RIM_EDGE} />
+            <path d={top} {...round} stroke={pal.glassesEdge} strokeWidth={RIM_EDGE + 2} />
             <rect {...lens(cx)} fill="none" stroke={pal.glasses} strokeWidth={RIM} />
+            <path d={top} {...round} stroke={pal.glasses} strokeWidth={RIM + 2} />
             <path
               d={`M ${cx - hw + 1} ${LENS_Y - 2} Q ${cx - hw + 1} ${LENS_Y - hh + 1} ${cx - hw + 12} ${LENS_Y - hh + 1}`}
               {...round}
