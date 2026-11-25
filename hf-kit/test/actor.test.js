@@ -302,3 +302,90 @@ test("actor light: tint, amount and rim are deterministic and scoped to the inst
   const A1 = ids("s1-host-0"), B1 = new Set(ids("s1-extra-1-0"));
   assert.ok(A1.every((id) => !B1.has(id)));
 });
+
+// ---------- phone-ready refresh: bigger head, same face; the vertical bottom slot ----------
+
+/* A minimal element for mountActor in node (it only sets styles and innerHTML). */
+function stubEl() {
+  const doc = { createElement: () => ({ style: {}, setAttribute() {}, innerHTML: "" }) };
+  return { ownerDocument: doc, innerHTML: "", appendChild() {} };
+}
+// the pre-refresh head box (body units): 278 tall, its bottom at y = 318 with the feet at 1300
+const OLD_HEAD_RATIO = 278 / (1300 - 318);
+
+test("refresh: the head is about 20% bigger relative to the body (1.18-1.22x)", () => {
+  assert.equal(P.LOOK.headScale, 1.2);
+  assert.equal(K.LOOK, P.LOOK, "HFKit.LOOK is the presenter look");
+  const R = K.rig;
+  for (const st of [base(), base({ outfit: "casual", pose: "celebrate" }), base({ outfit: "explorer", pose: "talk", facing: 1 })]) { // standing
+    const hb = R.headBox(st);
+    const chin = hb.y + hb.height, feet = R.feet(st).y;
+    const ratio = hb.height / (feet - chin) / OLD_HEAD_RATIO;
+    assert.ok(ratio >= 1.18 && ratio <= 1.22, "head/body ratio " + ratio.toFixed(3) + " for " + JSON.stringify(st));
+  }
+  // the drawn head (hair, ears, face, glasses) is scaled as one group, in the actor and the side presenter
+  assert.match(R.svg(base(), "g"), /data-part="head-group" transform="[^"]*scale\(1\.2\)/);
+  const side = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("neutral", "neutral", 1), mouth: 0, blink: 0, t: 0,
+    side: "center", width: 434, height: 288, still: true });
+  assert.match(side, /data-part="head-group" transform="[^"]*scale\(1\.2\)/);
+  // the head group holds the glasses, so they scale with the head
+  const g = /data-part="head-group"[\s\S]*data-glasses="lime-thick"/.test(side);
+  assert.ok(g, "glasses inside the scaled head group");
+});
+
+test("refresh: glasses and skin colours are unchanged", () => {
+  const svg = K.rig.svg(base({ expression: "happy" }), "g");
+  const glasses = /data-part="glasses"[\s\S]*$/.exec(svg)[0];
+  assert.match(glasses, /fill="#9CD62B" opacity="0\.95"/);
+  assert.match(glasses, /stroke="#5E9A14"/);
+  assert.match(glasses, /stroke="#D4F57A"/);
+  assert.match(svg, /fill="#F0CDAE"/);
+  assert.equal(P.LOOK.skinTone, "#F0CDAE");
+  assert.deepEqual([P.LOOK.glassesColor, P.LOOK.glassesLight, P.LOOK.glassesEdge], ["#9CD62B", "#D4F57A", "#5E9A14"]);
+});
+
+test("slots follow the canvas: landscape side slots unchanged, vertical bottom slot", () => {
+  try {
+    K.setCanvas(K.FORMATS.landscape);
+    const L = K.rig.SLOT;
+    assert.equal(L.left, 300); assert.equal(L.right, 1620); assert.equal(L.feetY, 1470);
+    assert.ok(Math.abs(L.k - 0.892) < 0.002, "landscape k " + L.k);
+    K.setCanvas(K.FORMATS.vertical);
+    const V = K.rig.SLOT;
+    assert.ok(V.bottom && V.bottom.left.x < 540 && V.bottom.right.x > 540 && V.bottom.k > 0, JSON.stringify(V.bottom));
+    assert.equal(V.bottom.left.x + V.bottom.right.x, 1080, "mirrored about the centre");
+    assert.equal(K.rig.slots({ width: 1080, height: 1920 }).bottom.k, V.bottom.k);
+  } finally { K.setCanvas(null); }
+});
+
+test("vertical bottom slot: face box within y 1150-1400, body cropped by the frame bottom", () => {
+  try {
+    K.setCanvas(K.FORMATS.vertical);
+    for (const slot of ["bottom-left", "bottom-right"]) {
+      const a = K.mountActor(stubEl(), { id: "host", character: "host", start: { slot } }, { sceneId: 1 });
+      for (const [t, st] of [[0, {}], [1, { pose: "talk", expression: "happy", mouth: 0.6 }], [2.3, { pose: "celebrate" }], [3, { pose: "point-left", expression: "surprised" }]]) {
+        a.update(t, st);
+        const b = a.box(t);
+        assert.ok(b.y >= 1150 && b.y + b.height <= 1400, slot + " face box " + JSON.stringify(b));
+        assert.ok(b.x >= 0 && b.x + b.width <= 1080, slot + " face box inside the frame width");
+        assert.ok(a.anchors.feet(t).y > 1920, slot + " feet below the frame bottom");
+      }
+      // he looks toward the middle of the frame
+      const mid = a.anchors.head(0).x;
+      assert.ok(slot === "bottom-left" ? mid < 540 : mid > 540, slot);
+    }
+    assert.throws(() => K.mountActor(stubEl(), { id: "host", start: { slot: "bottom-middle" } }, {}), /slot/);
+  } finally { K.setCanvas(null); }
+});
+
+test("refresh: SVG ids stay unique in the side presenter and the actor", () => {
+  const side = P.figureSVG({ pose: P.POSES.talk, face: P.faceAt("happy", "happy", 1), mouth: 0.7, blink: 0, t: 3,
+    side: "right", width: 434, height: 456 }, "u1");
+  const act = K.rig.svg(base({ outfit: "casual", pose: "celebrate", expression: "surprised" }), "u2");
+  for (const svg of [side, act]) {
+    const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(ids.length > 3);
+    assert.equal(new Set(ids).size, ids.length, "duplicate ids");
+    for (const r of [...svg.matchAll(/url\(#([^)]+)\)/g)].map((m) => m[1])) assert.ok(ids.includes(r), "url(#" + r + ")");
+  }
+});

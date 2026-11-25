@@ -42,6 +42,7 @@
   var STRIDE_HIP_X = 24; // hips closer together while striding, so the legs swing past each other
   var VIEW = { x: -800, y: -500, w: 1600, h: 1900 }; // room for raised arms, props and jumps
   var LINE = 3.5;
+  var WX = P.WAIST_X; // the torso's half width at the waist (the lower body meets it)
 
   function show(on) { return on ? undefined : "none"; }
   function rad(d) { return (d * Math.PI) / 180; }
@@ -446,8 +447,9 @@
    * legs, so it narrows while striding (hips closer together). */
   function pelvisNode(pal, hipX) {
     var o = hipX + 44, m = hipX + 84, c = Math.min(22, hipX - 2);
-    var d = "M -170 770 L 170 770 C 170 826 " + m + " 878 " + o + " 906 L " + c + " 906 Q 0 918 " + -c + " 906 L " + -o + " 906 C " + -m + " 878 -170 826 -170 770 Z";
-    var sides = "M -170 770 C -170 826 " + -m + " 878 " + -o + " 906 M 170 770 C 170 826 " + m + " 878 " + o + " 906";
+    var X = WX - 12; // inside the tapered waist (it never peeks past a hem in three-quarter view)
+    var d = "M " + -X + " 770 L " + X + " 770 C " + X + " 826 " + m + " 878 " + o + " 906 L " + c + " 906 Q 0 918 " + -c + " 906 L " + -o + " 906 C " + -m + " 878 " + -X + " 826 " + -X + " 770 Z";
+    var sides = "M " + -X + " 770 C " + -X + " 826 " + -m + " 878 " + -o + " 906 M " + X + " 770 C " + X + " 826 " + m + " 878 " + o + " 906";
     return h("g", { "data-part": "pelvis" }, [
       h("path", { d: d, fill: pal.trousers }),
       h("path", { d: "M 120 800 C 128 840 " + (o + 16) + " 880 " + (o - 6) + " 904 L " + (o - 46) + " 904 C 84 880 96 840 92 800 Z", fill: pal.trousersShade, opacity: 0.8, display: show(hipX > 40) }),
@@ -465,8 +467,8 @@
     var flare = lab ? 11 : 4;
     var gap = lab ? 14 : 32;
     var line = { stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round" };
-    var left = "M -171 800 L " + f2(-171 - flare + sw) + " " + (hem - 6) + " C " + f2(-130 + sw) + " " + (hem + 8) + " " + f2(-64 + sw * 0.6) + " " + (hem + 10) + " " + f2(-gap + sw * 0.4) + " " + hem + " L -1 800 Z";
-    var right = "M 171 800 L " + f2(171 + flare + sw) + " " + (hem - 6) + " C " + f2(130 + sw) + " " + (hem + 8) + " " + f2(64 + sw * 0.6) + " " + (hem + 10) + " " + f2(gap + 4 + sw * 0.4) + " " + hem + " L 5 800 Z";
+    var left = "M " + -WX + " 800 L " + f2(-WX - flare + sw) + " " + (hem - 6) + " C " + f2(-130 + sw) + " " + (hem + 8) + " " + f2(-64 + sw * 0.6) + " " + (hem + 10) + " " + f2(-gap + sw * 0.4) + " " + hem + " L -1 800 Z";
+    var right = "M " + WX + " 800 L " + f2(WX + flare + sw) + " " + (hem - 6) + " C " + f2(130 + sw) + " " + (hem + 8) + " " + f2(64 + sw * 0.6) + " " + (hem + 10) + " " + f2(gap + 4 + sw * 0.4) + " " + hem + " L 5 800 Z";
     // outlines leave the top edge open: the panels continue the torso without a seam
     var open = function (d) { return d.replace(/ Z$/, ""); };
     var kids = [
@@ -474,7 +476,7 @@
       h("path", { d: right, fill: pal.jacket }),
       h("path", Object.assign({ d: open(left), fill: "none" }, line)),
       // shade on the right side, as on the torso above
-      h("path", { d: "M 108 802 L 169 802 L " + f2(167 + flare + sw) + " " + (hem - 8) + " C " + f2(160 + sw) + " " + (hem + 2) + " " + f2(130 + sw) + " " + (hem + 5) + " " + f2(118 + sw * 0.8) + " " + (hem + 6) + " Z", fill: pal.jacketShade }),
+      h("path", { d: "M 108 802 L " + (WX - 2) + " 802 L " + f2(WX - 4 + flare + sw) + " " + (hem - 8) + " C " + f2(160 + sw) + " " + (hem + 2) + " " + f2(130 + sw) + " " + (hem + 5) + " " + f2(118 + sw * 0.8) + " " + (hem + 6) + " Z", fill: pal.jacketShade }),
       h("path", { d: "M -150 820 L " + f2(-160 + sw * 0.8) + " " + (hem - 20), stroke: pal.jacketLight, "stroke-width": 10, "stroke-linecap": "round", opacity: 0.5 }),
       // redraw the outlines over the shade
       h("path", Object.assign({ d: open(right), fill: "none" }, line)),
@@ -492,21 +494,29 @@
     return h("g", { "data-part": "coat" }, kids);
   }
 
+  /* The sweater below the waist (refresh: soft, not boxy): the knit blouses a little over a
+   * gathered ribbed hem band. */
   function sweaterHemNode(pal) {
-    var d = "M -171 800 L -168 872 C -100 882 100 882 168 872 L 171 800 Z";
+    var X = WX, B = X - 10, O = X + 3; // the band is gathered narrower than the body
+    var edge = "M " + -X + " 780 C " + -O + " 806 " + -O + " 836 " + -(X - 10) + " 850 C -100 866 100 866 " + (X - 10) + " 850 C " + O + " 836 " + O + " 806 " + X + " 780";
+    var band = "M " + -B + " 846 C -100 860 100 860 " + B + " 846 L " + (B - 2) + " 884 C 100 896 -100 896 " + -(B - 2) + " 884 Z";
+    var ribs = [];
+    for (var x = -128; x <= 128; x += 16) ribs.push("M " + x + " " + (858 - Math.abs(x) * 0.03) + " L " + x + " " + (890 - Math.abs(x) * 0.04));
     return h("g", { "data-part": "coat" }, [
-      h("path", { d: d, fill: pal.jacket }),
-      h("path", { d: "M 108 800 L 171 800 L 168 872 C 150 876 130 878 112 879 Z", fill: pal.jacketShade }),
-      h("path", { d: "M -169 842 C -100 852 100 852 169 842 L 168 872 C 100 882 -100 882 -168 872 Z", fill: pal.jacketShade, opacity: 0.75 }),
-      h("path", { d: [-120, -80, -40, 0, 40, 80, 120].map(function (x) { return "M " + x + " 850 L " + x + " 876"; }).join(" "), stroke: pal.jacketLine, "stroke-width": 2, opacity: 0.35 }),
-      h("path", { d: "M -171 800 L -168 872 C -100 882 100 882 168 872 L 171 800", fill: "none", stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round" }),
+      h("path", { d: band, fill: pal.jacketShade, stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round" }),
+      h("path", { d: ribs.join(" "), stroke: pal.jacketLine, "stroke-width": 2, opacity: 0.3, "stroke-linecap": "round" }),
+      h("path", { d: edge + " Z", fill: pal.jacket }),
+      h("path", { d: "M 112 780 L " + X + " 780 C " + O + " 806 " + O + " 836 " + (X - 10) + " 850 C 140 855 126 858 112 859 C 120 830 118 806 112 780 Z", fill: pal.jacketShade, opacity: 0.85 }),
+      // soft drapes where the knit gathers into the band
+      h("path", { d: "M -140 822 C -124 842 -98 852 -70 852 M 36 856 C 62 856 88 850 108 840 M -34 858 C -20 850 -2 850 10 858", fill: "none", stroke: pal.jacketShade, "stroke-width": 4.5, "stroke-linecap": "round", opacity: 0.85 }),
+      h("path", { d: edge, fill: "none", stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round", "stroke-linecap": "round" }),
     ]);
   }
 
   function beltNode(pal) {
     return h("g", { "data-part": "coat" }, [
-      h("path", { d: "M -172 806 L 172 806 L 171 842 L -171 842 Z", fill: pal.belt, stroke: pal.shoeLine, "stroke-width": 3, "stroke-linejoin": "round" }),
-      h("path", { d: "M -120 806 L -120 842 M 120 806 L 120 842", stroke: pal.shoeLine, "stroke-width": 3, opacity: 0.6 }),
+      h("path", { d: "M " + -(WX + 1) + " 806 L " + (WX + 1) + " 806 L " + WX + " 842 L " + -WX + " 842 Z", fill: pal.belt, stroke: pal.shoeLine, "stroke-width": 3, "stroke-linejoin": "round" }),
+      h("path", { d: "M -116 806 L -116 842 M 116 806 L 116 842", stroke: pal.shoeLine, "stroke-width": 3, opacity: 0.6 }),
       h("rect", { x: -22, y: 800, width: 44, height: 48, rx: 6, fill: pal.buckle, stroke: "#5A4318", "stroke-width": 3 }),
       h("rect", { x: -11, y: 812, width: 22, height: 24, rx: 3, fill: pal.belt }),
     ]);
@@ -514,25 +524,29 @@
 
   // ---------- torsos for the new outfits (the presenter draws blazer and lab coat) ----------
 
+  /* Casual knit sweater (refresh: softer, less boxy): curved chest stripes that follow the body's
+   * volume, soft drapes instead of hard folds, a rounded ribbed crew neck. */
   function sweaterNode(pal) {
     var clip = "{uid}-torso";
+    var bow = function (y, dy) { return "M -220 " + y + " C -120 " + (y + dy) + " 120 " + (y + dy) + " 220 " + y; };
     return h("g", { "data-part": "torso" }, [
       h("defs", {}, [h("clipPath", { id: clip }, [h("path", { d: P.TORSO_PATH })])]),
       h("path", { d: P.TORSO_PATH, fill: pal.jacket }),
       h("g", { "clip-path": "url(#" + clip + ")" }, [
         h("path", { d: P.TORSO_PATH, fill: "none", stroke: pal.rim, "stroke-width": 14, opacity: 0.3 }),
-        // a band across the chest
-        h("rect", { x: -220, y: 486, width: 440, height: 34, fill: pal.accent }),
-        h("rect", { x: -220, y: 532, width: 440, height: 10, fill: pal.accent }),
+        // a band across the chest, bowed with the chest
+        h("path", { d: bow(490, 26), fill: "none", stroke: pal.accent, "stroke-width": 32 }),
+        h("path", { d: bow(536, 26), fill: "none", stroke: pal.accent, "stroke-width": 10 }),
         h("path", { d: "M 104 360 C 156 370 178 398 176 432 C 172 500 162 570 152 640 L 156 840 L 110 840 C 120 700 124 560 120 450 C 118 410 112 380 104 360 Z", fill: pal.jacketShade, opacity: 0.85 }),
         h("path", { d: "M -176 420 C -156 396 -130 384 -104 382 C -132 402 -152 440 -162 490 Z", fill: pal.jacketLight, opacity: 0.7 }),
-        h("path", { d: "M -150 560 C -140 600 -138 640 -142 690 M 150 560 C 140 600 138 640 142 690", fill: "none", stroke: pal.jacketShade, "stroke-width": 6, "stroke-linecap": "round" }),
+        // soft knit drapes toward the waist
+        h("path", { d: "M -136 650 C -120 700 -100 730 -70 748 M 132 650 C 118 700 96 730 66 748 M -40 700 C -30 724 -14 738 4 744", fill: "none", stroke: pal.jacketShade, "stroke-width": 5, "stroke-linecap": "round", opacity: 0.7 }),
       ]),
       h("path", { d: P.TORSO_OUTLINE, fill: "none", stroke: pal.jacketLine, "stroke-width": LINE, "stroke-linejoin": "round" }),
-      // ribbed crew neck
-      h("path", { d: "M -50 340 C -26 384 26 384 50 340", fill: "none", stroke: pal.jacketShade, "stroke-width": 16, "stroke-linecap": "round" }),
-      h("path", { d: "M -58 342 C -30 394 30 394 58 342", fill: "none", stroke: pal.jacketLine, "stroke-width": 3, "stroke-linecap": "round" }),
-      h("path", { d: "M -43 338 C -22 374 22 374 43 338", fill: "none", stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0.7 }),
+      // ribbed crew neck, rounded
+      h("path", { d: "M -50 340 C -30 388 30 388 50 340", fill: "none", stroke: pal.jacketShade, "stroke-width": 17, "stroke-linecap": "round" }),
+      h("path", { d: "M -59 342 C -32 398 32 398 59 342", fill: "none", stroke: pal.jacketLine, "stroke-width": 3, "stroke-linecap": "round" }),
+      h("path", { d: "M -42 338 C -22 376 22 376 42 338", fill: "none", stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0.7 }),
     ]);
   }
 
@@ -672,15 +686,25 @@
     var T = lay.turn, ta = lay.ta;
     var headT = "translate(" + f2(lay.headTX) + " " + f2(lay.lift) + ") rotate(" + f2(tilt + lay.nod) + " 0 " + P.RIG.headPivotY + ")";
     // the back hair goes behind the neck and shoulders (long hair falls behind them)
-    var back = h("g", { transform: headT }, [h("g", { transform: "translate(" + f2(-8 * T) + " 0)" }, [hairBack(pal, pal.hairStyle, sway)])]);
-    var head = h("g", { transform: headT }, [
+    var hs = P.headScaleTransform(P.LOOK); // the head drawn bigger about the chin (every character)
+    var back = h("g", { transform: headT }, [h("g", { "data-part": "head-group-back", transform: hs }, [
+      h("g", { transform: "translate(" + f2(-8 * T) + " 0)" }, [hairBack(pal, pal.hairStyle, sway)])])]);
+    var head = h("g", { transform: headT }, [h("g", { "data-part": "head-group", transform: hs }, [
       turnHead(P.parts.head(pal), T),
-      // the face features slide toward the turn and narrow a little (three-quarter view)
-      h("g", { transform: "translate(" + f2(20 * T) + " 0) scale(" + f2(1 - 0.1 * ta) + " 1)" }, [
-        P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY, pal.look.glasses),
+      // the face features slide toward the turn and narrow a little (three-quarter view); on the
+      // side he turns toward they stop at the face line (the near temple arm goes behind the cheek)
+      h("defs", {}, [h("clipPath", { id: "{uid}-turn" }, [
+        h("path", { d: P.FACE_PATH }),
+        h("rect", { x: -400, y: -200, width: T < -0.01 ? 0 : 400, height: 800 }),
+        h("rect", { x: 0, y: -200, width: T > 0.01 ? 0 : 400, height: 800 }),
+      ])]),
+      h("g", { "clip-path": "url(#{uid}-turn)" }, [
+        h("g", { transform: "translate(" + f2(20 * T) + " 0) scale(" + f2(1 - 0.1 * ta) + " 1)" }, [
+          P.parts.face(pal, face, clamp(st.mouth || 0, 0, 1), clamp(st.blink || 0, 0, 1), gazeX, gazeY, pal.look.glasses),
+        ]),
       ]),
       h("g", { transform: "translate(" + f2(3 * T) + " 0)" }, [hairFront(pal, pal.hairStyle, sway)]),
-    ]);
+    ])]);
     var armL = h("g", { transform: "translate(" + f2(lay.armXL) + " 0)" }, [P.parts.arm(pose.left, false, pal, "arm-left")]);
     var armR = h("g", { transform: "translate(" + f2(lay.armXR) + " 0)" },
       (st.held ? [heldNode(st.held, pose)] : []).concat([P.parts.arm(pose.right, true, pal, "arm-right")]));
@@ -784,16 +808,22 @@
 
   // ---------- anchor points (body units, feet at FEET when standing) ----------
 
-  /* The head and hair box (the face area tags must not cover). */
+  /* A head-local y (unscaled drawing) after the head scale about the chin. */
+  function headY(y) { var S = P.RIG.headScaleY; return S + (y - S) * (P.LOOK.headScale || 1); }
+
+  /* The head and hair box (the face area tags must not cover): the unscaled box x +-114, y 40..318,
+   * scaled with the head. */
   function headBox(st) {
     var lay = layout(st || {});
-    var c = upper(lay, { x: lay.headTX, y: 180 + lay.lift });
-    return { x: c.x - 114, y: c.y - 140, width: 228, height: 278 };
+    var k = P.LOOK.headScale || 1;
+    var top = headY(40), bottom = headY(318);
+    var c = upper(lay, { x: lay.headTX, y: (top + bottom) / 2 + lay.lift });
+    return { x: c.x - 114 * k, y: c.y - (bottom - top) / 2, width: 228 * k, height: bottom - top };
   }
 
   function head(st) {
     var lay = layout(st || {});
-    return upper(lay, { x: lay.headTX, y: 200 + lay.lift });
+    return upper(lay, { x: lay.headTX, y: headY(200) + lay.lift });
   }
 
   /* The screen-right hand (the one that holds props). */
@@ -809,9 +839,32 @@
     return { x: (L.ankle.x + R.ankle.x) / 2, y: Math.max(L.sole, R.sole) + lay.dy };
   }
 
-  /* Side slot: about 1.35x the old presenter (its calm framing showed 690 body units in 456 px). */
-  var oldBox = P.presenterSize ? P.presenterSize("small") : { width: 422, height: 456 };
-  var SLOT = { k: Math.round((1.35 * oldBox.height / (724 - 34)) * 1000) / 1000, left: 300, right: 1620, feetY: 1470 };
+  /* Screen slots for a canvas {width, height} (HFKit.slots reads it per call, so a mount sees its
+   * composition's canvas):
+   *   landscape side slots: about 1.35x the old side presenter (its calm framing showed 690 body
+   *     units in 456 px of a 1920 x 1080 frame): k 0.892, x 300 / 1620, feet at y 1470 (below the
+   *     frame edge); scaled with the canvas for other landscape sizes.
+   *   bottom: {left: {x}, right: {x}, k, feetY}, the vertical host: shown from about the waist up,
+   *     cropped by the frame bottom, face box between y 1150 and 1400 on 1080 x 1920 (centred on
+   *     y 1275), left or right of centre.
+   * On a portrait canvas there is no side slot: "left" / "right" are the bottom slot's sides. */
+  var SIDE_K = Math.round((1.35 * 456 / (724 - 34)) * 1000) / 1000; // 0.892
+  var BOTTOM_K = 0.69, BOTTOM_X = 250, BOTTOM_FACE_Y = 1275;
+
+  function slots(canvas) {
+    var W = (canvas && canvas.width) || 1920, H = (canvas && canvas.height) || 1080;
+    var bk = Math.round(BOTTOM_K * Math.min(W / 1080, H / 1920) * 1000) / 1000;
+    var faceMid = (headY(40) + headY(318)) / 2; // the head box centre in body units (standing)
+    var bx = Math.round(BOTTOM_X * W / 1080);
+    var bottom = {
+      left: { x: bx }, right: { x: W - bx }, k: bk,
+      feetY: Math.round(BOTTOM_FACE_Y * H / 1920 + (FEET - faceMid) * bk),
+    };
+    if (H > W) return { k: bk, left: bottom.left.x, right: bottom.right.x, feetY: bottom.feetY, bottom: bottom };
+    var sx = W / 1920, sy = H / 1080;
+    return { k: Math.round(SIDE_K * sy * 1000) / 1000, left: Math.round(300 * sx), right: Math.round(1620 * sx), feetY: Math.round(1470 * sy), bottom: bottom };
+  }
+  function canvasNow() { return (root.HFKit && root.HFKit.CANVAS) || { width: 1920, height: 1080 }; }
 
   /* Ground covered by one cycle (body units): the planted foot's travel, twice per stride.
    * Move the actor by STRIDE[cycle] * k px per cycle and the feet do not slide. */
@@ -826,11 +879,13 @@
   var STRIDE = { walk: strideOf("walk"), run: strideOf("run") };
 
   A.rig = {
-    FEET: FEET, VIEW: VIEW, SLOT: SLOT, STRIDE: STRIDE, cycleBlend: cycleBlend, light: lightOf,
+    FEET: FEET, VIEW: VIEW, slots: slots, STRIDE: STRIDE, cycleBlend: cycleBlend, light: lightOf,
     POSES: POSES, CYCLES: CYCLES, OUTFITS: OUTFITS, HELD: HELD, EXPRESSIONS: EXPRESSIONS, HAIR: HAIR,
     animatedPose: animatedPose, blendPoses: P.blendPoses, faceAt: P.faceAt,
     palette: paletteFor, layout: layout, tree: tree, svg: svg,
     headBox: headBox, head: head, hand: hand, feet: feet,
   };
+  // rig.SLOT: the slots of the current canvas (HFKit.CANVAS), read when asked
+  Object.defineProperty(A.rig, "SLOT", { enumerable: true, get: function () { return slots(canvasNow()); } });
   if (root.HFKit) root.HFKit.rig = A.rig;
 })(typeof globalThis !== "undefined" ? globalThis : window);

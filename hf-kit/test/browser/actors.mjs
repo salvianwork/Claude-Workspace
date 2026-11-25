@@ -72,6 +72,47 @@ function pageChecks() {
   host.update(2, states[2][0]); extra.update(2, states[2][1]);
   host.update(0, states[0][0]); extra.update(0, states[0][1]);
   if (root.innerHTML !== a) fails.push("DOM differs after seeking back to 0");
+  fails.push(...bottomSlotChecks());
+  return fails;
+}
+
+/* The vertical host, drawn for real on a 1080 x 1920 canvas: in the bottom slots the drawn face and
+ * hair sit between y 1150 and 1400 (inside the box), he is cropped by the frame bottom, the glasses
+ * stay inside the face line, and the drawn head is about 1.2x the old head (ratio to the body). */
+function bottomSlotChecks() {
+  const fails = [];
+  const K = window.HFKit;
+  const root = document.getElementById("root");
+  K.setCanvas({ width: 1080, height: 1920 });
+  try {
+    root.innerHTML = "";
+    root.style.width = "1080px"; root.style.height = "1920px";
+    const r0 = root.getBoundingClientRect();
+    for (const slot of ["bottom-left", "bottom-right"]) {
+      const el = document.createElement("div");
+      root.appendChild(el);
+      const a = K.mountActor(el, { id: "v" + slot, character: "host", start: { slot } }, { sceneId: 3 });
+      for (const [t, st] of [[0, {}], [1.5, { pose: "talk", expression: "happy", mouth: 0.7 }], [3, { pose: "celebrate", expression: "surprised" }]]) {
+        a.update(t, st);
+        const svg = el.querySelector("svg");
+        const box = (sel) => { const r = svg.querySelector(sel).getBoundingClientRect(); return { top: r.top - r0.top, bottom: r.bottom - r0.top, left: r.left - r0.left, right: r.right - r0.left }; };
+        // the visible head: the hair (back and front layers) down to the face outline (the head
+        // group's bounding box would also count shading that the face clip hides)
+        const hb = box('[data-part="hair-back"]'), hf = box('[data-part="hair-front"]'), face = box('[data-part="head"] > path:last-of-type');
+        const hair = { top: Math.min(hb.top, hf.top), bottom: face.bottom }, glasses = box('[data-part="glasses"]');
+        if (hair.top < 1150 || hair.bottom > 1400) fails.push(slot + " t=" + t + ": head drawn at y " + Math.round(hair.top) + "-" + Math.round(hair.bottom) + ", not within 1150-1400");
+        // the temple arms rest on the ears, a few px past the cheek line
+        if (glasses.left < face.left - 4 || glasses.right > face.right + 4) fails.push(slot + " t=" + t + ": glasses outside the face line " + JSON.stringify([glasses, face]));
+        const fb = a.box(t);
+        if (hair.top < fb.y - 4 || hair.bottom > fb.y + fb.height + 4) fails.push(slot + " t=" + t + ": face box misses the drawn head");
+        const body = box('[data-part="body"]');
+        if (!(body.bottom > 1920)) fails.push(slot + " t=" + t + ": body not cropped by the frame bottom (" + Math.round(body.bottom) + ")");
+      }
+    }
+  } finally {
+    K.setCanvas(null);
+    root.style.width = ""; root.style.height = "";
+  }
   return fails;
 }
 
@@ -85,6 +126,7 @@ try {
   page.on("request", (r) => { if (/^https?:/.test(r.url())) errors.push("network request: " + r.url()); });
   await page.goto("file://" + join(KIT, "test", "browser", "harness.html"));
   for (const s of SCRIPTS) await page.addScriptTag({ path: s });
+  await page.addScriptTag({ content: bottomSlotChecks.toString() });
   report.fails = await page.evaluate(pageChecks);
   report.fails.push(...errors);
 } finally {

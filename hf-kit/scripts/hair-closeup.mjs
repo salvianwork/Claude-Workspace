@@ -1,6 +1,7 @@
 // node scripts/hair-closeup.mjs --out=<png>: head close-ups (about 4x) of the host through the rig,
 // one per pose / cycle frame, side by side on a light backdrop. Used to check the curly hair has no skin
-// gap between the fringe curls and the main mass, and the glasses sit well (expressions think / surprised / happy) (compare a run before and after a hair change).
+// gap between the fringe curls and the main mass, and the glasses sit well (the scale allows for
+// LOOK.headScale, so the head fills the cell as before the phone-ready refresh) (expressions think / surprised / happy) (compare a run before and after a hair change).
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
@@ -36,7 +37,7 @@ await page.evaluate(({ STATES, W, H }) => {
     cell.style.cssText = `position:absolute;left:${i * W}px;top:0;width:${W}px;height:${H}px;overflow:hidden`;
     const holder = document.createElement("div");
     cell.appendChild(holder); root.appendChild(cell);
-    const act = window.HFKit.mountActor(holder, { id: "host", character: "host", outfit: "blazer", scale: 4, start: { x: 500, y: 1000 } }, { sceneId: i });
+    const act = window.HFKit.mountActor(holder, { id: "host", character: "host", outfit: "blazer", scale: 4 / (window.HFKit.LOOK.headScale || 1), start: { x: 500, y: 1000 } }, { sceneId: i });
     act.update(1, st);
     const b = act.box(1);
     // move the actor so the head box is centred in the cell

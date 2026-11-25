@@ -65,7 +65,7 @@ test("every pose, expression and outfit renders an <svg> with every part", () =>
 test("head crop renders the head only", () => {
   const svg = P.figureSVG({ pose: P.POSES.idle, face: P.faceAt("happy", "happy", 1), mouth: 0, blink: 0, t: 0,
     side: "center", crop: "head", width: 150, height: 164, still: true });
-  assert.ok(svg.includes('viewBox="-138 30 276 300"'));
+  assert.ok(svg.includes('viewBox="-165.6 -26.4 331.2 360"'), "the old -138 30 276 300 window, scaled with the head");
   assert.ok(svg.includes('data-part="face"'));
   assert.ok(!svg.includes('data-part="torso"'));
 });

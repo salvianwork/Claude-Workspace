@@ -2,9 +2,10 @@ import React from "react";
 import type { Palette } from "../look";
 
 /** Jacket outline, shoulders to below the waist (body space, centre line x = 0); open at the neck. */
+/** Body silhouette: square shoulders easing into a slight waist taper (phone-ready refresh). */
 const TORSO_OUTLINE =
-  "M -44 344 C -84 350 -128 356 -158 370 C -182 382 -192 402 -192 430 C -190 500 -180 580 -170 650 L -172 840 " +
-  "L 172 840 L 170 650 C 180 580 190 500 192 430 C 192 402 182 382 158 370 C 128 356 84 350 44 344";
+  "M -44 344 C -84 350 -128 356 -158 370 C -182 382 -192 402 -192 430 C -190 500 -181 572 -170 632 C -162 676 -160 730 -162 840 " +
+  "L 162 840 C 160 730 162 676 170 632 C 181 572 190 500 192 430 C 192 402 182 382 158 370 C 128 356 84 350 44 344";
 
 /** Jacket silhouette (closed behind the collar, below the neck). */
 export const TORSO_PATH = TORSO_OUTLINE + " C 24 372 -24 372 -44 344 Z";

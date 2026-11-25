@@ -8,10 +8,10 @@ import { Face } from "./parts/Face";
 import { HairBack, HairFront } from "./parts/Hair";
 import { Head } from "./parts/Head";
 import { CollarBack, Neck, Torso } from "./parts/Torso";
-import { armPoints, blendPoses, faceAt, POSES, RIG, TALK_MIRROR, type Face as FaceParams, type Pose } from "./poses";
+import { armPoints, blendPoses, faceAt, headScaleTransform, POSES, RIG, TALK_MIRROR, type Face as FaceParams, type Pose } from "./poses";
 
 /** Drawing area in body units (y): from above the hair to the crop line. */
-const VIEW_TOP = 34;
+const VIEW_TOP = -14;
 /** Crop line for calm poses (hands near the body): a closer, larger framing. */
 const CALM_BOTTOM = 724;
 /** Crop line when the arms need more room (pointing, celebrating): the figure gets smaller. */
@@ -141,16 +141,19 @@ export const PresenterFigure: React.FC<FigureProps> = ({
   const swayFn = (phase: number) => (still ? 0 : sway(t, phase));
   const f = frame ?? fitFrame([pose], side, width / height);
   const bottom = f.y + f.h;
-  const viewBox = crop === "head" ? "-138 30 276 300" : `${f.x} ${f.y} ${f.w} ${f.h}`;
+  // head close-up: the old -138 30 276 300 window, scaled with the head
+  const viewBox = crop === "head" ? "-165.6 -26.4 331.2 360" : `${f.x} ${f.y} ${f.w} ${f.h}`;
   const fade = `${uid}-fade`;
   const mask = `${uid}-mask`;
 
   const head = (
     <g transform={`translate(0 ${lift}) rotate(${tilt} 0 ${RIG.headPivotY})`}>
-      <HairBack pal={pal} sway={swayFn} />
-      <Head pal={pal} uid={uid} />
-      <Face pal={pal} face={face} mouth={mouth} blink={blink} gazeX={pose.gazeX} gazeY={pose.gazeY} glasses={look.glasses} uid={uid} />
-      <HairFront pal={pal} sway={swayFn} />
+      <g transform={headScaleTransform(look.headScale)}>
+        <HairBack pal={pal} sway={swayFn} />
+        <Head pal={pal} uid={uid} />
+        <Face pal={pal} face={face} mouth={mouth} blink={blink} gazeX={pose.gazeX} gazeY={pose.gazeY} glasses={look.glasses} uid={uid} />
+        <HairFront pal={pal} sway={swayFn} />
+      </g>
     </g>
   );
 

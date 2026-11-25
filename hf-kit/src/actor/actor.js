@@ -8,7 +8,8 @@
  *
  * Light: s.light, else spec.light, else ctx.light = {tint, amount, rim?} (a place's
  *   meta.actorLight[variant]); see rig.js.
- * spec.start: {slot: "left" | "right"} (narrator slot, feet below the frame edge) or {x, y}
+ * spec.start: {slot: "left" | "right"} (narrator slot, feet below the frame edge), {slot: "bottom-left" |
+ *   "bottom-right"} (the vertical host: waist up, cropped by the frame bottom; rig.slots) or {x, y}
  *   (feet at that screen point, for an actor in the world). spec.scale multiplies the slot / world
  *   size. ctx: {sceneId, mouth (the scene's mouth array, 30 fps), seed?, offset? (frames), idPrefix?}.
  * Every SVG id is ctx.idPrefix + "-...", or "s<sceneId>-<spec.id>-<n>-..." (n counts mounts of that
@@ -52,8 +53,11 @@
     var seed = ctx.seed === undefined ? hash("s" + scene + "-" + spec.id) : ctx.seed;
     var mouth = ctx.mouth || [];
     var start = spec.start || { slot: "right" };
-    var slot = start.slot === "left" || start.slot === "right" ? start.slot : null;
+    var SLOTS = rig.slots((root.HFKit && root.HFKit.CANVAS) || null); // the composition's canvas, at mount
+    var bottom = /^bottom-(left|right)$/.exec(start.slot || "");
+    var slot = start.slot === "left" || start.slot === "right" ? start.slot : bottom ? bottom[1] : null;
     if (start.slot && !slot) throw new Error("mountActor: unknown slot " + start.slot);
+    var place = slot ? (bottom ? { k: SLOTS.bottom.k, x: SLOTS.bottom[slot].x, y: SLOTS.bottom.feetY } : { k: SLOTS.k, x: SLOTS[slot], y: SLOTS.feetY }) : null;
     if (!slot && !(Number.isFinite(start.x) && Number.isFinite(start.y))) throw new Error("mountActor: start needs {slot} or {x, y}");
 
     var holder = el.ownerDocument.createElement("div");
@@ -84,9 +88,9 @@
       if (s.light === undefined) st.light = spec.light || ctx.light || null;
       if (slot && s.gazeBias === undefined && !s.facing) st.gazeBias = slot === "right" ? -0.25 : 0.25;
       var mult = s.scale !== undefined ? s.scale : spec.scale !== undefined ? spec.scale : 1;
-      var k = (slot ? rig.SLOT.k : WORLD_K) * mult;
-      var x = s.x !== undefined ? s.x : slot ? rig.SLOT[slot] : start.x;
-      var y = s.y !== undefined ? s.y : slot ? rig.SLOT.feetY : start.y;
+      var k = (slot ? place.k : WORLD_K) * mult;
+      var x = s.x !== undefined ? s.x : slot ? place.x : start.x;
+      var y = s.y !== undefined ? s.y : slot ? place.y : start.y;
       return { st: st, k: k, x: x, y: y };
     }
 

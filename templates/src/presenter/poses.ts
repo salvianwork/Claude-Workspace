@@ -44,7 +44,13 @@ export const RIG = {
   wristWidth: 46,
   waist: 760,
   headPivotY: 300,
+  /** The chin: the head is scaled about this point (LOOK.headScale). */
+  headScaleY: 312,
 } as const;
+
+/** Transform that draws the head `headScale` times bigger about the chin. */
+export const headScaleTransform = (headScale = 1) =>
+  `translate(0 ${RIG.headScaleY}) scale(${headScale}) translate(0 ${-RIG.headScaleY})`;
 
 const arm = (shoulder: number, elbow: number, hand: HandShape, wrist = 0, upper = 1, fore = 1): ArmPose => ({
   shoulder,

@@ -4,8 +4,10 @@ import { mouthShape, type Brow, type Face as FaceParams } from "../poses";
 
 const EYE_X = 35;
 const EYE_Y = 226;
-const EYE_RX = 13.5;
-const EYE_RY = 13.5;
+/** Phone-ready refresh: eyes a little larger; they open at most to the rim (EYE_MAX). */
+const EYE_RX = 14.8;
+const EYE_RY = 14.8;
+const EYE_MAX = 17.6;
 
 /** Flat square translucent lime acetate glasses (wayfarer-square), lenses centred on the eyes. */
 const LENS_Y = EYE_Y + 1;
@@ -48,12 +50,12 @@ const Eye: React.FC<{
 }> = ({ pal, side, face, blink, gazeX, gazeY, uid }) => {
   const cx = side * EYE_X;
   const open = face.eyeOpen * (1 - blink);
-  const top = Math.max(0.6, EYE_RY * open);
+  const top = Math.max(0.6, Math.min(EYE_MAX, EYE_RY * open));
   // Lower lid rises with a smile ("smiling eyes") and closes with the blink as well.
   const bottom = Math.max(0.6, EYE_RY * (1 - face.squint * 0.6) * (0.25 + 0.75 * (1 - blink)));
   const d = `M ${cx - EYE_RX} ${EYE_Y} A ${EYE_RX} ${top} 0 0 1 ${cx + EYE_RX} ${EYE_Y} A ${EYE_RX} ${bottom} 0 0 1 ${cx - EYE_RX} ${EYE_Y} Z`;
   const clip = `${uid}-eye${side}`;
-  const iris = 9.5 * (face.eyeOpen > 1.15 ? 0.84 : 1);
+  const iris = 10.6 * (face.eyeOpen > 1.15 ? 0.84 : 1);
   const ix = cx + gazeX * 4.5;
   const iy = EYE_Y + gazeY * 4.5 + 1;
   const shut = blink > 0.82;
@@ -81,7 +83,7 @@ const Eye: React.FC<{
         d={`M ${cx - EYE_RX - 1} ${EYE_Y + 1} A ${EYE_RX + 1} ${top + 1} 0 0 1 ${cx + EYE_RX + 1} ${EYE_Y + 1}`}
         fill="none"
         stroke={pal.hairLine}
-        strokeWidth={shut ? 4.5 : 4}
+        strokeWidth={shut ? 5 : 4.6}
         strokeLinecap="round"
       />
       <path
@@ -105,19 +107,23 @@ const Eye: React.FC<{
   );
 };
 
+/** Bold brows (refresh): a thick, softly tapered bar, darker than the hair so they read on a phone. */
 const Eyebrow: React.FC<{ pal: Palette; side: -1 | 1; b: Brow }> = ({ pal, side, b }) => {
-  const inner = { x: side * 14, y: 194 + b.raise + b.inner };
-  const outer = { x: side * 56, y: 196 + b.raise };
-  const mid = { x: side * 35, y: 188 + b.raise - b.arch };
-  // Tapered brow: thick at the inner end, thin at the outer end.
+  const inner = { x: side * 13, y: 190 + b.raise + b.inner };
+  const outer = { x: side * 57, y: 193 + b.raise };
+  const mid = { x: side * 35, y: 184 + b.raise - b.arch };
+  // Tapered brow: thick at the inner end (13), thinner at the outer end (6).
   const d =
-    `M ${inner.x} ${inner.y + 4} Q ${mid.x} ${mid.y + 4} ${outer.x} ${outer.y + 1.5} ` +
-    `Q ${outer.x + side * 1.5} ${outer.y - 1.5} ${outer.x - side * 1} ${outer.y - 2.5} ` +
-    `Q ${mid.x} ${mid.y - 5} ${inner.x} ${inner.y - 5} Q ${inner.x - side * 4} ${inner.y} ${inner.x} ${inner.y + 4} Z`;
-  return <path d={d} fill={pal.hair} stroke={pal.hairLine} strokeWidth={2} strokeLinejoin="round" />;
+    `M ${inner.x} ${inner.y + 6} Q ${mid.x} ${mid.y + 6} ${outer.x} ${outer.y + 2.5} ` +
+    `Q ${outer.x + side * 2.5} ${outer.y - 0.5} ${outer.x - side * 0.5} ${outer.y - 3.5} ` +
+    `Q ${mid.x} ${mid.y - 7} ${inner.x} ${inner.y - 7} Q ${inner.x - side * 5} ${inner.y - 0.5} ${inner.x} ${inner.y + 6} Z`;
+  return <path d={d} fill={pal.hairShade} stroke={pal.hairLine} strokeWidth={2.2} strokeLinejoin="round" />;
 };
 
-/** Mouth for loudness `v` (0–1), shaped by the expression. */
+/**
+ * Mouth for loudness `v` (0–1), shaped by the expression: the round "oh", the closed smile line,
+ * the open grin of a big smile (cross-faded with the line by the smile), or the open talking mouth.
+ */
 const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }> = ({ pal, face, v, uid }) => {
   const shape = mouthShape(v);
   const y0 = 283 - face.smile * 0.35;
@@ -125,23 +131,52 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
     if (face.oh > 0.5) {
       return (
         <g>
-          <ellipse cx={2} cy={287} rx={8} ry={10} fill={pal.mouthIn} stroke={pal.lip} strokeWidth={3} />
-          <ellipse cx={2} cy={292} rx={4.5} ry={3.5} fill={pal.tongue} />
+          <ellipse cx={2} cy={288} rx={9} ry={11.5} fill={pal.mouthIn} stroke={pal.lip} strokeWidth={3.2} />
+          <ellipse cx={2} cy={294} rx={5} ry={3.8} fill={pal.tongue} />
         </g>
       );
     }
     const w = 21 * face.mouthWidth;
+    const grin = Math.max(0, Math.min(1, (face.smile - 8) / 3));
+    const gw = 21 * face.mouthWidth;
+    const gt = y0 - 1;
+    const gh = 10 + face.smile * 0.8;
+    const gd =
+      `M ${-gw + 2} ${gt} Q 2 ${gt + 4} ${gw + 2} ${gt - 1} ` +
+      `C ${gw + 1} ${gt + gh * 1.25} ${-gw + 3} ${gt + gh * 1.25} ${-gw + 2} ${gt} Z`;
+    const gclip = `${uid}-grin`;
     return (
       <g>
-        <path
-          d={`M ${-w + 2} ${y0} Q 2 ${y0 + face.smile * 1.6 + 2} ${w + 2} ${y0 - 1}`}
-          fill="none"
-          stroke={pal.lip}
-          strokeWidth={5}
-          strokeLinecap="round"
-        />
-        {/* lower lip hint */}
-        <path d={`M -6 ${y0 + face.smile * 0.8 + 10} Q 2 ${y0 + face.smile * 0.8 + 13} 10 ${y0 + face.smile * 0.8 + 10}`} fill="none" stroke={pal.skinDeep} strokeWidth={3} strokeLinecap="round" opacity={0.6} />
+        {grin < 1 ? (
+          <g opacity={1 - grin}>
+            <path
+              d={`M ${-w + 2} ${y0} Q 2 ${y0 + face.smile * 1.6 + 2} ${w + 2} ${y0 - 1}`}
+              fill="none"
+              stroke={pal.lip}
+              strokeWidth={5.5}
+              strokeLinecap="round"
+            />
+            {/* lower lip hint */}
+            <path d={`M -6 ${y0 + face.smile * 0.8 + 10} Q 2 ${y0 + face.smile * 0.8 + 13} 10 ${y0 + face.smile * 0.8 + 10}`} fill="none" stroke={pal.skinDeep} strokeWidth={3} strokeLinecap="round" opacity={0.6} />
+          </g>
+        ) : null}
+        {grin > 0 ? (
+          <g opacity={grin}>
+            <defs>
+              <clipPath id={gclip}>
+                <path d={gd} />
+              </clipPath>
+            </defs>
+            <path d={gd} fill={pal.mouthIn} />
+            <g clipPath={`url(#${gclip})`}>
+              <rect x={-gw} y={gt - 6} width={gw * 2 + 4} height={12} rx={3} fill={pal.teeth} />
+              <ellipse cx={2} cy={gt + gh * 1.05} rx={gw * 0.55} ry={gh * 0.4} fill={pal.tongue} />
+            </g>
+            <path d={gd} fill="none" stroke={pal.lip} strokeWidth={3.2} strokeLinejoin="round" />
+            {/* smile corners */}
+            <path d={`M ${-gw - 3} ${gt - 4} q 4 3 4 7 M ${gw + 7} ${gt - 5} q -4 3 -4 7`} fill="none" stroke={pal.skinDeep} strokeWidth={2.4} strokeLinecap="round" opacity={0.7} />
+          </g>
+        ) : null}
       </g>
     );
   }
@@ -166,7 +201,7 @@ const Mouth: React.FC<{ pal: Palette; face: FaceParams; v: number; uid: string }
         <rect x={-w} y={top - 6} width={w * 2 + 4} height={6 + Math.min(8, h * 0.32)} rx={3} fill={pal.teeth} />
         <ellipse cx={2} cy={top + h * 0.95} rx={w * 0.62} ry={h * 0.42} fill={pal.tongue} />
       </g>
-      <path d={d} fill="none" stroke={pal.lip} strokeWidth={3.5} strokeLinejoin="round" />
+      <path d={d} fill="none" stroke={pal.lip} strokeWidth={3.8} strokeLinejoin="round" />
     </g>
   );
 };
@@ -232,7 +267,7 @@ export const Face: React.FC<{
     {/* nose: soft shadow on the side turned from the light */}
     <path d="M 4 236 C 10 247 16 256 11 263 C 7 268 -3 268 -9 264" fill="none" stroke={pal.skinDeep} strokeWidth={4.5} strokeLinecap="round" />
     <ellipse cx={-2} cy={258} rx={5} ry={3.5} fill={pal.skinLight} opacity={0.6} />
-    <g transform="translate(2 286) scale(1.22) translate(-2 -286)">
+    <g transform="translate(2 286) scale(1.3) translate(-2 -286)">
       <Mouth pal={pal} face={face} v={mouth} uid={uid} />
     </g>
     {glasses ? <Glasses pal={pal} /> : null}
