@@ -227,7 +227,15 @@
     return { update: update, el: bar };
   }
 
+  /* Vertical (1080 x 1920) layout zones. Owner 2026-11-25: host bigger; captions sit above his face zone. */
+  var VERTICAL = Object.freeze({
+    captionBand: Object.freeze({ top: 840, bottom: 1020 }),
+    faceZone: Object.freeze({ top: 1060, bottom: 1400 }),
+    safe: Object.freeze({ x0: 64, x1: 940, y0: 200, y1: 1420 }),
+  });
+
   Object.assign(K, {
+    VERTICAL: VERTICAL,
     PRESENTER_WIDTH: PRESENTER_WIDTH, CAPTION_POSITIONS: CAPTION_POSITIONS, resolveStyle: resolveStyle, layout: layout,
     kitFrame: kitFrame, heroFrame: heroFrame, driftSafe: driftSafe, DRIFT_INSET: DRIFT_INSET, view: view, normaliseAnchors: normaliseAnchors, drift: drift,
     shell: shell, mountCaptions: mountCaptions, captionWord: captionWord,

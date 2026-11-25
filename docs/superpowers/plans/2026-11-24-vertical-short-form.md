@@ -26,8 +26,8 @@
   - dive 4×/s;
   - cut is instant.
 - **Vertical text safe zone:** text (captions, labels, tags, titles) stays inside x 64–940, y 200–1420. The host is exempt.
-- **Vertical captions:** a band at y 940–1120, 64 px, max width 860, at most 2 lines, with word highlight.
-- **Vertical host:** the `bottom` slot, left or right. He is cropped by the frame bottom, his face sits between y 1150–1400, and no text ever covers his face (overlap check).
+- **Vertical captions:** a band at y 840–1020 (a 40 px gap above the host's face zone), 64 px, max width 860, at most 2 lines, with word highlight. Exported as `HFKit.VERTICAL`.
+- **Vertical host:** the `bottom` slot, left or right. He is cropped by the frame bottom, about 1.4x bigger (k 0.97, face box about 320–330 px tall), his face sits inside y 1060–1400 (chin above 1400, clear of the apps' bottom text) and inside x 40–1040, and no text ever covers his face (overlap check). Owner decision 2026-11-25.
 - **Anchor spread:** shot validation warns when anchors used in one vertical shot are more than 1700 world px apart horizontally.
 - **Short recipe (vertical):**
   - target 45–75 s, hard limits 30–180 s;

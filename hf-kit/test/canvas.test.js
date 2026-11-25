@@ -198,3 +198,10 @@ test("a mounted scene element takes the canvas size", () => {
     delete globalThis.gsap;
   }
 });
+
+
+test("HFKit.VERTICAL pins the vertical zones (owner 2026-11-25: host bigger, captions above his face)", () => {
+  assert.deepEqual(JSON.parse(JSON.stringify(globalThis.HFKit.VERTICAL)), {
+    captionBand: { top: 840, bottom: 1020 }, faceZone: { top: 1060, bottom: 1400 }, safe: { x0: 64, x1: 940, y0: 200, y1: 1420 } });
+  assert.ok(globalThis.HFKit.VERTICAL.captionBand.bottom + 40 <= globalThis.HFKit.VERTICAL.faceZone.top, "40 px gap above the face zone");
+});

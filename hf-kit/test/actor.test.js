@@ -355,10 +355,13 @@ test("slots follow the canvas: landscape side slots unchanged, vertical bottom s
     assert.ok(V.bottom && V.bottom.left.x < 540 && V.bottom.right.x > 540 && V.bottom.k > 0, JSON.stringify(V.bottom));
     assert.equal(V.bottom.left.x + V.bottom.right.x, 1080, "mirrored about the centre");
     assert.equal(K.rig.slots({ width: 1080, height: 1920 }).bottom.k, V.bottom.k);
+    // owner 2026-11-25: the host is about 1.4x bigger (0.69 -> 0.97), face box 320-330 px tall
+    assert.equal(V.bottom.k, 0.97);
+    assert.deepEqual([V.bottom.left.x, V.bottom.right.x], [205, 875]);
   } finally { K.setCanvas(null); }
 });
 
-test("vertical bottom slot: face box within y 1150-1400, body cropped by the frame bottom", () => {
+test("vertical bottom slot: face box within y 1060-1400, body cropped by the frame bottom", () => {
   try {
     K.setCanvas(K.FORMATS.vertical);
     for (const slot of ["bottom-left", "bottom-right"]) {
@@ -366,8 +369,9 @@ test("vertical bottom slot: face box within y 1150-1400, body cropped by the fra
       for (const [t, st] of [[0, {}], [1, { pose: "talk", expression: "happy", mouth: 0.6 }], [2.3, { pose: "celebrate" }], [3, { pose: "point-left", expression: "surprised" }]]) {
         a.update(t, st);
         const b = a.box(t);
-        assert.ok(b.y >= 1150 && b.y + b.height <= 1400, slot + " face box " + JSON.stringify(b));
-        assert.ok(b.x >= 0 && b.x + b.width <= 1080, slot + " face box inside the frame width");
+        assert.ok(b.y >= 1060 && b.y + b.height <= 1400, slot + " face box " + JSON.stringify(b));
+        assert.ok(b.x >= 40 && b.x + b.width <= 1040, slot + " face box inside x 40-1040");
+        assert.ok(b.height >= 320 && b.height <= 330, slot + " face box height " + b.height);
         assert.ok(a.anchors.feet(t).y > 1920, slot + " feet below the frame bottom");
       }
       // he looks toward the middle of the frame

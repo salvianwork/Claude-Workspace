@@ -77,7 +77,7 @@ function pageChecks() {
 }
 
 /* The vertical host, drawn for real on a 1080 x 1920 canvas: in the bottom slots the drawn face and
- * hair sit between y 1150 and 1400 (inside the box), he is cropped by the frame bottom, the glasses
+ * hair sit between y 1060 and 1400 (inside the box), he is cropped by the frame bottom, the glasses
  * stay inside the face line, and the drawn head is about 1.2x the old head (ratio to the body). */
 function bottomSlotChecks() {
   const fails = [];
@@ -99,10 +99,11 @@ function bottomSlotChecks() {
         // the visible head: the hair (back and front layers) down to the face outline (the head
         // group's bounding box would also count shading that the face clip hides)
         const hb = box('[data-part="hair-back"]'), hf = box('[data-part="hair-front"]'), face = box('[data-part="head"] > path:last-of-type');
-        const hair = { top: Math.min(hb.top, hf.top), bottom: face.bottom }, glasses = box('[data-part="glasses"]');
-        if (hair.top < 1150 || hair.bottom > 1400) fails.push(slot + " t=" + t + ": head drawn at y " + Math.round(hair.top) + "-" + Math.round(hair.bottom) + ", not within 1150-1400");
+        const hair = { top: Math.min(hb.top, hf.top), bottom: face.bottom, left: Math.min(hb.left, hf.left), right: Math.max(hb.right, hf.right) }, glasses = box('[data-part="glasses"]');
+        if (hair.top < 1060 || hair.bottom > 1400) fails.push(slot + " t=" + t + ": head drawn at y " + Math.round(hair.top) + "-" + Math.round(hair.bottom) + ", not within 1060-1400");
         // the temple arms rest on the ears, a few px past the cheek line
         if (glasses.left < face.left - 4 || glasses.right > face.right + 4) fails.push(slot + " t=" + t + ": glasses outside the face line " + JSON.stringify([glasses, face]));
+        if (hair.left < 40 || hair.right > 1040) fails.push(slot + " t=" + t + ": head outside x 40-1040");
         const fb = a.box(t);
         if (hair.top < fb.y - 4 || hair.bottom > fb.y + fb.height + 4) fails.push(slot + " t=" + t + ": face box misses the drawn head");
         const body = box('[data-part="body"]');

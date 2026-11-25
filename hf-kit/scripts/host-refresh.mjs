@@ -3,7 +3,7 @@
 // kit in --before (e.g. hf-kit extracted from the base commit with `git archive <base> hf-kit | tar -x`)
 // and once with this kit, then the two columns are set side by side (left before, right after):
 //   4 outfits x idle / talk / point / celebrate, a walk strip, face close-ups in 4 expressions and a
-//   vertical 1080 x 1920 mock frame (countryside, caption bar at y 940-1120, host bottom-right).
+//   vertical 1080 x 1920 mock frame (countryside, caption band at y 840–1020, host bottom-right).
 // The "before" kit has no bottom slot: its host stands at the same feet point and body scale.
 // Offline (every http(s) request is aborted); the PNG is quantized to fit in 1.5 MB.
 import { createRequire } from "node:module";
@@ -92,7 +92,7 @@ function build(title) {
     a.el.style.transform = `translate(${120 - (b.x + b.width / 2)}px, ${136 - (b.y + b.height / 2)}px)`;
     el(c, "div", "lab", label);
   }
-  // vertical mock frame: 1080 x 1920, countryside, caption bar at y 940-1120, host bottom-right
+  // vertical mock frame: 1080 x 1920, countryside, caption band at y 840–1020, host bottom-right
   el(col, "h2", "", "Vertical 1080×1920: host in the bottom-right slot");
   const row = el(col, "div", "row");
   row.style.alignItems = "flex-start"; row.style.gap = "24px";
@@ -104,10 +104,10 @@ function build(title) {
   const cam = { x: p.x + 160, y: 1080, zoom: 1.05 };
   place.update(2, cam);
   const cap = el(inner, "div");
-  cap.style.cssText = "position:absolute;left:64px;top:940px;width:952px;height:180px;display:flex;align-items:center;justify-content:center;text-align:center;font:800 64px/1.2 Poppins,sans-serif;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.55),0 0 18px rgba(0,0,0,.5)";
+  cap.style.cssText = "position:absolute;left:110px;top:840px;width:860px;height:180px;display:flex;align-items:center;justify-content:center;text-align:center;font:800 64px/1.2 Poppins,sans-serif;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.55),0 0 18px rgba(0,0,0,.5)";
   cap.innerHTML = "Sound races down the <span style='color:#FFD43B'>rail</span>";
   const band = el(inner, "div");
-  band.style.cssText = "position:absolute;left:0;top:940px;width:1080px;height:180px;border-top:6px dashed rgba(255,255,255,.9);border-bottom:6px dashed rgba(255,255,255,.9);box-sizing:border-box";
+  band.style.cssText = "position:absolute;left:0;top:840px;width:1080px;height:180px;border-top:6px dashed rgba(255,255,255,.9);border-bottom:6px dashed rgba(255,255,255,.9);box-sizing:border-box";
   const host = el(inner, "div");
   host.style.cssText = "position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:50";
   cap.style.zIndex = 61;
@@ -127,9 +127,9 @@ function build(title) {
   face.style.cssText = `position:absolute;left:${fb.x}px;top:${fb.y}px;width:${fb.width}px;height:${fb.height}px;outline:6px dotted rgba(230,40,40,.95)`;
   for (const e of [band, face]) e.style.zIndex = 60;
   const zone = el(inner, "div");
-  zone.style.cssText = "position:absolute;left:0;top:1150px;width:1080px;height:250px;z-index:59;background:rgba(255,80,80,.16);border-top:4px solid rgba(230,40,40,.8);border-bottom:4px solid rgba(230,40,40,.8);box-sizing:border-box";
+  zone.style.cssText = "position:absolute;left:0;top:1060px;width:1080px;height:340px;z-index:59;background:rgba(255,80,80,.16);border-top:4px solid rgba(230,40,40,.8);border-bottom:4px solid rgba(230,40,40,.8);box-sizing:border-box";
   const note = el(row, "div", "note");
-  note.innerHTML = "Dashed white: caption band y 940–1120.<br>Pink band: face zone y 1150–1400.<br>Dotted red: his face box (" +
+  note.innerHTML = "Dashed white: caption band y 840–1020.<br>Pink band: face zone y 1060–1400.<br>Dotted red: his face box (" +
     Math.round(fb.y) + "–" + Math.round(fb.y + fb.height) + ").<br><br>He stands in the lower right, cropped by the frame bottom, below the caption band.";
   K.setCanvas(null);
 }

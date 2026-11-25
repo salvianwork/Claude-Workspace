@@ -88,6 +88,7 @@ Formats: vertical-only per video with landscape on request (**owner: A**) vs bot
   bottom caption/username area and the top bar.
 - **Captions** sit in the lower-middle of the safe zone (around y 1180–1400), 64 px, max width
   about 860 px, two lines max, word highlight as today.
+  > 2026-11-25 owner: host bigger in vertical (face zone 1060–1400, captions 840–1020).
 - `python -m tools.hf.snapshot <run> --safe-zone` reports any caption, label or tag box outside
   the safe zone (like the overlap report; exit 1 if any). Sage treats it as must-fix.
 
@@ -158,6 +159,7 @@ Formats: vertical-only per video with landscape on request (**owner: A**) vs bot
    his **face between y ≈ 1150 and 1400** (above the apps' bottom text band). Captions move up to
    the **middle-lower band (y ≈ 940–1120)** so they never cover his face; the overlap check keeps
    flagging any text on a face. Exact numbers are tuned on the vertical sheets within these bands.
+   > 2026-11-25 owner: host bigger in vertical (face zone 1060–1400, captions 840–1020).
 4. **Wide shots in a narrow frame.** The zoom floor stays 0.6×. A tall frame shows about 1800
    world px across, so "wide" in vertical means **tall reveals and pans**, not side-by-side.
    Shot validation **warns** when anchors used in one shot are more than about 1700 px apart

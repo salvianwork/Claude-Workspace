@@ -845,11 +845,11 @@
    *     units in 456 px of a 1920 x 1080 frame): k 0.892, x 300 / 1620, feet at y 1470 (below the
    *     frame edge); scaled with the canvas for other landscape sizes.
    *   bottom: {left: {x}, right: {x}, k, feetY}, the vertical host: shown from about the waist up,
-   *     cropped by the frame bottom, face box between y 1150 and 1400 on 1080 x 1920 (centred on
-   *     y 1275), left or right of centre.
+   *     cropped by the frame bottom, face box 320-330 px tall between y 1060 and 1400 on 1080 x 1920 (centred on
+   *     y 1230), left or right of centre.
    * On a portrait canvas there is no side slot: "left" / "right" are the bottom slot's sides. */
   var SIDE_K = Math.round((1.35 * 456 / (724 - 34)) * 1000) / 1000; // 0.892
-  var BOTTOM_K = 0.69, BOTTOM_X = 250, BOTTOM_FACE_Y = 1275;
+  var BOTTOM_K = 0.97, BOTTOM_X = 205, BOTTOM_FACE_Y = 1230;
 
   function slots(canvas) {
     var W = (canvas && canvas.width) || 1920, H = (canvas && canvas.height) || 1080;
