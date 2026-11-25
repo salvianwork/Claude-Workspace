@@ -3,8 +3,8 @@
 Layered world scenes that actors, effects and tags live in. Check this list before asking for a
 new place; reuse a place (or one of its variants) when it fits. One line per place:
 
-- `countryside` — railway through farmland, cut away: sky, hills, windmill, barn and silo, meadow, a lake under a trestle bridge, soil in section. Variants `day`, `sunset`, `night`. Anchors `rail-near`, `rail-far`, `bridge`, `lake`, `barn`, `sky`. Path `rail`. Actor scale 1.
-- `lab` — warm science lab: window, wall screen, shelves of glassware, door, a long workbench, tiled floor. Variants `bright`, `dim`. Anchors `bench`, `screen`, `door`, `window`. Path `bench-top`. Actor scale 1.6.
+- `countryside` — railway through farmland, cut away: sky, hills, windmill, barn and silo, meadow, a lake under a trestle bridge, soil in section. Variants `day`, `sunset`, `night`. Anchors `rail-near`, `rail-far`, `bridge`, `lake`, `barn`, `sky`. Path `rail`. Actor scale 1. Extended for vertical (sky with cirrus, contrails, a balloon, birds or stars above; clay, groundwater, bedrock, roots and a fossil below).
+- `lab` — warm science lab: window, wall screen, shelves of glassware, door, a long workbench, tiled floor. Variants `bright`, `dim`. Anchors `bench`, `screen`, `door`, `window`. Path `bench-top`. Actor scale 1.6. Extended for vertical (a duct run, a high shelf and the ceiling above; floor, lower cabinets and under-bench storage below).
 - `city-street` — downtown street from the near sidewalk: shopfronts across the road, the city behind, cars, a zebra crossing, a bus shelter. Variants `day`, `night`. Anchors `sidewalk`, `crosswalk`, `shop-door`, `bus-stop`, `road`, `sky`. Path `sidewalk`, `road`. Actor scale 1.
 - `home` — cosy living room and kitchen: bookshelf, window over a sofa, coffee table, inner door, kitchen counter, hob and fridge. Variants `day`, `evening`. Anchors `sofa`, `table`, `kitchen`, `window`, `door`, `floor`. Path `floor`. Actor scale 1.6.
 - `classroom` — bright classroom: tall windows, a green chalkboard, bunting, a pin board and map, the teacher's desk, pupils' desks. Variants `day`, `afternoon`. Anchors `board`, `desk`, `front`, `window`, `seats`. Path `aisle`. Actor scale 1.6.
@@ -16,7 +16,9 @@ new place; reuse a place (or one of its variants) when it fits. One line per pla
 - `rooftop-night` — a cosy city rooftop at night: the glowing city past a parapet, a stair hut, water tank, telescope, fairy lights, deck chairs. Variants `clear`, `rain`. Anchors `ledge`, `telescope`, `door`, `tank`, `skyline`, `sky`. Path `roof`. Actor scale 1.1.
 
 Review sheet: `npm run world-sheet` (in `hf-kit/`) writes `sample/world-sheet/place-<name>.png`
-(every variant, anchors and paths marked) and `host.png`. New places are saved here only after
+(every variant, anchors and paths marked) and `host.png`; an extended place also gets
+`place-<name>-vertical.png` (the tall world and 1080 × 1920 shots: wide, mid with the host in the
+bottom-right slot, close, the top and bottom of the world). New places are saved here only after
 the owner's final approval (the props rule, extended to places).
 
 ## Place contract (`hf-kit/places/<name>/`)
@@ -57,6 +59,17 @@ comment is the full contract.
   - Leave clear sky or wall above each anchor, so tags never land on scenery. A layer with
     factor f ≠ 1 only shows part of itself (the sky layer about x 700–3200, y 400–1700): compose
     it inside that window.
+  - Extended (vertical videos): `meta.extend = {top: {draws, seamAllow}, bottom: {draws, seamAllow}}`
+    says what the place draws 720 px above and 720 px below its world. Mounted with
+    `{extended: true}` on `HFKit.placeLayers(el, idPrefix, HFKit.placeWorld(place, true))` the
+    world is 3840 × 3600: the original untouched in the middle (y 720–2880), every anchor and path
+    720 lower (`anchorsFor({..., extended: true})` too), REF the tall world's centre. Use
+    `HFKit.place.extendLayers` (original drawn in a group moved down 720, bands in `under` / `over`
+    groups via `HFKit.place.band`). The bands must blend with no seam: the browser test samples
+    the rows at y 720 and 2880 at REF and fails on a straight colour step, except the
+    `seamAllow` x ranges (real scene edges crossing the row). A vertical canvas mounts a place
+    with `meta.extend` extended (`HFKit.place.extendedFor`) and the camera stays inside the tall
+    world; landscape, and places not yet extended, mount exactly as before (3840 × 2160).
 - `preview.png` — the default variant at a 0.6× pull-out, 960 × 540
   (`npm run world-sheet -- --preview`).
 - `README.md` — one line describing it (and add the line above).

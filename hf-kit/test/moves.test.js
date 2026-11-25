@@ -399,3 +399,55 @@ test("point at another actor: he points toward that actor (no crash before the t
   assert.equal(K.actorAt(c.actors.host, WORDS[2].start + 0.5).state.pose, right ? "point-right" : "point-left");
   assert.equal(K.actorAt(c.actors.friend, WORDS[2].start + 0.5).state.pose, right ? "point-left" : "point-right");
 });
+
+// ---- extended places (vertical): the camera stays inside the taller world (Review Focus 4) ----
+test("vertical: an extended place is a 3840x3600 world and a 0.6x pull-out at its top or bottom never shows past the edge", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const scene = railway({
+      id: 7,
+      actors: [{ id: "host", start: { slot: "right" } }],
+      beats: [
+        { at: { word: 0 }, moves: [{ do: "cut", target: "sky", zoom: 0.6 }, { do: "gesture", who: "host", name: "wave" }] },
+        { at: { word: 6 }, moves: [{ do: "push_in", target: "sky", zoom: 1.2 }] },
+        { at: { word: 12 }, moves: [{ do: "cut", target: "lake", zoom: 0.6 }] },
+        { at: { word: 18 }, moves: [{ do: "pull_out", target: "lake", zoom: 0.6, from: 1 }] },
+      ],
+    });
+    const w = K.worldFor(scene, { cast: CAST });
+    assert.equal(w.extended, true);
+    assert.deepEqual(w.bounds, { width: 3840, height: 3600 });
+    assert.deepEqual(w.anchors.sky(0), { x: 1920, y: 560 + 720 }, "anchors move down by the top extension");
+    const c = K.compileMoves(scene, WORDS, w);
+    assert.deepEqual(c.errors, []);
+    let top = Infinity, bottom = -Infinity;
+    for (let t = 0; t <= c.duration; t += 0.05) {
+      const cam = K.worldCamera(c, t), hx = 540 / cam.zoom, hy = 960 / cam.zoom;
+      assert.ok(cam.x - hx >= -1e-6 && cam.x + hx <= 3840 + 1e-6, `t=${t.toFixed(2)}: view x past the edge ${JSON.stringify(cam)}`);
+      assert.ok(cam.y - hy >= -1e-6 && cam.y + hy <= 3600 + 1e-6, `t=${t.toFixed(2)}: view y past the edge ${JSON.stringify(cam)}`);
+      top = Math.min(top, cam.y - hy); bottom = Math.max(bottom, cam.y + hy);
+    }
+    // the shots really reach both edges of the tall world (so the clamp was exercised)
+    assert.ok(top < 1, "reaches the top: " + top);
+    assert.ok(bottom > 3599, "reaches the bottom: " + bottom);
+    // landscape: the same place mounts as today (no extension, 3840 x 2160)
+    K.setCanvas(K.FORMATS.landscape);
+    const l = K.worldFor(scene, { cast: CAST });
+    assert.equal(l.extended, false);
+    assert.deepEqual(l.bounds, { width: 3840, height: 2160 });
+    assert.deepEqual(l.anchors.sky(0), { x: 1920, y: 560 });
+  } finally { K.setCanvas(null); }
+});
+
+test("vertical: a place without meta.extend keeps the 3840x2160 world; extended can be forced off", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const fake = { meta: { name: "flat", variants: ["a"], anchors: [], paths: [] }, anchorsFor: () => ({ anchors: {}, paths: {} }), mount() {} };
+    const w = K.worldFor({ id: 1, place: "flat", actors: [] }, { places: { flat: fake } });
+    assert.equal(w.extended, false);
+    assert.deepEqual(w.bounds, { width: 3840, height: 2160 });
+    const off = K.worldFor(railway(), { cast: CAST, extended: false });
+    assert.equal(off.extended, false);
+    assert.deepEqual(off.anchors.sky(0), { x: 1920, y: 560 });
+  } finally { K.setCanvas(null); }
+});

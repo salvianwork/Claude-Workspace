@@ -13,6 +13,8 @@
  *   barn       the barn door
  *   sky        open sky (for tags, a sound wave, a bird)
  * Path: rail (the near rail, left to right, through the bridge).
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
  *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
@@ -35,6 +37,11 @@
       sunset: { tint: "#FFB07A", amount: 0.4, rim: "#FFC27E", rimSide: 1 },
       night: { tint: "#5566A6", amount: 0.7, rim: "#C4D6FF", rimSide: 1 },
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the sky continued upward: high cirrus, contrails with a plane, cumulus, a hot-air balloon and flocks of birds (day, sunset); stars to the top, the Milky Way, a shooting star and a plane's lights (night)", seamAllow: [] },
+      bottom: { draws: "the soil continued down: darker deep soil, clay, a sand and gravel bed holding groundwater, slate bedrock with boulders; the oak's deep roots, earthworms, a geode and a little dinosaur fossil", seamAllow: [] },
+    },
   };
 
   // ---- geometry (ground-layer world px) ------------------------------------------------------
@@ -56,6 +63,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors() {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var rail = [];
     for (var x = 0; x <= 3840; x += 320) rail.push({ x: x, y: G.railNear + 6 });
@@ -427,6 +437,266 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension (vertical videos): 720 px of sky above, 720 px of ground below ----------
+  // Band art is in the TALL world's px (3840 x 3600): the original sits at y 720 .. 2880.
+  // The sky gradient over the original's sky rect at offset t (0 .. 1 of its 5400 px height).
+  function skyAt(stops, t) {
+    for (var i = 1; i < stops.length; i++) if (t <= stops[i][0]) {
+      var a = stops[i - 1], b = stops[i];
+      return D.mix(a[1], b[1], (t - a[0]) / (b[0] - a[0]));
+    }
+    return stops[stops.length - 1][1];
+  }
+  // the original sky rect runs from y -1600 to 3800 (its own px); its y 0 is the seam (tall y 720)
+  var SKY_T0 = 1600 / 5400;
+  // band clouds [layer, x, y, scale] drift right like the sky's; birds [layer, x, y, scale]
+  var XCLOUDS = [["mid", 640, 500, 0.95], ["mid", 2060, 300, 0.7], ["mid", 3380, 560, 1.05], ["ground", 1250, 170, 1.3], ["ground", 3420, 150, 0.9]];
+  var XCLOUD_SPAN = [-800, 4640];
+  var XBIRDS = [["ground", 300, 330, 1.7], ["ground", 400, 280, 1.4], ["ground", 470, 360, 1.55],
+    ["mid", 1480, 600, 0.9], ["mid", 1540, 570, 0.8], ["mid", 1600, 545, 0.85], ["mid", 1660, 575, 0.8], ["mid", 1720, 605, 0.75], ["mid", 1420, 630, 0.75], ["mid", 1360, 660, 0.7]];
+
+  function plane(x, y, s, col, rot) {
+    return tag("g", { transform: "translate(" + r2(x) + " " + r2(y) + ") rotate(" + r2(rot || 0) + ") scale(" + r2(s) + ")" },
+      tag("path", { d: "M-34 0 Q-30 -6 -10 -6 L30 -5 Q40 -3 42 0 Q40 3 30 4 L-10 5 Q-30 5 -34 0 Z", fill: col }) +
+      tag("path", { d: "M2 -4 L-12 -30 L-4 -30 L16 -4 Z M2 4 L-10 26 L-3 26 L14 4 Z M-28 -3 L-36 -16 L-31 -16 L-22 -4 Z", fill: col }));
+  }
+
+  function balloon(x, y, s, tone, v) {
+    var c1 = tone("#E8553E"), c2 = tone("#FFD15C"), c3 = tone("#2FA39A"), line = tone("#7A3A2A");
+    var out = "", env = "M0 -130 C80 -130 120 -70 112 -10 C104 46 58 84 26 118 L-26 118 C-58 84 -104 46 -112 -10 C-120 -70 -80 -130 0 -130 Z";
+    out += tag("path", { d: env, fill: c1, stroke: line, "stroke-width": 5 });
+    out += tag("path", { d: "M0 -130 C40 -130 58 -70 54 -10 C50 46 34 84 14 118 L-14 118 C-34 84 -50 46 -54 -10 C-58 -70 -40 -130 0 -130 Z", fill: c2 });
+    out += tag("path", { d: "M0 -130 C14 -130 20 -70 18 -10 C16 46 10 84 5 118 L-5 118 C-10 84 -16 46 -18 -10 C-20 -70 -14 -130 0 -130 Z", fill: c3 });
+    out += tag("path", { d: "M-108 -20 Q0 4 108 -20", fill: "none", stroke: line, "stroke-width": 4, opacity: 0.5 });
+    out += tag("path", { d: "M-60 -96 Q-80 -50 -74 0", fill: "none", stroke: "#FFFFFF", "stroke-width": 10, "stroke-linecap": "round", opacity: 0.35 });
+    out += tag("path", { d: "M-24 118 L-20 160 M24 118 L20 160 M-6 118 L-6 160 M6 118 L6 160", stroke: line, "stroke-width": 3 });
+    out += tag("rect", { x: -26, y: 158, width: 52, height: 36, rx: 6, fill: tone("#9A6A3C"), stroke: tone("#5E3E20"), "stroke-width": 4 });
+    out += tag("path", { d: "M-26 170 H26", stroke: tone("#5E3E20"), "stroke-width": 3, opacity: 0.6 });
+    if (v === "sunset") out += tag("path", { d: env, fill: "#FFB070", opacity: 0.18 });
+    return tag("g", { "data-balloon": 0, transform: "translate(" + r2(x) + " " + r2(y) + ") scale(" + r2(s) + ")" }, out);
+  }
+
+  /* The top band: the sky gradient continued (sky layer), cirrus, contrails or the Milky Way (far),
+   * cumulus, a balloon and a flock (mid), nearer birds and clouds (ground). Night: stars all the
+   * way up, a shooting star and a plane's lights, no birds. Nothing crosses the seam row y 720. */
+  function drawTopBand(P, v, pal, tone, R) {
+    var night = v === "night", out = { sky: { defs: "", body: "" }, far: { defs: "", body: "" }, mid: { defs: "", body: "" }, ground: { defs: "", body: "" } };
+    // sky layer: the original gradient continued upward exactly (its y 0 is the seam), so the
+    // band meets the original with no step; it only shows at the very top of the tall world
+    var st = pal.stops, list = [[0, st[0][1]]];
+    st.forEach(function (q) { if (q[0] > 0 && q[0] < SKY_T0) list.push([r2(q[0] / SKY_T0 * 10000) / 10000, q[1]]); });
+    list.push([1, skyAt(st, SKY_T0)]);
+    out.sky.defs = '<linearGradient id="' + P + '-xsky" gradientUnits="userSpaceOnUse" x1="0" y1="-880" x2="0" y2="720">' + list.map(function (q) { return tag("stop", { offset: q[0], "stop-color": q[1] }); }).join("") + "</linearGradient>";
+    out.sky.body = tag("rect", { x: -2600, y: -900, width: 9040, height: 1620, fill: "url(#" + P + "-xsky)" });
+    if (night) {
+      var s = "";
+      for (var i = 0; i < 170; i++) {
+        var big = R() < 0.07, sx = 200 + R() * 3440, sy = 20 + R() * 1040;
+        if (Math.abs(sy - 720) < 8) sy += 16;
+        s += tag("circle", { cx: sx, cy: sy, r: big ? 3.4 + R() * 2 : 1.4 + R() * 2.4, fill: ["#FFF8E1", "#FFFFFF", "#DCE8FF", "#FFE2C4"][(R() * 4) | 0], opacity: 0.4 + R() * 0.55, "data-xstar": i });
+      }
+      out.sky.body += tag("g", { "data-part": "xstars" }, s);
+    }
+    // far layer (parallax 0.45): high cirrus and contrails (day, sunset); the Milky Way (night)
+    var f = "";
+    var wisps = [[420, 520, 1.1], [1150, 600, 0.8], [2350, 470, 1.25], [3250, 640, 0.9], [760, 880, 0.9], [1900, 960, 1.1], [3050, 900, 0.8], [3600, 1010, 0.7]];
+    wisps.forEach(function (w) {
+      var g = "";
+      for (var k = 0; k < 4; k++) g += tag("ellipse", { cx: (k - 1.5) * 110 * w[2] + R() * 40, cy: (k % 2) * 16 - 8, rx: (170 + R() * 150) * w[2], ry: 7 + R() * 7, fill: night ? pal.cloudLight : pal.cloudLight, opacity: (night ? 0.18 : 0.42) + R() * 0.18 });
+      f += tag("g", { transform: "translate(" + w[0] + " " + w[1] + ") rotate(-5)", "data-wisp": 1 }, g);
+    });
+    if (!night) {
+      // two contrails: a fresh one with its plane, an old one spread and fading
+      var trail = v === "sunset" ? "#FFE2CC" : "#FFFFFF";
+      out.far.defs += S.lin(P + "-trail", [[0, trail, 0], [0.75, trail, 0.75], [1, trail, 0.95]], [0, 0, 1, 0]);
+      out.far.defs += S.lin(P + "-trail2", [[0, trail, 0], [0.5, trail, 0.35], [1, trail, 0]], [0, 0, 1, 0]);
+      f += tag("g", { transform: "rotate(-6 1400 560)" }, tag("rect", { x: 300, y: 548, width: 2100, height: 26, rx: 13, fill: "url(#" + P + "-trail)", opacity: 0.5 }) +
+        tag("rect", { x: 500, y: 552, width: 1900, height: 7, rx: 3.5, fill: "url(#" + P + "-trail)" }) + tag("rect", { x: 500, y: 564, width: 1900, height: 7, rx: 3.5, fill: "url(#" + P + "-trail)" }) +
+        plane(2436, 562, 0.9, v === "sunset" ? "#6B4A6E" : "#8A9AB0", 0));
+      f += tag("g", { transform: "rotate(4 3100 860)" }, tag("rect", { x: 2300, y: 832, width: 1700, height: 54, rx: 27, fill: "url(#" + P + "-trail2)", opacity: 0.55 }));
+    } else {
+      out.far.defs += S.rad(P + "-milky", [[0, "#C8D2FF", 0.2], [0.6, "#A9B6EE", 0.08], [1, "#A9B6EE", 0]]);
+      f += tag("ellipse", { cx: 1900, cy: 760, rx: 2100, ry: 230, fill: "url(#" + P + "-milky)", transform: "rotate(-12 1900 760)" });
+      var dust = "";
+      for (var m = 0; m < 160; m++) {
+        var u = R() * 2 - 1, mx = 1900 + u * 1900, my = 760 - u * 1900 * Math.tan(12 * Math.PI / 180) + (R() + R() - 1) * 150;
+        if (Math.abs(my - 720) < 6) my += 12;
+        dust += tag("circle", { cx: r2(mx), cy: r2(my), r: r2(1 + R() * 2.2), fill: "#EEF1FF", opacity: r2(0.3 + R() * 0.5), "data-xstar": 1000 + m });
+      }
+      f += tag("g", { "data-part": "milky" }, dust);
+      f += tag("g", { "data-part": "shooting", opacity: 0 }, tag("path", { d: "M0 0 L-260 -70", stroke: "#FFFFFF", "stroke-width": 5, "stroke-linecap": "round", opacity: 0.9 }) +
+        tag("path", { d: "M0 0 L-420 -113", stroke: "#BFD0FF", "stroke-width": 10, "stroke-linecap": "round", opacity: 0.25 }) + tag("circle", { r: 6, fill: "#FFFFFF" }));
+      f += tag("g", { "data-part": "nightplane", transform: "translate(2950 560)" }, plane(0, 0, 0.8, "#1A2244", 0) +
+        tag("circle", { cx: -8, cy: -26, r: 5, fill: "#FF5A5A", "data-blink": 0 }) + tag("circle", { cx: 40, cy: 0, r: 4, fill: "#FFFFFF", "data-blink": 1 }));
+    }
+    out.far.body = f;
+    // mid layer (0.75): cumulus, a hot-air balloon and a flock (day, sunset)
+    var mm = "";
+    XCLOUDS.forEach(function (c, i) { if (c[0] === "mid") mm += cloud(c[1], c[2], c[3], pal, "x" + i); });
+    if (!night) mm += balloon(2760, 380, 1, tone, v);
+    out.mid.body = tag("g", { "data-part": "xclouds-mid", opacity: night ? 0.7 : 1 }, mm);
+    // ground layer (1): the nearest high clouds and birds
+    var gg = "";
+    XCLOUDS.forEach(function (c, i) { if (c[0] === "ground") gg += cloud(c[1], c[2], c[3], pal, "x" + i); });
+    out.ground.body = tag("g", { "data-part": "xclouds-ground", opacity: night ? 0.55 : 0.95 }, gg);
+    if (!night) {
+      var birdCol = v === "sunset" ? "#3B2440" : "#2E3B55";
+      ["mid", "ground"].forEach(function (layer) {
+        var b = "";
+        XBIRDS.forEach(function (q, i) {
+          if (q[0] !== layer) return;
+          b += tag("path", { "data-xbird": i, d: "M-22 0 Q-10 -14 0 0 Q10 -14 22 0", fill: "none", stroke: birdCol, "stroke-width": 5, "stroke-linecap": "round", transform: "translate(" + q[1] + " " + q[2] + ") scale(" + q[3] + ")" });
+        });
+        out[layer].body += tag("g", { "data-part": "xbirds" }, b);
+      });
+    }
+    return out;
+  }
+
+  /* A wavy stratum top through x -300 .. 4140 around y0, closed below the world. */
+  function stratum(R, y0, amp, fill, extra) {
+    var pts = [];
+    for (var x = -300; x <= 4140; x += 340) pts.push([x, y0 + Math.sin(x / 520 + y0) * amp + (R() - 0.5) * amp]);
+    return { top: pts, d: smooth(pts, false) + " L4140 3800 L-300 3800 Z", body: tag("path", Object.assign({ d: smooth(pts, false) + " L4140 3800 L-300 3800 Z", fill: fill }, extra || {})) };
+  }
+  function yOn(pts, x) { // the stratum top's y at x (linear between its points)
+    for (var i = 1; i < pts.length; i++) if (x <= pts[i][0]) { var a = pts[i - 1], b = pts[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
+    return pts[pts.length - 1][1];
+  }
+
+  function fossil(x, y, s, tone) {
+    var bone = tone("#EFE6D2"), line = tone("#8C7C62"), out = "";
+    // a little long-necked dinosaur, lying on its side
+    out += tag("path", { d: "M-180 30 Q-120 -10 -40 0 Q40 6 90 -20 Q140 -60 170 -110 Q186 -136 214 -140", fill: "none", stroke: line, "stroke-width": 22, "stroke-linecap": "round" });
+    out += tag("path", { d: "M-180 30 Q-120 -10 -40 0 Q40 6 90 -20 Q140 -60 170 -110 Q186 -136 214 -140", fill: "none", stroke: bone, "stroke-width": 14, "stroke-linecap": "round", "stroke-dasharray": "16 6" });
+    out += tag("path", { d: "M-180 30 Q-250 60 -330 50 Q-380 44 -410 20", fill: "none", stroke: line, "stroke-width": 16, "stroke-linecap": "round" }) +
+      tag("path", { d: "M-180 30 Q-250 60 -330 50 Q-380 44 -410 20", fill: "none", stroke: bone, "stroke-width": 9, "stroke-linecap": "round", "stroke-dasharray": "12 5" });
+    for (var k = 0; k < 7; k++) {
+      var rx = -110 + k * 26;
+      out += tag("path", { d: "M" + rx + " " + (k < 1 ? -4 : 0) + " q" + (-6 + k) + " 46 " + (-20 + k * 2) + " 66", fill: "none", stroke: line, "stroke-width": 10, "stroke-linecap": "round" }) +
+        tag("path", { d: "M" + rx + " " + (k < 1 ? -4 : 0) + " q" + (-6 + k) + " 46 " + (-20 + k * 2) + " 66", fill: "none", stroke: bone, "stroke-width": 5, "stroke-linecap": "round" });
+    }
+    [[-120, 10, -150, 110, -120, 120], [10, 10, 30, 112, 60, 118]].forEach(function (L) {
+      out += tag("path", { d: "M" + L[0] + " " + L[1] + " L" + L[2] + " " + L[3] + " L" + L[4] + " " + L[5], fill: "none", stroke: line, "stroke-width": 16, "stroke-linecap": "round", "stroke-linejoin": "round" }) +
+        tag("path", { d: "M" + L[0] + " " + L[1] + " L" + L[2] + " " + L[3] + " L" + L[4] + " " + L[5], fill: "none", stroke: bone, "stroke-width": 9, "stroke-linecap": "round", "stroke-linejoin": "round" });
+    });
+    out += tag("ellipse", { cx: 232, cy: -146, rx: 34, ry: 20, fill: bone, stroke: line, "stroke-width": 5, transform: "rotate(-14 232 -146)" }) +
+      tag("circle", { cx: 238, cy: -152, r: 6, fill: line }) + tag("path", { d: "M214 -132 Q236 -124 262 -136", fill: "none", stroke: line, "stroke-width": 3 });
+    return tag("g", { "data-part": "fossil", transform: "translate(" + x + " " + y + ") scale(" + s + ")" }, out);
+  }
+
+  function geode(x, y, s, tone) {
+    var out = tag("path", { d: "M-80 0 Q-84 -60 -20 -70 Q50 -76 80 -20 Q96 40 30 62 Q-50 76 -80 0 Z", fill: tone("#5D5A66"), stroke: tone("#3A3842"), "stroke-width": 6 });
+    out += tag("path", { d: "M-56 0 Q-58 -42 -14 -48 Q40 -52 60 -14 Q70 30 22 44 Q-36 54 -56 0 Z", fill: tone("#4B2F6E") });
+    var cr = "";
+    for (var k = 0; k < 12; k++) {
+      var a = k / 12 * Math.PI * 2, cx = Math.cos(a) * 40, cy = Math.sin(a) * 28;
+      cr += tag("path", { d: "M" + r2(cx * 1.2) + " " + r2(cy * 1.2) + " L" + r2(cx * 0.45 - 6) + " " + r2(cy * 0.45) + " L" + r2(cx * 0.5 + 6) + " " + r2(cy * 0.5 - 6) + " Z", fill: tone(k % 2 ? "#B58CF0" : "#D6BCFF"), stroke: tone("#7A52B8"), "stroke-width": 2 });
+    }
+    out += cr + tag("circle", { cx: -6, cy: -6, r: 10, fill: "#FFFFFF", opacity: 0.5 });
+    return tag("g", { "data-part": "geode", transform: "translate(" + x + " " + y + ") scale(" + s + ")" }, out);
+  }
+
+  /* The bottom band: the soil continued down, then clay, a sand and gravel bed holding groundwater,
+   * and bedrock; the oak's deep roots, worms, pebbles, a geode and a little dinosaur fossil. Its
+   * strata start below y 3000, so the original's soil runs on unbroken across the seam (y 2880). */
+  function drawBottomBand(P, v, pal, tone, R) {
+    var under = tag("rect", { x: -300, y: 2860, width: 4440, height: 940, fill: tone("#4C3526") });
+    var defs = S.lin(P + "-xclay", [[0, tone("#8E5E3E")], [1, tone("#6F4630")]]) +
+      S.lin(P + "-xsand", [[0, tone("#C9A066")], [0.55, tone("#B08A58")], [1, tone("#7F8F94")]]) +
+      S.lin(P + "-xrock", [[0, tone("#868A98")], [1, tone("#4E5160")]]) +
+      S.lin(P + "-xwater", [[0, tone("#5FA8D3"), 0], [1, tone("#3F86C0"), 0.6]]) +
+      S.lin(P + "-xroot", [[0, tone("#4A321F"), 0], [0.2, tone("#4A321F"), 1], [1, tone("#3E2A1A"), 1]]) +
+      S.lin(P + "-xrootc", [[0, tone("#8A6142"), 0], [0.2, tone("#8A6142"), 1], [1, tone("#9C7350"), 1]]) +
+      S.lin(P + "-xdeep", [[0, "#000000", 0], [1, "#000000", 0.28]]);
+    var s = "";
+    // darker deep soil streaks just below the original (no edge: soft bands)
+    for (var q = 0; q < 14; q++) {
+      var qx = -200 + R() * 4200, qy = 2960 + R() * 90;
+      s += tag("ellipse", { cx: r2(qx), cy: r2(qy), rx: r2(160 + R() * 260), ry: r2(8 + R() * 10), fill: tone(q % 2 ? "#3F2B1F" : "#5A3F2C"), opacity: 0.45 });
+    }
+    // the original's pebbles carry on down through the deep soil
+    for (var pb = 0; pb < 70; pb++) {
+      var px = -250 + R() * 4380, py = 2905 + R() * 150, pr = 8 + R() * 22;
+      var pc = tone(pb % 3 ? "#A6927A" : "#8E7D69");
+      s += tag("path", { d: "M" + r2(px - pr) + " " + r2(py) + " Q" + r2(px - pr) + " " + r2(py - pr * 0.85) + " " + r2(px) + " " + r2(py - pr * 0.8) + " Q" + r2(px + pr * 1.2) + " " + r2(py - pr * 0.7) + " " + r2(px + pr) + " " + r2(py) + " Q" + r2(px) + " " + r2(py + pr * 0.55) + " " + r2(px - pr) + " " + r2(py) + " Z",
+        fill: pc, stroke: tone("#5C4A38"), "stroke-width": 3 }) +
+        tag("path", { d: "M" + r2(px - pr * 0.4) + " " + r2(py - pr * 0.5) + " q" + r2(pr * 0.4) + " " + r2(-pr * 0.18) + " " + r2(pr * 0.8) + " 0", stroke: D.tint(pc, 0.35), "stroke-width": 3, fill: "none", "stroke-linecap": "round" });
+    }
+    // clay
+    var clay = stratum(R, 3075, 26, "url(#" + P + "-xclay)");
+    s += clay.body + tag("path", { d: smooth(clay.top, false), fill: "none", stroke: tone("#A8744C"), "stroke-width": 7, opacity: 0.8 });
+    for (var c = 0; c < 26; c++) { // pale clay lenses
+      var cx = -200 + R() * 4300, cy = yOn(clay.top, cx) + 40 + R() * 90;
+      s += tag("ellipse", { cx: r2(cx), cy: r2(cy), rx: r2(40 + R() * 90), ry: r2(6 + R() * 8), fill: tone("#B88660"), opacity: 0.55 });
+    }
+    // sand and gravel, with groundwater in its lower part
+    var sand = stratum(R, 3235, 18, "url(#" + P + "-xsand)");
+    s += sand.body + tag("path", { d: smooth(sand.top, false), fill: "none", stroke: tone("#DDBB82"), "stroke-width": 6, opacity: 0.8 });
+    s += tag("rect", { x: -300, y: 3290, width: 4440, height: 140, fill: "url(#" + P + "-xwater)" });
+    var grit = "";
+    for (var g = 0; g < 260; g++) {
+      var gx = -280 + R() * 4400, gy = yOn(sand.top, gx) + 14 + R() * 150, gr = 3 + R() * 9;
+      grit += tag("ellipse", { cx: r2(gx), cy: r2(gy), rx: r2(gr * 1.25), ry: r2(gr), fill: tone(["#9C8F79", "#C7B79A", "#7E7466", "#B5A58A"][g % 4]), stroke: g % 3 ? "none" : tone("#5C4A38"), "stroke-width": 2 });
+    }
+    s += grit;
+    for (var dp = 0; dp < 22; dp++) { // water droplets in the wet sand
+      var dx = -200 + R() * 4200, dy = 3320 + R() * 80;
+      s += tag("path", { d: "M" + r2(dx) + " " + r2(dy - 12) + " q8 12 0 18 q-8 -6 0 -18 Z", fill: v === "night" ? "#8FB6F0" : "#BFE8FF", opacity: 0.75 });
+    }
+    // bedrock: slate blocks with cracks
+    var rock = stratum(R, 3400, 24, "url(#" + P + "-xrock)");
+    s += rock.body + tag("path", { d: smooth(rock.top, false), fill: "none", stroke: tone("#A7ABB8"), "stroke-width": 8, opacity: 0.85 });
+    var cracks = "";
+    for (var k = 0; k < 22; k++) {
+      var kx = -200 + k * 200 + R() * 80, ky = yOn(rock.top, kx) + 8;
+      cracks += "M" + r2(kx) + " " + r2(ky) + " l" + r2(-20 + R() * 40) + " " + r2(60 + R() * 50) + " l" + r2(-30 + R() * 60) + " " + r2(50 + R() * 60) + " ";
+      if (k % 2) cracks += "M" + r2(kx - 120) + " " + r2(ky + 90 + R() * 60) + " h" + r2(140 + R() * 80) + " ";
+    }
+    s += tag("path", { d: cracks, fill: "none", stroke: tone("#3F4250"), "stroke-width": 5, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.75 });
+    var boulders = "";
+    for (var b = 0; b < 16; b++) {
+      var bx = -200 + R() * 4300, by = 3480 + R() * 120, br = 26 + R() * 40;
+      if (bx > 2650 && bx < 3300 && by < 3600) continue; // keep the fossil clear
+      if (bx > 1000 && bx < 1360) continue; // and the geode
+      boulders += tag("path", { d: "M" + r2(bx - br) + " " + r2(by) + " Q" + r2(bx - br) + " " + r2(by - br * 0.9) + " " + r2(bx) + " " + r2(by - br * 0.85) + " Q" + r2(bx + br * 1.2) + " " + r2(by - br * 0.7) + " " + r2(bx + br) + " " + r2(by) + " Q" + r2(bx) + " " + r2(by + br * 0.6) + " " + r2(bx - br) + " " + r2(by) + " Z",
+        fill: tone(b % 2 ? "#9599A6" : "#6F7381"), stroke: tone("#3F4250"), "stroke-width": 4 }) +
+        tag("path", { d: "M" + r2(bx - br * 0.45) + " " + r2(by - br * 0.5) + " q" + r2(br * 0.45) + " " + r2(-br * 0.2) + " " + r2(br * 0.9) + " 0", stroke: "#FFFFFF", "stroke-width": 4, fill: "none", opacity: 0.3, "stroke-linecap": "round" });
+    }
+    s += boulders;
+    s += fossil(2960, 3512, 0.7, tone) + geode(1180, 3500, 1.1, tone);
+    // the oak's deep roots (left) and a few long meadow roots, fading in from the dark soil
+    var roots = "";
+    var rootPath = function (x0, len, sway, w, seed) {
+      var RR = D.rng(seed), pts = [[x0, 2850]], x = x0, y = 2850;
+      while (y < 2850 + len) { y += 60 + RR() * 40; x += (RR() - 0.5) * sway; pts.push([x, y]); }
+      var d = smooth(pts, false), side = "";
+      for (var j = 2; j < pts.length - 1; j += 1 + (j % 2)) { // side rootlets
+        var p = pts[j], dir = j % 2 ? 1 : -1;
+        side += "M" + r2(p[0]) + " " + r2(p[1]) + " q" + r2(dir * 40) + " " + r2(20 + RR() * 20) + " " + r2(dir * (70 + RR() * 50)) + " " + r2(60 + RR() * 40) + " ";
+      }
+      // a dark rim and a lighter core (like the fossil's bones), fading in from the dark soil
+      return tag("path", { d: side, fill: "none", stroke: tone("#3E2A1A"), "stroke-width": Math.max(5, w * 0.5), "stroke-linecap": "round" }) +
+        tag("path", { d: side, fill: "none", stroke: tone("#8A6142"), "stroke-width": Math.max(2, w * 0.5 - 4), "stroke-linecap": "round" }) +
+        tag("path", { d: d, fill: "none", stroke: "url(#" + P + "-xroot)", "stroke-width": w, "stroke-linecap": "round" }) +
+        tag("path", { d: d, fill: "none", stroke: "url(#" + P + "-xrootc)", "stroke-width": Math.max(2, w - 7), "stroke-linecap": "round" });
+    };
+    roots += rootPath(80, 540, 120, 22, 71) + rootPath(200, 430, 140, 16, 72) + rootPath(-30, 380, 90, 14, 73) + rootPath(320, 300, 160, 11, 74);
+    [[980, 240], [1380, 200], [3060, 260], [3600, 230], [3880, 210]].forEach(function (r, i) { roots += rootPath(r[0], r[1], 100, 9, 80 + i); });
+    s += tag("g", { "data-part": "xroots", opacity: 0.95 }, roots);
+    // earthworms in the soil and clay
+    [[1640, 3010, 0], [2580, 3140, 1], [3420, 2990, 2]].forEach(function (w) {
+      var d = "M0 0 q20 -18 40 0 q20 18 40 0 q20 -18 40 0";
+      s += tag("g", { "data-part": "worm", transform: "translate(" + w[0] + " " + w[1] + ") rotate(" + (w[2] * 25 - 20) + ")" },
+        tag("path", { d: d, fill: "none", stroke: tone("#C76B7B"), "stroke-width": 14, "stroke-linecap": "round" }) +
+        tag("path", { d: d, fill: "none", stroke: tone("#E99AA6"), "stroke-width": 5, "stroke-linecap": "round", opacity: 0.8, transform: "translate(0 -3)" }) +
+        tag("circle", { cx: 120, cy: -2, r: 3, fill: tone("#5B2A33") }));
+    });
+    // depth: a soft darkening toward the bottom of the world
+    s += tag("rect", { x: -300, y: 3250, width: 4440, height: 550, fill: "url(#" + P + "-xdeep)" });
+    return { defs: defs, under: under, body: s };
+  }
+
   // ---- mount ---------------------------------------------------------------------------------
   function mount(layers, opts) {
     opts = opts || {};
@@ -439,9 +709,16 @@
       sky: drawSky(P, v, pal, tone, D.rng(seed + 1)), far: drawFar(P, v, pal, tone, D.rng(seed + 2)), mid: drawMid(P, v, pal, tone, D.rng(seed + 3)),
       ground: drawGround(P, v, pal, tone, D.rng(seed + 4)), front: drawFront(P, v, pal, tone, D.rng(seed + 5)),
     };
+    var X = PL.extendLayers(layers, opts, meta), L = X.layers;
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "countryside-" + name, parts[name].defs, parts[name].body); });
-    var bladesG = D.el(layers.mid, "g", { "data-part": "windmill-blades" });
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(L[name], "countryside-" + name, parts[name].defs, parts[name].body); });
+    if (X.on) { // the bands above and below (tall-world px)
+      var top = drawTopBand(P, v, pal, tone, D.rng(seed + 31)), bot = drawBottomBand(P, v, pal, tone, D.rng(seed + 32));
+      ["sky", "far", "mid", "ground"].forEach(function (name) { PL.band(X.over[name], "top", top[name].defs, top[name].body); });
+      PL.band(X.under.ground, "bottom", "", bot.under);
+      PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    }
+    var bladesG = D.el(L.mid, "g", { "data-part": "windmill-blades" });
     bladesG.innerHTML = parts.mid.blades;
     var blades = bladesG.firstChild;
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
@@ -486,6 +763,7 @@
         e.setAttribute("r", r2(p.r * 0.8));
         e.setAttribute("opacity", r2(p.alive ? 0.75 * (1 - p.u) : 0));
       });
+      if (X.on) updateBands(t);
       motes.forEach(function (m) {
         var w = D.wobble(t, m.s, 0.5), w2 = D.wobble(t, m.s + 50, 0.4);
         var mx = PL.art.wrap(m.x + t * 6, MOTE_SPAN[0], MOTE_SPAN[1]), edge = PL.art.wrapFade(mx, MOTE_SPAN[0], MOTE_SPAN[1], 160);
@@ -495,8 +773,34 @@
         m.e.setAttribute("opacity", r2(edge * (night ? Math.max(0, 0.25 + 0.75 * Math.sin(t * 2 + m.s)) : 0.35 + 0.25 * w)));
       });
     }
+    // the bands' moving parts (none when not extended)
+    var q = function (sel) { var out = []; if (X.on) PL.LAYERS.forEach(function (n) { out = out.concat([].slice.call(X.over[n].querySelectorAll(sel))); }); return out; };
+    var xclouds = q("[data-cloud^='x']").map(function (e) { var i = +e.getAttribute("data-cloud").slice(1); return { e: e, i: i, base: e.getAttribute("transform") }; });
+    var xbirds = q("[data-xbird]").map(function (e) { return { e: e, i: +e.getAttribute("data-xbird"), base: e.getAttribute("transform") }; });
+    var xstars = q("[data-xstar]").filter(function (e, i) { return i % 4 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+    var xballoon = q("[data-balloon]").map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    var shooting = q('[data-part="shooting"]')[0], blinks = q("[data-blink]");
+    function updateBands(t) {
+      xclouds.forEach(function (c) {
+        var x0 = XCLOUDS[c.i][1], x = PL.art.wrap(x0 + t * (5 + c.i * 1.3), XCLOUD_SPAN[0], XCLOUD_SPAN[1]);
+        c.e.setAttribute("transform", "translate(" + r2(x - x0) + " 0) " + c.base);
+      });
+      xbirds.forEach(function (b) {
+        var bx = XBIRDS[b.i][1], dx = PL.art.wrap(bx + t * (b.i < 3 ? 60 : 34), BIRD_SPAN[0], BIRD_SPAN[1]) - bx;
+        b.e.setAttribute("transform", "translate(" + r2(dx) + " " + r2(D.wobble(t, b.i + 11, 0.7) * 12) + ") " + b.base + " scale(1 " + r2(0.75 + 0.35 * Math.sin(t * 7.5 + b.i * 1.3)) + ")");
+      });
+      xstars.forEach(function (s) { s.e.setAttribute("opacity", r2(s.op * (0.6 + 0.4 * Math.sin(t * 2 + s.k)))); });
+      xballoon.forEach(function (b) { b.e.setAttribute("transform", "translate(0 " + r2(D.wobble(t, 5, 0.3) * 16) + ") " + b.base); });
+      if (shooting) { // a shooting star every 6 s, crossing in 0.7 s
+        var u = (t % 6) / 0.7, on = u < 1;
+        shooting.setAttribute("opacity", r2(on ? Math.sin(u * Math.PI) : 0));
+        shooting.setAttribute("transform", "translate(" + r2(1200 + u * 520) + " " + r2(470 + u * 140) + ")");
+      }
+      blinks.forEach(function (e, i) { e.setAttribute("opacity", ((t * 1.25 + i * 0.5) % 1) < 0.35 ? 1 : 0.15); });
+    }
+
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

@@ -22,6 +22,9 @@
  * effects (world px, on the ground plane), actors (screen px, sorted by depth), the place's front
  * layer, the inside views of dives, tags / labels / the title, a cut flash, captions.
  *
+ * Extended places: on a portrait (vertical) canvas a place with meta.extend mounts 3840 x 3600
+ * (HFKit.placeWorld; its anchors 720 lower) and the camera is clamped to that taller world.
+ *
  * Camera: HFKit.worldCamera(compiled, t) -> {x, y, zoom} world px (see moves.js for the units:
  * the camera maths runs in world px / 3840 on both axes, so WORLD_LIMITS' pan limit of 0.6 is
  * 2304 screen px/s at the eased peak, 1.2 frame widths a second, at every zoom). Places get the
@@ -88,9 +91,14 @@
     }
     var worldEl = div("hf-world-place");
     worldEl.style.zIndex = "0"; // its own stacking context: actors sort by depth inside it, under the tags and captions
-    var layers = K.placeLayers(worldEl, base + "-place-0");
-    var place = P.mount(layers, { variant: variant, seed: sid, idPrefix: base + "-place-0" });
-    var fxLayer = K.draw.el(worldEl, "svg", { width: 3840, height: 2160, viewBox: "0 0 3840 2160", overflow: "visible", "data-layer": "effects" });
+    // a vertical canvas mounts an extended place (3840 x 3600, the original 720 lower; world.extended
+    // and world.bounds come from HFKit.worldFor); a landscape canvas mounts it exactly as before
+    var WB = world.bounds;
+    var layers = world.extended ? K.placeLayers(worldEl, base + "-place-0", WB) : K.placeLayers(worldEl, base + "-place-0");
+    var popts = { variant: variant, seed: sid, idPrefix: base + "-place-0" };
+    if (world.extended) popts.extended = true;
+    var place = P.mount(layers, popts);
+    var fxLayer = K.draw.el(worldEl, "svg", { width: WB.width, height: WB.height, viewBox: "0 0 " + WB.width + " " + WB.height, overflow: "visible", "data-layer": "effects" });
     css(fxLayer, { position: "absolute", left: "0", top: "0", overflow: "visible", transformOrigin: "0 0", pointerEvents: "none" });
     worldEl.insertBefore(fxLayer, layers.front);
     var actorsEl = div("hf-world-actors", worldEl, layers.front);

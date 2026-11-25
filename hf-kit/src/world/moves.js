@@ -49,8 +49,10 @@
  * maxPanPerSec 0.6 x zoom is then 0.6 x 3840 = 2304 world px/s at zoom 1, which on screen is
  * 2304 px/s = 1.2 frame widths a second at the eased (sine) peak, at every zoom (world px/s =
  * 2304 / zoom). Zoom is multiplicative (<= 2.5x/s at the peak); a dive's push-in may zoom at up to
- * 4x/s (DIVE_LIMITS) because it ends in a cut. Move times come from timing.js (cameraMoveTime). The view never leaves the 3840 x 2160 world (focus points are clamped
- * for their zoom). */
+ * 4x/s (DIVE_LIMITS) because it ends in a cut. Move times come from timing.js (cameraMoveTime). The view never leaves the world (focus points are clamped
+ * for their zoom): world.bounds, 3840 x 2160, or 3840 x 3600 for an extended place (a vertical
+ * canvas and a place with meta.extend: world.extended; its anchors are 720 lower, see place.js).
+ * opts.extended (true / false) overrides the canvas rule. */
 (function (root) {
   "use strict";
   var K = root.HFKit;
@@ -137,10 +139,11 @@
   function toScreen(p, cam) { return { x: (p.x - cam.x) * cam.zoom + canvas().width / 2, y: (p.y - cam.y) * cam.zoom + canvas().height / 2 }; }
   function unproject(s, cam) { return { x: cam.x + (s.x - canvas().width / 2) / cam.zoom, y: cam.y + (s.y - canvas().height / 2) / cam.zoom }; }
   /* The focus point a camera at zoom z may use, so the view stays inside the world. */
-  function clampFocus(p, z) {
-    var hx = canvas().width / 2 / z, hy = canvas().height / 2 / z;
-    return { x: clamp(p.x, Math.min(hx, WORLD.width / 2), Math.max(WORLD.width - hx, WORLD.width / 2)), y: clamp(p.y, Math.min(hy, WORLD.height / 2), Math.max(WORLD.height - hy, WORLD.height / 2)) };
+  function clampFocus(p, z, bounds) {
+    var B = bounds || WORLD, hx = canvas().width / 2 / z, hy = canvas().height / 2 / z;
+    return { x: clamp(p.x, Math.min(hx, B.width / 2), Math.max(B.width - hx, B.width / 2)), y: clamp(p.y, Math.min(hy, B.height / 2), Math.max(B.height - hy, B.height / 2)) };
   }
+  var clampTo = clampFocus;
   function norm(p) { return { x: p.x / NORM, y: p.y / NORM }; }
   function denorm(c) { return { x: c.x * NORM, y: c.y * NORM, zoom: c.zoom }; }
 
@@ -185,11 +188,13 @@
     var w = {
       place: scene.place, variant: scene.variant, meta: P ? P.meta : null, anchors: {}, paths: {}, actors: {},
       effects: opts.effects || Object.keys(K.effects), customs: opts.customs || K.customs || {}, insides: opts.insides || K.insides || {},
-      duration: opts.duration, errors: errors, fatal: false,
+      duration: opts.duration, errors: errors, fatal: false, extended: false, bounds: { width: WORLD.width, height: WORLD.height },
     };
     if (!P) { errors.push("scene " + sid + ": unknown place \"" + scene.place + "\""); w.fatal = true; return w; }
+    w.extended = opts.extended !== undefined ? !!opts.extended && !!P.meta.extend : K.place.extendedFor(P, canvas());
+    w.bounds = K.placeWorld(P, w.extended);
     var a;
-    try { a = P.anchorsFor({ variant: scene.variant, seed: sid }); } catch (e) { errors.push("scene " + sid + ": " + e.message); w.fatal = true; return w; }
+    try { a = P.anchorsFor({ variant: scene.variant, seed: sid, extended: w.extended }); } catch (e) { errors.push("scene " + sid + ": " + e.message); w.fatal = true; return w; }
     w.variant = scene.variant === undefined ? P.meta.variants[0] : scene.variant;
     w.anchors = a.anchors; w.paths = a.paths;
     var cast = opts.cast;
@@ -607,7 +612,9 @@
 
   /* Camera keys from the camera moves (plus automatic follows of walkers, `autos`). points(name, t,
    * "body") resolves targets. Returns {keys, anchors, dives, errors, warnings}. */
-  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos) {
+  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos, bounds) {
+    var B = bounds || WORLD;
+    function clampFocus(p, z) { return clampTo(p, z, B); }
     var anchors = {}, keys = [], dives = [], errors = [], warnings = [], n = 0, landed = [];
     function isStatic(name) {
       if (tracks[name] || name === "pulse") return false;
@@ -625,7 +632,7 @@
           if (!p || p.screen) { // an actor in the side slot: aim where he will step into the world
             var tr = tracks[name], mvs = (tr || []).filter(function (e) { return e.type === "move" && e.space === "world"; });
             var nx = mvs.find(function (e) { return e.t >= t; }) || mvs[mvs.length - 1];
-            p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: WORLD.width / 2, y: WORLD.height / 2 };
+            p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: B.width / 2, y: B.height / 2 };
           } else p = tracks[name] ? actorFocus(points, name, t, zoom) : aim(p, zoom, false);
           return norm(clampFocus(p, zoom));
         };
@@ -708,7 +715,7 @@
       });
     });
     // an actor in view whose head the frame edge cuts (or leaves out) where a camera move lands: warn
-    var final = { camera: keys.slice(), camAnchors: anchors, dives: dives };
+    var final = { camera: keys.slice(), camAnchors: anchors, dives: dives, bounds: B };
     camMoves.forEach(function (p) { if (p.mv.do === "cut") landed.push({ p: p, t: p.t }); });
     landed.forEach(function (L) {
       var cam = worldCamera(final, L.t + 1e-6);
@@ -752,22 +759,23 @@
   function worldCamera(c, t) {
     for (var i = 0; i < (c.dives || []).length; i++) {
       var dv = c.dives[i];
-      if (t >= dv.t0 && t < dv.t1) return clampView(camPose(dv.keys, c.camAnchors, t, DIVE_LIMITS));
+      if (t >= dv.t0 && t < dv.t1) return clampView(camPose(dv.keys, c.camAnchors, t, DIVE_LIMITS), c.bounds);
       if (t >= dv.t1 && t < dv.until) {
         var at = camPose(c.camera, c.camAnchors, t);
-        return Object.assign(clampView(at), { inside: dv.into, insideT: t - dv.t1, params: dv.params, dive: i });
+        return Object.assign(clampView(at, c.bounds), { inside: dv.into, insideT: t - dv.t1, params: dv.params, dive: i });
       }
     }
-    return clampView(camPose(c.camera, c.camAnchors, t));
+    return clampView(camPose(c.camera, c.camAnchors, t), c.bounds);
   }
-  function clampView(cam) { var p = clampFocus(cam, cam.zoom); return { x: p.x, y: p.y, zoom: cam.zoom }; }
+  function clampView(cam, bounds) { var p = clampFocus(cam, cam.zoom, bounds); return { x: p.x, y: p.y, zoom: cam.zoom }; }
 
   // ---- the compiler ---------------------------------------------------------------------------
   function compileMoves(scene, words, world) {
     scene = scene || {};
     world = world || worldFor(scene, {});
     var sid = scene.id, errors = [], duration = sceneDuration(scene, words, world);
-    var out = { actors: {}, effects: [], overlays: [], camera: [], dives: [], camAnchors: {}, overrun: 0, duration: duration, errors: errors, warnings: [] };
+    var bounds = world.bounds || WORLD;
+    var out = { actors: {}, effects: [], overlays: [], camera: [], dives: [], camAnchors: {}, overrun: 0, duration: duration, errors: errors, warnings: [], bounds: bounds, extended: !!world.extended };
     var beats = scene.beats;
     if (!Array.isArray(beats) || !beats.length) { errors.push("scene " + sid + ": no beats"); return out; }
     var hasPulse = beats.some(function (b) { return b && (b.moves || []).some(function (mv) { return mv && mv.do === "pulse_along"; }); });
@@ -833,7 +841,7 @@
     var used = [];
     Object.keys(world.actors).forEach(function (id) { var st = world.actors[id].start; if (st.anchor) used.push(st.anchor); });
     parsed.forEach(function (p) { ["to", "from", "target"].forEach(function (k) { if (world.anchors[p.mv[k]]) used.push(p.mv[k]); }); });
-    var first = camMoves[0], centre = { x: WORLD.width / 2, y: WORLD.height / 2 };
+    var first = camMoves[0], centre = { x: bounds.width / 2, y: bounds.height / 2 };
     if (used.length) {
       var ps = used.map(function (n) { return world.anchors[n](0); });
       var xs = ps.map(function (q) { return q.x; }), ys = ps.map(function (q) { return q.y; });
@@ -856,12 +864,12 @@
       if (of && !of.screen) opening = { x: of.x, y: of.y, zoom: oz };
       first.openedTight = true;
     }
-    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration));
-    var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives }, t); };
+    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration), bounds);
+    var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives, bounds: bounds }, t); };
     var p2 = pass(cam1, p1.tracks);
     sync();
     var points = makePoints(world, p2.tracks, pulses);
-    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration));
+    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration), bounds);
     p2.errors.concat(c2.errors).forEach(function (x) { errors.push(x[0].tag + ": " + x[1]); });
     c2.warnings.forEach(function (x) { out.warnings.push(x[0].tag + ": " + x[1]); });
     // a strike that had to wait for its actor more than 0.5 s after its word: say how to fix it
