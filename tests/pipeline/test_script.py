@@ -52,3 +52,21 @@ def test_other_problems():
     s.scenes[0].narration = " "
     assert any("empty" in p.lower() for p in check_story(s))
     assert word_count(Script("T", [Scene(1, "a", "hi - ... there", "u", "v")], [])) == 2
+
+
+def test_vertical_short_word_limits():
+    """A vertical short is 30-180 s (75-450 words at 150 wpm); landscape stays 150-450 words."""
+    assert check_story(make_script(110), format="vertical") == []
+    assert check_story(make_script(75), format="vertical") == []
+    assert any("75–450" in p for p in check_story(make_script(70), format="vertical"))
+    assert any("75–450" in p for p in check_story(make_script(460), format="vertical"))
+    assert any("150–450" in p for p in check_story(make_script(110)))
+    assert any("150–450" in p for p in check_story(make_script(110), format="landscape"))
+
+
+def test_checks_cli_takes_format(tmp_path, capsys):
+    from tools.pipeline.checks import main
+    p = tmp_path / "s.md"
+    p.write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+    assert main(["story", str(p), "--format", "vertical"]) == 0
+    assert '"problems": []' in capsys.readouterr().out

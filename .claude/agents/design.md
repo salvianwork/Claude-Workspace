@@ -29,7 +29,7 @@ Before you start, run `python -m tools.lessons list --section everyone` and `--s
 
 Read first:
 - `brief.md` (owner's notes on look, audience, mood)
-- `01-script/script.md` — the header (`**Type:**`, `**Audience:**`, `**Host outfit:**`), each
+- `01-script/script.md` — the header (`**Type:**`, `**Audience:**`, `**Format:**`, `**Host outfit:**`), each
   scene's narration, "Viewer should understand", "Visual idea", and the key claims
 - `02-voice/manifest.json` (each scene's `duration_s`)
 - `02-voice/words.json` (each word's index `i`, `text`, `start`/`end` in seconds from the start
@@ -66,8 +66,10 @@ it again as schema 2 on your next round — except on an owner sound-only note, 
 
 ## Video settings and cast
 
-- `type`, `audience`: copy them from the script header: `explainer` or `what-if`; `all-ages`,
-  `teens` or `adults`. (`story`, `action` and `other` come in a later phase.)
+- `type`, `audience`, `format`: copy them from the script header: `explainer` or `what-if`;
+  `all-ages`, `teens` or `adults`; `vertical` (1080×1920, the default) or `landscape` (1920×1080).
+  Set `"format":"vertical"` or `"format":"landscape"` at the top of `shots.json` (a missing
+  `**Format:**` line means `vertical`). (`story`, `action` and `other` come in a later phase.)
 - `cast`: the host is always there, `{"id":"host","character":"host","outfit":"<outfit>"}`,
   with the outfit from the script's `**Host outfit:**` line: `blazer`, `lab-coat`, `casual` or
   `explorer`. If the header has none, choose it: `lab-coat` for science, health, medicine,
@@ -137,14 +139,47 @@ checked by the validator):
 gas; `cells`: animal, plant or blood cells) — use it to show what something is made of.
 
 `pan_up` / `pan_down` (vertical videos) pan the view up or down at the same zoom, to an anchor (`to`)
-or by world px (`by`): tall reveals, sky to ground. They stop at the world's top and bottom edge. In a
-vertical shot keep the anchors of one beat within 1700 world px of each other (sideways); the build
-warns when they are further apart, so pan or cut between them in separate beats instead.
+or by world px (`by`): tall reveals, sky to ground; `at` is where the pan starts. They stop at the
+world's top and bottom edge. In a vertical shot keep the anchors of one beat within 1700 world px
+of each other (sideways); the build warns when they are further apart, so pan or cut between
+them in separate beats instead (see "Vertical framing").
+
+## Vertical framing (`"format":"vertical"`)
+
+A vertical video is a tall 1080×1920 phone screen. Text (captions, labels, tags, titles) stays
+inside **x 64–940, y 200–1420**; the host is exempt. Frame every shot for it:
+- **Action in the middle band.** Put what the viewer must see in the middle of the screen
+  (about y 420–1000): the captions sit at the bottom of that band and the host in the lower
+  part, so nothing important goes under them. Use the extended places: each is taller than a
+  landscape one (sky above, ground below).
+- **Tall reveals and pans, not wide shots.** Wide means *tall* here: reveal a scene from sky to
+  ground with `pan_down`, or from ground to sky with `pan_up` (`at` is where the pan starts),
+  or `pull_out` to see a column of things. Keep `push_in` and `follow` for what is close.
+- **The spread warning.** The frame is narrow (about 1800 world px at the widest zoom), so
+  anchors, targets and camera targets used in one shot should stay no more than 1700 world px apart
+  sideways. `shots validate` warns when they do not; fix it with a pan or a cut in a
+  separate beat (rail-near → pan → rail-far), or pick closer anchors. A kept warning is
+  explained in `Kit warnings` like every other one.
+- **The host stands in a bottom slot:** `{"slot":"bottom-left"}` or `{"slot":"bottom-right"}`
+  (never `left`/`right`, which are the landscape side slots), cropped by the bottom of the
+  frame, on the side away from the action, alternating as the shots need. His face sits in
+  y 1060–1400. A step-in (the host out of his slot, in the world) still counts as one of the 1–2.
+- **Captions** sit at y 840–1020 while the host is in his slot, and move to the top band
+  (y 220–400) while he is out of it (stepping in, walking, in the world), so keep tags and
+  labels out of the **active caption band** of the moment: no tag or label inside y 840–1020
+  while he is in his slot, none inside y 220–400 while he is out. The kit warns when one
+  crosses it; fix it with another `side`, another target or a later `at`. Tags are short (at
+  most 4 words) and sit beside the thing, never across a face.
+- Titles, kit pieces and other non-world scenes do not exist in vertical (world scenes only).
+
+A `landscape` video ignores this section and keeps the side slots (`left`, `right`).
 
 ## The host
 
 - Each scene's `actors` lists the host with a `start`: `{"slot":"right"}` or
-  `{"slot":"left"}` (he talks from the side of the frame, beside the world), or
+  `{"slot":"left"}` (landscape: he talks from the side of the frame, beside the world), or
+  `{"slot":"bottom-left"}` / `{"slot":"bottom-right"}` (vertical: from the lower part of the
+  tall frame), or
   `{"anchor":"<anchor>"}` (he stands in the world).
 - **Host step-ins: 1–2 per video.** A step-in is a scene where the host is in the world (he
   starts at an anchor, or walks or runs out of the side slot with `walk_to` / `run_to`). Give
@@ -205,7 +240,8 @@ treats every unexplained warning as a must-fix.
 
 **Captions** are word-highlighted pills from the voice: `style.json` `captions` sets their
 `size` (px, 60 by default; keep 48–80 so they read on a phone) and `position` (`bottom`, or
-`top` when the action happens low in the frame). Keep tags and faces out of the caption band.
+`top` when the action happens low in the frame). Keep tags and faces out of the caption band. In a vertical video the kit places the captions
+itself (64 px, at most 2 lines, bands in "Vertical framing"): leave `position` as it is.
 
 **Transition** (how the scene enters, inside its first 0.5 s): `cut`, `fade`, `blur`,
 `slide`, `zoom`. Calm by default (`fade`); `slide`/`zoom` for a change of place; scene 1 `fade`.
@@ -250,8 +286,12 @@ Every `at.word` / `until.word` is a word index of **that** scene in `02-voice/wo
 
 ## `shots.json` (schema 2)
 
+The example below is a **landscape** one (side slots). A vertical `shots.json` is the same
+with `"format":"vertical"` (or no `format`, the default) and `bottom-left` / `bottom-right`
+host slots.
+
 ```json
-{"schema":2,"type":"explainer","audience":"all-ages",
+{"schema":2,"format":"landscape","type":"explainer","audience":"all-ages",
  "cast":[{"id":"host","character":"host","outfit":"lab-coat"}],
  "scenes":[
   {"id":1,"kind":"world","place":"countryside","variant":"day","new_place":false,
@@ -286,7 +326,7 @@ Every `at.word` / `until.word` is a word index of **that** scene in `02-voice/wo
    "transition":"slide"}]}
 ```
 
-- Top level: `"schema":2`, `type`, `audience`, `cast` (the host, with his outfit), `scenes`.
+- Top level: `"schema":2`, `format` (`vertical` or `landscape`), `type`, `audience`, `cast` (the host, with his outfit), `scenes`.
 - Every scene: `id`, `"kind":"world"`, `place`, `variant`, `new_place`, `facts`, `actors`
   (each `id`, `start`; extras also `character` `extra-<n>` and `outfit`), `beats` (each `at`,
   `action`, `moves`), `transition`.
@@ -298,7 +338,7 @@ Every `at.word` / `until.word` is a word index of **that** scene in `02-voice/wo
 ````markdown
 # Storyboard: <video title>
 
-Type: explainer · Audience: all-ages · Host outfit: lab-coat
+Type: explainer · Audience: all-ages · Format: vertical · Host outfit: lab-coat
 Music mood: curious
 Total: 96.2 s, 7 scenes, host step-ins: scenes 1, 4; new place: none; custom moves: none; 4 sound effects
 

@@ -54,6 +54,7 @@ Read first:
 - `04-video/hf/` (index.html, data.json, kit/) — written by `tools.hf.build`; never edit by hand
 - `04-video/hf/snapshots/` — written by `tools.hf.snapshot`
 - `04-video/hf/overlap.json` — the overlap report, written by `tools.hf.snapshot --overlap`
+- `04-video/hf/safe-zone.json` — the safe-zone report, written by `tools.hf.snapshot --safe-zone` (vertical)
 - `04-video/audio/` (stems, `mix.wav`) and `04-video/credits.md` — written by `tools.audio.mix`
 - `04-video/render.log` — the render command's output (the Reviewer reads it)
 - `04-video/out/video.mp4` — written by `tools.render.render`; the main output
@@ -150,7 +151,7 @@ them; the host is not cut off and looks alive; no blank or broken scene. Fix wha
 modules; for a plan problem, note it), build and snapshot again. Never hand over a scene you
 have not looked at.
 
-## Step 4 — the overlap report must be clean
+## Step 4 — the overlap report (and, for vertical, the safe-zone report) must be clean
 
 ```bash
 python -m tools.hf.snapshot "<run_dir>" --overlap
@@ -165,6 +166,24 @@ overlap caused by your module (a new place's
 anchor, a custom piece) → fix it, build and run the report again. One caused by the plan (a
 tag's target or side, where an actor stands, the camera) → copy each entry into `notes.md` as
 needing a Design change. Hand over only with `[]`, or with every remaining entry in `notes.md`.
+
+**Vertical videos** (`"format":"vertical"` in `03-design/shots.json`) also need the safe-zone
+report, **and both reports must be clean**:
+
+```bash
+python -m tools.hf.snapshot "<run_dir>" --safe-zone
+```
+(in the background: `run_in_background: true`, `timeout: 3600000`, and wait for it to exit)
+
+It writes `04-video/hf/safe-zone.json`: one entry per caption, label or tag box that leaves the
+text safe zone (x 64–940, y 200–1420), `{scene, t, kind, id, box}`. It prints that it is clean
+and exits 0, or lists the entries and exits 1. Treat each entry like an overlap: caused by your
+module (a new place's anchor, a custom piece's text) → fix it, build, snapshot and run both
+reports again; caused by the plan (a tag's side or target, the camera, where an actor stands)
+→ copy it into `notes.md` as needing a Design change. Hand over only with `[]` in both files,
+or with every remaining entry in `notes.md`; the Reviewer treats any entry as a must-fix. Also
+check the vertical snapshots at phone size (about 360 px wide): captions, tags and labels still
+readable, and the host's face clear of text.
 
 ## Step 5 — mix the audio
 
@@ -273,6 +292,7 @@ saved in `notes.md`, then reply as usual (`DONE` with the video path).
 - Kit warnings: none | scene 3: head crop at the push-in — kept on purpose (storyboard explains)
 - Snapshots looked at: all 21 (04-video/hf/snapshots/)
 - Overlap report: [] (04-video/hf/overlap.json) | <entries needing a Design change>
+- Safe-zone report (vertical): [] (04-video/hf/safe-zone.json) | <entries needing a Design change> | n/a (landscape)
 - Changes from the shot list: none | <what and why>
 - Mix warnings: none | <copied lines>
 - Render: 04-video/render.log — video written, 14.2 min
@@ -282,6 +302,12 @@ saved in `notes.md`, then reply as usual (`DONE` with the video path).
 ```
 
 ## Remotion fallback (only when the owner asks)
+
+Remotion is **landscape-only**. For a `vertical` video there is no fallback: if the HyperFrames
+build or render fails and you cannot fix it, write the error in `04-video/notes.md` and reply
+without a `DONE` line (the run stops through the stuck-gate flow). Never switch the format to
+landscape or the engine to Remotion yourself, even when the owner asks for `--engine remotion` on
+a vertical video: say in `notes.md` that it needs a landscape run. Only the owner decides that.
 
 The old Remotion engine stays selectable until the owner has approved three HyperFrames
 videos. Use it **only when the owner asks** (the `note` or owner feedback says
@@ -331,7 +357,8 @@ becomes the closest flat template, so say in `notes.md` what is lost.
   `anchorsFor`.
 - `hyperframes check` clean, every snapshot looked at and the overlap report clean (or every
   remaining entry in `notes.md`) before you reply.
-- Run `tools.hf.build`, then `tools.hf.snapshot`, then `tools.hf.snapshot --overlap`, then
+- Run `tools.hf.build`, then `tools.hf.snapshot`, then `tools.hf.snapshot --overlap` (and, for a
+  vertical video, `--safe-zone`), then
   `tools.audio.mix`, then `tools.render.render --engine hyperframes`.
 - Scene durations come from the voice manifest and never change.
 - No downloaded images; no network calls.

@@ -485,3 +485,48 @@ def test_cleanup_suggestions_are_not_lessons_and_use_remove():
     reviewer = (MAKE_VIDEO.parent.parent / "agents" / "reviewer.md").read_text(encoding="utf-8")
     assert "These lines are not lessons" in reviewer
     assert "style only" in reviewer
+
+
+# ---- vertical short form: --format ----
+
+def _section1() -> str:
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    return text.split("## 1. Start or resume", 1)[1].split("## 2.", 1)[0]
+
+
+def test_make_video_takes_format_and_defaults_to_vertical():
+    meta, _ = front_matter(MAKE_VIDEO)
+    assert "--format vertical|landscape" in meta["argument-hint"]
+    s1 = _section1()
+    for needle in ["`--format`", "`vertical`", "`landscape`", "default", "format: <format>"]:
+        assert needle in s1, needle
+    assert re.search(r"without `--format`.*vertical|`vertical`.*default", s1, re.S | re.I)
+
+
+def test_unknown_format_is_refused_before_any_agent_starts():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    s1 = _section1()
+    refuse = s1.index("Unknown format")
+    assert 'Unknown format "<format>": use --format vertical or landscape.' in s1
+    after = " ".join(s1[refuse:refuse + 400].lower().split())
+    assert "start no agent" in after and "stop" in after
+    assert refuse < s1.index("tools.pipeline.status init")
+    assert refuse < text.index("subagent_type")
+
+
+def test_format_is_stored_and_shown_at_script_approval():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    s1 = _section1()
+    assert "brief.md" in s1 and "format: <format>" in s1
+    assert any("--event \"video settings\"" in c and "<format>" in c for c in status_update_commands())
+    gate1 = text.split("### 4.1", 1)[1].split("### 4.2", 1)[0]
+    req = [c for c in answers_commands() if "--checkpoint gate-1 " in c][0]
+    assert "<format>" in req
+    assert "**Format:**" in gate1 and "Format: <format>" in gate1
+
+
+def test_failed_vertical_render_stops_the_run_never_switches_format():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    stuck = text.split("## 5. A gate is stuck", 1)[1].split("\n## 6", 1)[0]
+    for needle in ["remotion", "landscape-only", "vertical", "never switch", "format"]:
+        assert needle in stuck.lower(), needle

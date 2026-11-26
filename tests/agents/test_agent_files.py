@@ -475,3 +475,63 @@ def test_reviewer_proposes_lessons_after_final_approval():
               "replaces sage#2", "40", "merge", "general rule", "one-off"]:
         assert s in part, s
     assert "gate: lessons" in section(body, "## Inputs", "## Output")
+
+
+# ---- vertical short form (Task 7) ----
+
+def test_story_has_a_short_recipe_for_vertical():
+    _, body = parse("story")
+    for s in ["`format:`", "`vertical`", "`landscape`", "45–75 s", "30–180 s", "about 2 s",
+              "5–8 s", "rewatch", "comment", "**Format:**", "--format"]:
+        assert s in body, f"story.md must mention {s!r}"
+    # the vertical short is written to the same word limits the check enforces
+    assert 'python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>' in body
+
+
+def test_design_sets_format_and_frames_for_the_tall_screen():
+    _, body = parse("design")
+    for s in ["\"format\":\"vertical\"", "`format`", "**Format:**", "middle band", "tall reveals",
+              "`pan_up`", "`pan_down`", "1700", "bottom-left", "bottom-right", "840", "220",
+              "x 64–940", "y 200–1420", "active caption band", "landscape", "Kit warnings"]:
+        assert s in body, f"design.md must mention {s!r}"
+    # the extended spread note is extended, not duplicated
+    assert body.count("within 1700 world px") <= 1
+
+
+def test_design_example_vertical_host_uses_a_bottom_slot():
+    _, body = parse("design")
+    ex = json_example(body, '"schema":2')
+    assert ex.get("format", "vertical") in ("vertical", "landscape")
+
+
+def test_animator_runs_overlap_and_safe_zone_and_never_switches_format():
+    _, body = parse("animator")
+    step4 = section(body, "## Step 4", "## Step 5")
+    for s in ['python -m tools.hf.snapshot "<run_dir>" --overlap',
+              'python -m tools.hf.snapshot "<run_dir>" --safe-zone',
+              "04-video/hf/safe-zone.json", "run_in_background: true", "timeout: 3600000",
+              "vertical", "both"]:
+        assert s in step4, f"animator.md step 4 must mention {s!r}"
+    assert step4.index("--overlap") < step4.index("--safe-zone")
+    order = ['python -m tools.hf.snapshot "<run_dir>" --safe-zone', "python -m tools.audio.mix"]
+    assert body.index(order[0]) < body.index(order[1])
+    fallback = body[body.index("## Remotion fallback"):]
+    for s in ["landscape-only", "never switch", "stuck"]:
+        assert s in body.lower(), s
+    assert "vertical" in fallback
+    assert "04-video/hf/safe-zone.json" in section(body, "## Outputs", "## Step 1")
+
+
+def test_reviewer_checks_the_vertical_rules_at_gates_1_3_4():
+    _, body = parse("reviewer")
+    gate1 = section(body, "## Gate 1", "## Gate 2")
+    for s in ["**Format:**", "`vertical`", "45–75 s", "30–180 s", "about 2 s", "5–8 s", "rewatch", "--format"]:
+        assert s in gate1, f"reviewer.md gate 1 must mention {s!r}"
+    gate3 = section(body, "## Gate 3", "## Gate 4")
+    for s in ["`format`", "middle band", "tall reveals", "1700", "spread", "bottom-left", "bottom-right",
+              "active caption band"]:
+        assert s in gate3, f"reviewer.md gate 3 must mention {s!r}"
+    gate4 = section(body, "## Gate 4")
+    for s in ['python -m tools.hf.snapshot "<run_dir>" --safe-zone', "04-video/hf/safe-zone.json",
+              "must-fix", "phone", "hook", "vertical"]:
+        assert s in gate4, f"reviewer.md gate 4 must mention {s!r}"
