@@ -181,6 +181,14 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 2300, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · the sky-ship", { x: 2300, y: 3000, zoom: 1.6 }, null],
   ],
+  "rooftop-night": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "telescope", dx: -200, dy: -300, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the telescope", { anchor: "telescope", dx: 100, dy: -200, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2200, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1000, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the windows below", { x: 900, y: 3000, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">

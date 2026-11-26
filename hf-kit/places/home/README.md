@@ -1,1 +1,1 @@
-Cosy living room and kitchen: bookshelf, window over a sofa, coffee table, inner door, kitchen counter, hob and fridge; variants day, evening; anchors sofa, table, kitchen, window, door, floor; path floor.
+Cosy living room and kitchen: bookshelf, window over a sofa, coffee table, inner door, kitchen counter, hob and fridge; variants day, evening; anchors sofa, table, kitchen, window, door, floor; path floor. Extended for vertical (rafters, a skylight, a turning fan and fairy lights above; the floor with a rug, a sleeping dog, toys and a basket below).

@@ -14,6 +14,9 @@
  *   sky        open night sky above the city (the moon is at its right)
  * Path: roof (across the roof, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -33,12 +36,20 @@
       clear: { tint: "#4C5EA0", amount: 0.6, rim: "#FFD39A", rimSide: -1 }, // fairy lights and the door lamp at the left
       rain: { tint: "#3E5084", amount: 0.68, rim: "#A8D4FF", rimSide: 1 },
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the night sky above: stars, the Milky Way and a shooting star (clear) or heavy rain clouds and rain all the way up (rain), a plane's blinking lights, a tall skyscraper rising behind the blocks with its spire and warning light, a drone hovering", seamAllow: [] },
+      bottom: { draws: "the roof's near edge with its coping and gutter, then the building's lower floors below: brick, lit windows with curtains, plants, a cat on a sill, a television's glow, a fire escape, a pictogram sign and a laundry line (rain: wet and streaming)", seamAllow: [] },
+    },
   };
 
   var G = { parapet: 1330, roof: 1420, hut: { x0: 160, x1: 760, top: 900 }, tank: { x: 3400, top: 560, base: 1560 }, scope: { x: 2620, y: 1640 } };
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var roof = [];
     for (var x = 300; x <= 3600; x += 330) roof.push({ x: x, y: 1720 });
@@ -177,6 +188,118 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  /* The top band. Sky: stars and the Milky Way (clear) or heavy rain clouds (rain). Far: a plane's
+   * blinking lights, a shooting star (clear). Mid (under the blocks): a tall skyscraper with its
+   * spire and warning light. Ground: a drone hovering with its lights. */
+  function drawTopBand(P, v, L, R) {
+    var rain = L.rain, out = { sky: "", far: "", midUnder: "", ground: "", defs: "" };
+    if (!rain) {
+      var st = "";
+      for (var k = 0; k < 200; k++) { var sy = 10 + R() * 1060; if (Math.abs(sy - 720) < 8) sy += 16; st += tag("circle", { cx: r2(-100 + R() * 4040), cy: r2(sy), r: r2(1.2 + R() * (R() < 0.06 ? 4 : 2.2)), fill: ["#FFF8E1", "#FFFFFF", "#DCE8FF", "#FFE2C4"][k % 4], opacity: r2(0.35 + R() * 0.6), "data-xstar": k }); }
+      out.defs += S.lin(P + "-xmw", [[0, "#B8C4F0", 0], [0.45, "#C8D0F4", 0.14], [0.5, "#E6E2F6", 0.2], [0.55, "#C8D0F4", 0.14], [1, "#B8C4F0", 0]]);
+      out.sky = tag("g", { transform: "rotate(-16 1920 500)" }, tag("rect", { x: -600, y: 300, width: 5000, height: 420, fill: "url(#" + P + "-xmw)" })) + tag("g", { "data-part": "xstars" }, st);
+      out.far = tag("g", { "data-part": "xshoot", opacity: 0 }, tag("path", { d: "M0 0 L-300 -80", stroke: "#FFFFFF", "stroke-width": 5, "stroke-linecap": "round", opacity: 0.9 }) + tag("circle", { r: 6, fill: "#FFFFFF" }));
+    } else {
+      var pal = { cloud: "#363C56", cloudShade: "#272C42", cloudLight: "#4A5070" }, c = "";
+      [[300, 300, 1.4], [1300, 200, 1.6], [2400, 320, 1.5], [3500, 220, 1.6], [800, 560, 1.2], [2000, 600, 1.3], [3100, 580, 1.2]].forEach(function (q, i) { c += A.cloud(q[0], q[1], q[2], pal, "x" + i); });
+      out.sky = tag("rect", { x: -2600, y: -900, width: 9040, height: 600, fill: "#10131E", opacity: 0.6 }) + c;
+    }
+    out.far += tag("g", { "data-part": "xplane", transform: "translate(1200 620)" }, tag("path", { d: "M-50 0 H50 M-8 0 L-34 -24 M-8 0 L-34 24", stroke: "#0E1226", "stroke-width": 7, "stroke-linecap": "round" }) +
+      tag("circle", { cx: -50, cy: 0, r: 6, fill: "#FF5A5A", "data-blink": 0 }) + tag("circle", { cx: 50, cy: 0, r: 5, fill: "#FFFFFF", "data-blink": 1 }));
+    // a tall skyscraper behind the blocks: tiers, a spire, lit windows
+    var x0 = 2150, w = 300, top = 420, c2 = rain ? "#2E3450" : "#232B52", sk = "";
+    sk += tag("rect", { x: x0, y: top + 160, width: w, height: 1400, fill: c2 }) + tag("rect", { x: x0 + 40, y: top + 40, width: w - 80, height: 140, fill: c2 }) + tag("rect", { x: x0 + 90, y: top - 60, width: w - 180, height: 120, fill: c2 });
+    sk += tag("path", { d: "M" + (x0 + w / 2) + " " + (top - 60) + " V" + (top - 300), stroke: c2, "stroke-width": 12 }) + tag("circle", { cx: x0 + w / 2, cy: top - 300, r: 12, fill: "#FF4D4D", "data-blink": 2 });
+    for (var wy = top + 200; wy < 1500; wy += 46) for (var wx = x0 + 18; wx < x0 + w - 20; wx += 32) if (R() < 0.45) sk += tag("rect", { x: wx, y: wy, width: 14, height: 22, fill: R() < 0.7 ? "#FFD27A" : "#9FD8FF", opacity: rain ? 0.6 : 0.85 });
+    sk += tag("rect", { x: x0 + 40, y: top + 70, width: w - 80, height: 18, fill: "#5FE3FF", opacity: 0.6 });
+    out.midUnder = sk;
+    // a drone hovering, its lights blinking
+    out.ground = tag("g", { "data-part": "xdrone", transform: "translate(1450 520)" }, tag("rect", { x: -40, y: -14, width: 80, height: 28, rx: 10, fill: "#3A4651", stroke: "#1E2430", "stroke-width": 4 }) +
+      tag("path", { d: "M-40 -6 L-90 -20 M40 -6 L90 -20", stroke: "#3A4651", "stroke-width": 8 }) + tag("ellipse", { cx: -90, cy: -26, rx: 40, ry: 6, fill: "#8A929D", opacity: 0.7 }) + tag("ellipse", { cx: 90, cy: -26, rx: 40, ry: 6, fill: "#8A929D", opacity: 0.7 }) +
+      tag("circle", { cx: -30, cy: 14, r: 6, fill: "#51CF66", "data-blink": 3 }) + tag("circle", { cx: 30, cy: 14, r: 6, fill: "#FF5A5A", "data-blink": 4 }) + tag("circle", { cx: 0, cy: 18, r: 8, fill: "#3A4651" }));
+    return out;
+  }
+  /* The bottom band (ground layer): the roof deck runs on to its near edge (coping and a gutter),
+   * then the building's lower floors below: brick, lit windows (curtains, plants, a cat, a
+   * television's glow), a fire escape, a pictogram sign and a laundry line. */
+  function drawBottomBand(P, v, L, R) {
+    var rain = L.rain, s = "", edge = 2960;
+    var defs = S.lin(P + "-xbrick", [[0, "#5E4A44"], [1, "#3E302E"]]) + S.rad(P + "-xwarm", [[0, "#FFD27A", 0.6], [1, "#FFD27A", 0]]) + S.lin(P + "-xtv", [[0, "#7FB8FF", 0.5], [1, "#7FB8FF", 0]]);
+    // gravel runs on, a roof drain
+    for (var gv = 0; gv < 60; gv++) s += tag("circle", { cx: r2(-300 + R() * 4400), cy: r2(2890 + R() * 60), r: r2(2 + R() * 3), fill: R() < 0.5 ? "#4A4F62" : "#23262F" });
+    s += tag("ellipse", { cx: 1900, cy: 2930, rx: 60, ry: 16, fill: "#1E2028", stroke: "#5A6470", "stroke-width": 4 });
+    // the near edge: coping and a gutter, then the wall
+    s += tag("rect", { x: -400, y: edge, width: 4640, height: 30, rx: 6, fill: "#7A6E62" }) + tag("rect", { x: -400, y: edge + 30, width: 4640, height: 22, fill: "#4A4038" });
+    s += tag("rect", { x: -400, y: edge + 52, width: 4640, height: 18, rx: 8, fill: "#6E7682" });
+    s += tag("rect", { x: -400, y: edge + 70, width: 4640, height: 600, fill: "url(#" + P + "-xbrick)" });
+    var br = "";
+    for (var by = edge + 100; by < 3620; by += 34) br += "M-400 " + by + " H4240 ";
+    for (var row = 0; row < 20; row++) for (var bx = -400 + (row % 2) * 40; bx < 4240; bx += 80) br += "M" + bx + " " + (edge + 100 + row * 34) + " v34 ";
+    s += tag("path", { d: br, stroke: "#3A2C28", "stroke-width": 3, opacity: 0.5 });
+    if (rain) s += tag("path", { d: "M300 3120 v300 M1250 3110 v380 M2700 3130 v320 M3600 3120 v260", stroke: "#9FB8E8", "stroke-width": 4, opacity: 0.35 }); // streaks
+    // windows: [x, kind]
+    var win = function (x, y, kind) {
+      var o = "", lit = kind !== "dark";
+      o += tag("rect", { x: x - 10, y: y - 10, width: 300, height: 300, rx: 6, fill: "#2A201E" });
+      o += tag("rect", { x: x, y: y, width: 280, height: 280, fill: lit ? (kind === "tv" ? "#2A3A66" : "#FFD27A") : "#1A2142" });
+      if (kind === "tv") o += tag("rect", { x: x, y: y, width: 280, height: 280, fill: "url(#" + P + "-xtv)" }) + tag("rect", { x: x + 90, y: y + 150, width: 110, height: 70, fill: "#9FD8FF", opacity: 0.8 });
+      if (lit && kind !== "tv") o += tag("rect", { x: x, y: y, width: 90, height: 280, fill: "#E8904A", opacity: 0.75 }) + tag("rect", { x: x + 190, y: y, width: 90, height: 280, fill: "#E8904A", opacity: 0.75 });
+      if (kind === "lamp") o += tag("path", { d: "M" + (x + 140) + " " + (y + 40) + " v40 M" + (x + 110) + " " + (y + 110) + " L" + (x + 125) + " " + (y + 80) + " H" + (x + 155) + " L" + (x + 170) + " " + (y + 110) + " Z", stroke: "#8A5A20", "stroke-width": 4, fill: "#FFF3C4" });
+      o += tag("path", { d: "M" + (x + 140) + " " + y + " v280 M" + x + " " + (y + 140) + " h280", stroke: "#2A201E", "stroke-width": 12 });
+      o += tag("rect", { x: x - 20, y: y + 280, width: 320, height: 20, rx: 4, fill: "#7A6E62" });
+      if (kind === "plants") [x + 50, x + 140, x + 230].forEach(function (px, i) { o += tag("path", { d: "M" + (px - 26) + " " + (y + 280) + " l6 -40 h40 l6 40 Z", fill: "#B5523B" }) + tag("circle", { cx: px, cy: y + 222, r: 28, fill: ["#3E7F5A", "#2E6B4A", "#4E9A48"][i] }); });
+      if (kind === "cat") o += tag("path", { d: "M" + (x + 60) + " " + (y + 280) + " q-6 -60 30 -70 l6 -26 l14 20 l14 -20 l6 26 q36 10 30 70 Z M" + (x + 160) + " " + (y + 276) + " q50 0 40 -50", fill: "#1A1420", stroke: "#1A1420", "stroke-width": 8 }) + tag("circle", { cx: x + 100, cy: y + 232, r: 4, fill: "#FFE066" }) + tag("circle", { cx: x + 118, cy: y + 232, r: 4, fill: "#FFE066" });
+      if (lit) o += tag("ellipse", { cx: x + 140, cy: y + 140, rx: 260, ry: 220, fill: "url(#" + P + "-xwarm)", opacity: kind === "tv" ? 0.3 : 0.5 });
+      return o;
+    };
+    var kinds = ["lamp", "plants", "dark", "cat", "tv", "lamp", "plants", "dark"], wy = edge + 130;
+    for (var i = 0; i < 8; i++) s += win(-200 + i * 540, wy, kinds[i]);
+    var kinds2 = ["dark", "tv", "lamp", "dark", "plants", "cat", "lamp", "tv"]; // the floor below, its windows' tops
+    for (var i2 = 0; i2 < 8; i2++) s += win(-200 + i2 * 540, wy + 420, kinds2[i2]);
+    // a fire escape on the facade, a pictogram sign, a laundry line between two windows
+    var fe = 2760;
+    s += tag("path", { d: "M" + (fe - 220) + " " + (wy + 300) + " H" + (fe + 320) + " M" + (fe - 220) + " " + (wy + 340) + " H" + (fe + 320) + " M" + (fe - 220) + " " + (wy + 300) + " V" + (wy + 340) + " M" + (fe + 320) + " " + (wy + 300) + " V" + (wy + 340), stroke: "#1E1A16", "stroke-width": 8 });
+    for (var rl = fe - 200; rl < fe + 320; rl += 40) s += tag("path", { d: "M" + rl + " " + (wy + 300) + " v40", stroke: "#1E1A16", "stroke-width": 4 });
+    s += tag("path", { d: "M" + (fe + 200) + " " + (wy + 340) + " L" + (fe + 300) + " 3620 M" + (fe + 240) + " " + (wy + 340) + " L" + (fe + 340) + " 3620", stroke: "#1E1A16", "stroke-width": 6 });
+    for (var st = 0; st < 6; st++) s += tag("path", { d: "M" + (fe + 210 + st * 16) + " " + (wy + 380 + st * 40) + " h40", stroke: "#1E1A16", "stroke-width": 5 });
+    s += tag("rect", { x: 1550, y: wy + 40, width: 120, height: 120, rx: 14, fill: "#120E24", stroke: "#3A3060", "stroke-width": 5 }) + tag("path", { d: "M1570 " + (wy + 130) + " q40 -70 80 0 M1580 " + (wy + 80) + " h60", stroke: "#5FE3FF", "stroke-width": 7, fill: "none", "data-xneon": 1 });
+    s += tag("path", { d: "M380 " + (wy + 30) + " Q610 " + (wy + 90) + " 840 " + (wy + 30), stroke: "#C9D2E8", "stroke-width": 3, fill: "none" });
+    [[470, "#FF8787", 40], [560, "#74C0FC", 34], [660, "#FFE066", 44], [750, "#B197FC", 30]].forEach(function (c) { var cy = wy + 30 + 4 * 60 * ((c[0] - 380) / 460) * (1 - (c[0] - 380) / 460); s += tag("rect", { x: c[0] - 26, y: r2(cy), width: 52, height: c[2] * 1.4, rx: 4, fill: c[1], opacity: rain ? 0.7 : 0.9 }); });
+    return { defs: defs, body: s };
+  }
+  /* Rain all the way up and down (front layer, the rain variant): drops above and below the
+   * original's (which fall over its y -200 .. 2400). */
+  function rainBand(R, el) {
+    var drops = [];
+    for (var i = 0; i < 70; i++) drops.push({ x: -300 + R() * 4500, y: R(), lo: i % 2 ? -400 : 3000, hi: i % 2 ? 560 : 3800, sp: 1500 + R() * 700, len: 50 + R() * 50, e: D.el(el, "path", { stroke: "#BFD6FF", "stroke-width": 3, "stroke-linecap": "round", opacity: r2(0.35 + R() * 0.3) }) });
+    return drops;
+  }
+  function mountBands(X, P, v, L, seed) {
+    var top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+    PL.band(X.over.sky, "top", top.defs, top.sky);
+    PL.band(X.over.far, "top", "", top.far);
+    PL.band(X.under.mid, "top", "", top.midUnder);
+    PL.band(X.over.ground, "top", "", top.ground);
+    PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    var drops = L.rain ? rainBand(D.rng(seed + 35), PL.band(X.over.front, "top", "", "")) : [];
+    if (!L.rain) PL.band(X.over.front, "top", "", "");
+    var q = function (sel) { var o = []; PL.LAYERS.forEach(function (n) { o = o.concat([].slice.call(X.over[n].querySelectorAll(sel)), [].slice.call(X.under[n].querySelectorAll(sel))); }); return o; };
+    var blinks = q("[data-blink]"), plane = q('[data-part="xplane"]')[0], drone = q('[data-part="xdrone"]')[0], shoot = q('[data-part="xshoot"]')[0], neon = q("[data-xneon]")[0];
+    var xstars = q("[data-xstar]").filter(function (e, i) { return i % 4 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+    var xcl = q("[data-cloud^='x']").map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    return function (t) {
+      blinks.forEach(function (e, i) { e.setAttribute("opacity", ((t * 1.2 + i * 0.37) % 1) < 0.4 ? 1 : 0.2); });
+      if (plane) plane.setAttribute("transform", "translate(" + r2(A.wrap(1200 + t * 80, -400, 4300)) + " 620)");
+      if (drone) drone.setAttribute("transform", "translate(" + r2(1450 + D.wobble(t, 2, 0.3) * 40) + " " + r2(520 + D.wobble(t, 5, 0.5) * 16) + ")");
+      if (shoot) { var u = (t % 7) / 0.8; shoot.setAttribute("opacity", r2(u < 1 ? Math.sin(u * Math.PI) : 0)); shoot.setAttribute("transform", "translate(" + r2(2400 + u * 500) + " " + r2(300 + u * 130) + ")"); }
+      if (neon) neon.setAttribute("opacity", (Math.floor(t * 8) % 41 === 0) ? 0.4 : 1);
+      xstars.forEach(function (x) { x.e.setAttribute("opacity", r2(x.op * (0.6 + 0.4 * Math.sin(t * 2 + x.k)))); });
+      xcl.forEach(function (c, k) { c.e.setAttribute("transform", "translate(" + r2(A.wrap(t * (10 + k * 2), -300, 300)) + " 0) " + c.base); });
+      drops.forEach(function (d) { var span = d.hi - d.lo, y = A.wrap(d.lo + d.y * span + t * d.sp, d.lo, d.hi), x = d.x - (y - d.lo) * 0.12; d.e.setAttribute("d", "M" + r2(x) + " " + r2(y) + " l" + r2(-d.len * 0.12) + " " + r2(d.len)); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -186,7 +309,9 @@
     var L = LOOK[v];
     var parts = { sky: drawSky(P, v, L, D.rng(seed + 1)), far: drawFar(P, v, L, D.rng(seed + 2)), mid: drawMid(P, v, L, D.rng(seed + 3)), ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)) };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "rooftop-night-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "rooftop-night-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, L, seed) : null; // the bands above and below (tall-world px)
     var stars = [].slice.call(g.sky.querySelectorAll("[data-star]")), starOp = stars.map(function (e) { return +e.getAttribute("opacity"); });
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform"), x0: +/translate\(([-\d.]+)/.exec(e.getAttribute("transform"))[1] }; });
     var beacon = g.far.querySelector('[data-part="beacon"]');
@@ -199,6 +324,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       stars.forEach(function (e, k) { if (k % 4 === 0) e.setAttribute("opacity", r2(starOp[k] * (0.6 + 0.4 * Math.sin(t * 2 + k)))); });
       clouds.forEach(function (c, k) { var x = A.wrap(c.x0 + t * (10 + k * 2), -900, 4600); c.e.setAttribute("transform", "translate(" + r2(x - c.x0) + " 0) " + c.base); });
       if (beacon) beacon.setAttribute("opacity", (t % 1.6) < 0.5 ? 1 : 0.2);
@@ -209,7 +335,7 @@
       drops.forEach(function (d) { var y = A.wrap(d.y + t * d.sp, -200, 2400), x = d.x - (y + 200) * 0.12; d.e.setAttribute("d", "M" + r2(x) + " " + r2(y) + " l" + r2(-d.len * 0.12) + " " + r2(d.len)); });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 
