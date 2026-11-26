@@ -38,9 +38,18 @@ needs_browser = pytest.mark.skipif(
 
 
 def vertical_shots() -> dict:
-    """world_shots() with no format: the default, vertical."""
+    """world_shots() with no format (the default, vertical) and the host in the bottom slots."""
     s = world_shots()
     s.pop("format", None)
+    for scene, slot in zip(s["scenes"], ("bottom-right", "bottom-left")):
+        for a in scene["actors"]:
+            if a.get("start", {}).get("slot"):
+                a["start"] = {"slot": slot}
+    # a tag in vertical stays clear of the caption band (y 840-1020) and inside the safe zone: the camera
+    # pulls out over the bridge and the tag rides the sky above it (the landscape pulse tag crosses the band)
+    mv = s["scenes"][0]["beats"][1]["moves"]
+    mv[:] = [m for m in mv if m["do"] not in ("tag_follow", "follow")]
+    mv += [{"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "tag_follow", "target": "sky", "text": "Sky"}]
     return s
 
 
@@ -194,11 +203,11 @@ def test_vertical_snapshots_are_1080_by_1920(tmp_path):
 def test_overlap_report_runs_in_the_composition_size(tmp_path):
     run = make_world_run(tmp_path, vertical_shots())
     build(run, KIT, run_check=False)
-    # overlap.mjs checks its viewport is the canvas (else HFError). This fixture keeps the host in the
-    # legacy side slot (the vertical bottom slot is wired later), whose face sits in the caption band:
-    # that caption hit (and a tag crossing the caption pill) is expected; nothing else overlaps.
-    report = snap_mod.overlap(run)
-    assert [o for o in report if "caption" not in (o["a"]["kind"], o["b"]["kind"])] == [], report
+    # overlap.mjs checks its viewport is the canvas (else HFError). The host starts in the bottom slot,
+    # below the caption band, and the fixture's tags stay clear of captions. The one expected hit: scene 1's
+    # step-in (walk_to at word 1), where his face climbs out of the slot through the caption band.
+    assert snap_mod.overlap(run) == [{"scene": 1, "t": 1.5, "a": {"kind": "caption", "id": "caption"},
+                                      "b": {"kind": "face", "id": "host"}}]
 
 
 # ---- render (slow) ---------------------------------------------------------------------------
@@ -209,9 +218,7 @@ def test_vertical_render_is_1080_by_1920(tmp_path):
     from tests.hf.test_build import _music_library
     from tools.audio.mix import build_mix
     from tools.render import render as render_mod
-    shots = vertical_shots()
-    # the fixture's pulse tag crosses the vertical caption pill; `hyperframes check` fails a tag on text
-    shots["scenes"][0]["beats"][1]["moves"] = [m for m in shots["scenes"][0]["beats"][1]["moves"] if m["do"] != "tag_follow"]
+    shots = vertical_shots()  # includes a tag clear of the caption band
     run = make_world_run(tmp_path, shots)
     build_mix(run, _music_library(tmp_path))
     assert render_mod.main([str(run), "--engine", "hyperframes"]) == 0

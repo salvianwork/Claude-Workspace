@@ -74,6 +74,8 @@ def test_boxes_overlap_pairs():
 def _vertical_run(tmp_path, scene1_moves=None):
     shots = world_shots()
     shots.pop("format")  # the default: vertical
+    shots["scenes"][0]["actors"][0]["start"] = {"slot": "bottom-right"}
+    shots["scenes"][1]["actors"][0]["start"] = {"slot": "bottom-left"}
     if scene1_moves is not None:
         shots["scenes"][0]["beats"] = [{"at": {"word": 0}, "action": "tag far out on the right", "moves": scene1_moves}]
     return make_world_run(tmp_path, shots)
@@ -84,21 +86,45 @@ def _safe_zone_report(run):
 
 
 @needs_browser
-def test_safe_zone_reports_a_tag_at_x_1000(tmp_path, capsys):
-    # zoomed out on the bridge, rail-far sits at about x 996 of the 1080-wide frame
+def test_safe_zone_reports_a_tag_wider_than_the_zone(tmp_path, capsys):
+    """Tags and labels clamp to the zone (x 64-940), so only a pill wider than the 876 px zone can leave it:
+    four long words at 38 px."""
     run = _vertical_run(tmp_path, [
         {"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
-        {"do": "tag_follow", "target": "rail-far", "text": "Far rail", "at": {"t": 2.0}, "until": {"t": 5.0}}])
+        {"do": "tag_follow", "target": "sky", "text": "Electromagnetic spectroscopy instrumentation calibration",
+         "at": {"t": 2.0}, "until": {"t": 5.0}}])
     build(run, KIT, run_check=False)
     assert snap_mod.main([str(run), "--safe-zone"]) == 1
     hits = [h for h in _safe_zone_report(run) if h["kind"] == "tag"]
     assert len(hits) == 1, hits
     h = hits[0]
     assert h["scene"] == 1 and 2.0 <= h["t"] <= 3.0 and h["id"].startswith("tag-")
-    assert h["box"]["x"] + h["box"]["w"] > 940, h
+    assert h["box"]["w"] > 876 and h["box"]["x"] < 64, h
     assert set(h["box"]) == {"x", "y", "w", "h"}
     err = capsys.readouterr().err
     assert "scene 1" in err and "outside the safe zone" in err
+
+
+@needs_browser
+def test_a_tag_at_x_1000_is_clamped_into_the_safe_zone(tmp_path):
+    """Review: a tag whose point is at x about 1000 is pulled inside x 64-940, so the check passes."""
+    run = _vertical_run(tmp_path, [
+        {"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
+        {"do": "tag_follow", "target": "rail-far", "text": "Far rail", "at": {"t": 2.0}, "until": {"t": 5.0}}])
+    build(run, KIT, run_check=False)
+    _, _, out = snap_mod._sample(run, KIT, 0.5, "test")
+    tags = [b for s in out["samples"] for b in s["boxes"] if b["kind"] == "tag"]
+    assert tags and all(b["x"] >= 64 and b["x"] + b["w"] <= 940 for b in tags), tags
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
+
+
+@needs_browser
+def test_a_vertical_title_stays_inside_the_safe_zone(tmp_path):
+    run = _vertical_run(tmp_path, [
+        {"do": "cut", "target": "bridge", "zoom": 1}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
+        {"do": "title", "text": "How fast does sound travel", "at": {"t": 1.0}, "until": {"t": 4.0}}])
+    build(run, KIT, run_check=False)
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
 
 
 @needs_browser

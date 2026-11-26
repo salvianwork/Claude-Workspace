@@ -546,3 +546,54 @@ test("Review Focus 2: anchors far apart in one vertical beat warn, naming scene,
   });
   assert.deepEqual(compile(far).warnings.filter((x) => /apart horizontally/.test(x)), [], "landscape shows the whole width");
 });
+
+// ---- fix round 1: bottom slots, camera-aware spread, tag vs caption band ----
+test("bottom-left / bottom-right are host slots on a vertical canvas; landscape refuses them", () => {
+  const scene = (slot) => railway({ id: 8, actors: [{ id: "host", start: { slot } }],
+    beats: [{ at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }, { do: "walk_to", who: "host", to: "rail-near", at: { word: 4 } }] }] });
+  vertical(() => {
+    for (const side of ["left", "right"]) {
+      const w = K.worldFor(scene("bottom-" + side), { cast: CAST });
+      assert.deepEqual(w.errors, []);
+      assert.deepEqual(w.actors.host.start, { slot: side, bottom: true });
+      assert.deepEqual(K.validateWorld(scene("bottom-" + side), WORDS, { cast: CAST }), []);
+      const c = compile(scene("bottom-" + side));
+      const a = K.actorAt(c.actors.host, 0.1), SLOT = K.rig.SLOT;
+      assert.equal(a.mode, "slot");
+      assert.deepEqual(a.screen, { x: SLOT[side], y: SLOT.feetY });
+      assert.equal(a.screen.y > 1400, true, "feet below the face zone: he is cropped by the frame bottom");
+    }
+    assert.ok(K.validateWorld(scene("bottom-middle"), WORDS, { cast: CAST }).some((e) => /slot must be left, right, bottom-left or bottom-right/.test(e)));
+  });
+  const land = K.validateWorld(scene("bottom-right"), WORDS, { cast: CAST });
+  assert.ok(land.some((e) => /slot "bottom-right" needs a vertical canvas/.test(e)), land.join("\n"));
+});
+
+test("the spread counts the target of push_in, cut and follow (not a pan's `to`)", () => vertical(() => {
+  const mk = (cam) => railway({ id: 4, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 6 }, moves: [{ do: "burst", target: "rail-near" }, cam] }] });
+  const spread = (cam) => compile(mk(cam)).warnings.filter((x) => /apart horizontally/.test(x));
+  for (const cam of [{ do: "cut", target: "barn" }, { do: "push_in", target: "barn", zoom: 1.2 }, { do: "follow", target: "barn" }]) {
+    const w = spread(cam);
+    assert.equal(w.length, 1, cam.do + ": " + w.join("\n"));
+    assert.match(w[0], /^scene 4 beat 1: anchors "rail-near" and "barn" are 2700 world px apart/);
+  }
+  assert.deepEqual(spread({ do: "pan_up", to: "barn" }), [], "a pan is how the frame travels");
+}));
+
+test("a tag or label whose pill crosses the caption band (y 840-1020) warns in vertical only", () => {
+  const mk = (moves) => railway({ id: 9, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "lake", zoom: 1 }, { do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 4 }, moves }] });
+  const crossing = (moves) => compile(mk(moves)).warnings.filter((x) => /caption band/.test(x));
+  vertical(() => {
+    // the lake sits at 55 % of the height (y about 1056): a label above it is on the band
+    const hit = crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]);
+    assert.equal(hit.length, 1, hit.join("\n"));
+    assert.match(hit[0], /^scene 9 beat 1 move 0 \(label\): the label "Lake" crosses the caption band \(y 840-1020\) at \d+\.\d s/);
+    // the bridge is 300 px above the lake: its tag sits well above the band
+    assert.deepEqual(crossing([{ do: "tag_follow", target: "bridge", text: "Bridge", at: { word: 8 }, until: { word: 12 } }]), []);
+  });
+  assert.deepEqual(crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]), [], "landscape has no vertical caption band");
+});

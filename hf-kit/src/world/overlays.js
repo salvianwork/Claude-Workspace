@@ -64,7 +64,11 @@
     if (!el || !el.ownerDocument) throw new Error(kind + ": needs an overlay element");
     var isTag = kind === "tag";
     var fs = spec.size || (isTag ? 38 : 34);
-    var B = spec.bounds || { x: SAFE, y: SAFE, width: FRAME.width - 2 * SAFE, height: FRAME.height - 2 * SAFE };
+    // text stays inside the safe frame: 96 px from every edge, or on a vertical canvas the text safe zone
+    // (HFKit.VERTICAL.safe: x 64-940, y 200-1420)
+    var VS = K.VERTICAL && K.VERTICAL.safe || { x0: 64, x1: 940, y0: 200, y1: 1420 };
+    var B = spec.bounds || (FRAME.height > FRAME.width ? { x: VS.x0, y: VS.y0, width: VS.x1 - VS.x0, height: VS.y1 - VS.y0 }
+      : { x: SAFE, y: SAFE, width: FRAME.width - 2 * SAFE, height: FRAME.height - 2 * SAFE });
     var padX = Math.round(fs * 0.62), padY = Math.round(fs * 0.24);
     var W = Math.ceil(textWidth(spec.text, fs) + 2 * padX + (isTag ? fs * 0.5 : 0)), H = Math.round(fs * 1.28 + 2 * padY);
     var accent = spec.accent || "#F59E0B", at = spec.at || 0, until = spec.until;

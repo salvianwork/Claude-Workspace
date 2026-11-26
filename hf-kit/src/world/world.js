@@ -136,14 +136,17 @@
     var overlays = c.overlays.map(function (o, i) {
       if (o.kind === "title") {
         var t = doc.createElement("div");
+        // vertical: the title sits inside the text safe zone (x 64-940, y 200-1420), centred on the frame and
+        // shrunk to fit; landscape: 88 px at y 120, as always
+        var vert = FRAME.height > FRAME.width, tfs = vert ? Math.max(36, Math.min(88, Math.floor((2 * (K.VERTICAL.safe.x1 - FRAME.width / 2) - 112) / (o.text.length * 0.6)))) : 88, ttop = vert ? K.VERTICAL.safe.y0 + 20 : 120;
         t.className = "hf-title";
         t.textContent = o.text;
-        css(t, { position: "absolute", left: "50%", top: "120px", transform: "translateX(-50%)", padding: "18px 56px 22px", borderRadius: "999px",
-          background: "rgba(14,18,34,0.74)", color: "#FFF8EC", fontFamily: '"Poppins", "Inter", sans-serif', fontWeight: "700", fontSize: "88px",
+        css(t, { position: "absolute", left: "50%", top: ttop + "px", transform: "translateX(-50%)", padding: "18px 56px 22px", borderRadius: "999px",
+          background: "rgba(14,18,34,0.74)", color: "#FFF8EC", fontFamily: '"Poppins", "Inter", sans-serif', fontWeight: "700", fontSize: tfs + "px",
           lineHeight: "1.15", whiteSpace: "nowrap", boxShadow: "0 14px 40px rgba(10,14,30,0.35), inset 0 0 0 3px rgba(255,248,236,0.18)", opacity: "0" });
         ovEl.appendChild(t);
-        var w = Math.ceil(o.text.length * 88 * 0.6 + 112), h = Math.round(88 * 1.15 + 40);
-        return { o: o, title: t, box: function (tt) { var op = titleOp(o, tt); return op > 0 ? { x: FRAME.width / 2 - w / 2, y: 120, width: w, height: h } : { x: 0, y: 0, width: 0, height: 0 }; } };
+        var w = Math.ceil(o.text.length * tfs * 0.6 + 112), h = Math.round(tfs * 1.15 + 40);
+        return { o: o, title: t, box: function (tt) { var op = titleOp(o, tt); return op > 0 ? { x: FRAME.width / 2 - w / 2, y: ttop, width: w, height: h } : { x: 0, y: 0, width: 0, height: 0 }; } };
       }
       var api = K.overlays[o.kind](ovEl, { text: o.text, target: o.target, at: o.at, until: o.until, side: o.side }, base + "-" + o.kind + "-" + i);
       return { o: o, api: api };

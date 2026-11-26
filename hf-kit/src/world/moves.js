@@ -115,8 +115,8 @@
     follow: m("camera", ["target"], ["zoom", "at"], "follow a moving actor or `pulse` (slew-limited, never a whip pan). Walkers are followed by default while no camera move runs"),
     cut: m("camera", ["target"], ["zoom", "at"], "an instant cut to a target (after a dive: back out of the inside view)"),
     dive: m("camera", ["target", "into"], ["params", "zoom", "at"], "push in to zoom >= 3 (default 3.2, up to 3x/s) on the target, then cut to the inside view HFKit.insides[into]: {INSIDES}"),
-    pan_up: m("camera", [], ["to", "by", "at"], "pan the view up (a tall reveal, ground to sky) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's top edge"),
-    pan_down: m("camera", [], ["to", "by", "at"], "pan the view down (sky to ground) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's bottom edge"),
+    pan_up: m("camera", [], ["to", "by", "at"], "pan the view up (a tall reveal, ground to sky) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move; it stops at the world's top edge. `at` is where the pan starts"),
+    pan_down: m("camera", [], ["to", "by", "at"], "pan the view down (sky to ground) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move; it stops at the world's bottom edge. `at` is where the pan starts"),
     custom: m("custom", ["name"], ["params", "at", "until"], "a scene-specific piece: needs 04-video/hf/scenes/scene-<id>.js registering HFKit.customs[name]"),
   };
   Object.keys(FX).forEach(function (name) {
@@ -216,7 +216,11 @@
       var start = sa.start || (character === "host" ? { slot: "right" } : null);
       if (!start) { errors.push(tag + ": needs a start ({slot} or {anchor})"); return; }
       if (start.slot !== undefined) {
-        if (start.slot !== "left" && start.slot !== "right") { errors.push(tag + ": slot must be left or right (got \"" + start.slot + "\")"); return; }
+        var bm = /^bottom-(left|right)$/.exec(String(start.slot));
+        if (bm) { // the vertical host's slot: on a portrait canvas the rig's left / right slots are the bottom slot's sides
+          if (!(canvas().height > canvas().width)) { errors.push(tag + ": slot \"" + start.slot + "\" needs a vertical canvas (use left or right in landscape)"); return; }
+          start = { slot: bm[1], bottom: true };
+        } else if (start.slot !== "left" && start.slot !== "right") { errors.push(tag + ": slot must be left, right, bottom-left or bottom-right (got \"" + start.slot + "\")"); return; }
       } else if (!w.anchors[start.anchor]) { errors.push(tag + ": unknown anchor \"" + start.anchor + "\""); return; }
       w.actors[sa.id] = { id: sa.id, character: character, outfit: outfit, start: start, scale: actorScale * (sa.scale || 1), host: character === "host" };
     });
@@ -795,16 +799,20 @@
 
   /* Anchors used together in one beat of a vertical shot (Review Focus 2): a tall frame shows about 1800
    * world px across at 1x, so anchors more than SPREAD_MAX px apart horizontally can't both be framed.
-   * One warning per such beat, naming the scene, the beat and the spread. Camera moves and a pulse's from / to are left
-   * out (the camera is how the frame gets from one anchor to the other, and it follows a pulse). */
+   * One warning per such beat, naming the scene, the beat and the spread. The target of push_in, cut and follow counts;
+   * a pan's `to` and a pulse's from / to are left out (the pan is how the frame gets from one anchor to
+   * the other, and the camera follows a pulse). */
   var SPREAD_MAX = 1700;
   function spreadWarnings(parsed, world, sid) {
     var c = canvas();
     if (!(c.height > c.width)) return [];
     var byBeat = {}, out = [];
     parsed.forEach(function (p) {
-      if (MOVES[p.mv.do].group === "camera" || p.mv.do === "pulse_along") return; // the camera follows a pulse along its path
-      ["to", "from", "target"].forEach(function (k) {
+      var d = p.mv.do, camera = MOVES[d].group === "camera";
+      if (d === "pulse_along" || d === "pan_up" || d === "pan_down") return; // the camera follows a pulse; a pan is the way between anchors
+      // push_in, cut and follow frame their target, so it must share the frame with the beat's other anchors
+      if (camera && d !== "push_in" && d !== "cut" && d !== "follow") return;
+      (camera ? ["target"] : ["to", "from", "target"]).forEach(function (k) {
         var a = world.anchors[p.mv[k]];
         if (a) (byBeat[p.bi] = byBeat[p.bi] || {})[p.mv[k]] = a(0).x;
       });
@@ -816,6 +824,30 @@
       if (spread > SPREAD_MAX) out.push("scene " + sid + " beat " + bi + ": anchors \"" + lo + "\" and \"" + hi + "\" are " + spread + " world px apart horizontally (more than " + SPREAD_MAX + "; a vertical frame shows about 1800 px across): pan or cut between them in separate beats instead");
     });
     return out;
+  }
+
+  /* Vertical frames: where a tag or label pill sits on screen over its life, against the caption band
+   * (y 840-1020). Same placement rules as overlays.js (a tag above its point by LEAD, below near the
+   * top; a label centred, or beside / above / below by `side`), clamped to the text safe zone. Returns the
+   * first time (s) it crosses the band, or null. Not in landscape (no vertical caption band). */
+  var CAPTION_BAND = { top: 840, bottom: 1020 }, SAFE_Y = { y0: 200, y1: 1420 };
+  function captionBandCrossing(o, out, camFn) {
+    var c = canvas();
+    if (!(c.height > c.width) || o.kind === "title" || o.target === undefined) return null;
+    var isTag = o.kind === "tag", fs = isTag ? 38 : 34, H = Math.round(fs * 1.28 + 2 * Math.round(fs * 0.24)), lead = isTag ? 66 : 20;
+    var side = o.side || (isTag ? "auto" : "center");
+    for (var t = o.at; t <= o.until + 1e-9; t += 0.1) {
+      var q = out.point(o.target, t, "top");
+      if (!q) continue;
+      if (!q.screen) q = toScreen(q, camFn(t));
+      if (q.x < -200 || q.x > c.width + 200 || q.y < -200 || q.y > c.height + 200) continue; // far outside: the pill is hidden
+      var s = side;
+      if (s === "auto") s = q.y - lead - H < SAFE_Y.y0 ? "below" : "above";
+      var cy = s === "above" ? q.y - lead - H / 2 : s === "below" ? q.y + lead + H / 2 : q.y;
+      var y0 = Math.min(Math.max(cy - H / 2, SAFE_Y.y0), SAFE_Y.y1 - H);
+      if (y0 + H > CAPTION_BAND.top && y0 < CAPTION_BAND.bottom) return t;
+    }
+    return null;
   }
 
   // ---- the compiler ---------------------------------------------------------------------------
@@ -978,6 +1010,8 @@
       if (mv.target !== undefined) o.target = mv.target;
       if (mv.side !== undefined) o.side = mv.side;
       out.overlays.push(o);
+      var cross = captionBandCrossing(o, out, cam);
+      if (cross !== null) out.warnings.push(p.tag + ": the " + (o.kind === "tag" ? "tag" : o.kind) + " \"" + o.text + "\" crosses the caption band (y " + CAPTION_BAND.top + "-" + CAPTION_BAND.bottom + ") at " + cross.toFixed(1) + " s and would sit on the caption: reframe so its target is clear of the band, or move it to another beat");
     });
 
     // camera overrun (main keys and dives) against the scene duration

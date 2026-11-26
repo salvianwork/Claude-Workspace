@@ -163,3 +163,22 @@ test("landscape captions are unchanged (60 px, fixed pages of 7, no box)", () =>
   assert.equal(caps.el.children.length, 7);
   assert.equal(caps.box(2).width, 0);
 });
+
+test("vertical: tags and labels clamp to the text safe zone (x 64-940, y 200-1420); landscape keeps 96 px", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    for (const kind of ["tag", "label"]) {
+      const { o } = mount(kind, { text: "Far rail", target: "rail-far" });
+      for (const q of [{ x: 1000, y: 700 }, { x: 1060, y: 1300 }, { x: 20, y: 120 }, { x: 540, y: 1900 - 480 }]) {
+        const s = o.update(4, q);
+        if (!(s.opacity > 0)) continue;
+        const b = o.box(4);
+        assert.ok(b.x >= 64 - 1e-6 && b.x + b.width <= 940 + 1e-6 && b.y >= 200 - 1e-6 && b.y + b.height <= 1420 + 1e-6, `${kind} at ${q.x},${q.y}: ${JSON.stringify(b)}`);
+      }
+      assert.ok(o.update(4, { x: 1000, y: 700 }).clamped);
+    }
+  } finally { K.setCanvas(null); }
+  const { o } = mount("tag", { text: "Far rail", target: "rail-far" });
+  o.update(4, { x: 1850, y: 500 });
+  assert.ok(Math.abs(o.box(4).x + o.box(4).width - 1824) < 1e-6, "landscape: 96 px margin");
+});
