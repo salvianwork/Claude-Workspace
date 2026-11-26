@@ -117,6 +117,14 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 1300, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · the ceiling", { x: 2500, y: 600, zoom: 1.6 }, null],
   ],
+  "city-street": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "sidewalk", dx: 330, dy: -330, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the crossing", { anchor: "crosswalk", dy: -60, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1300, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1100, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the rooftops", { x: 3000, y: 560, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">

@@ -52,7 +52,16 @@
  * reference camera is the tall world's centre (HFKit.place.refOf(world)), so parallax lines up
  * exactly as drawn there too. A place does this with HFKit.place.extendLayers (below). Without
  * `extended` (landscape, and places without meta.extend) a place mounts exactly as before. Which
- * canvases extend: HFKit.place.extendedFor(place, canvas) (a portrait canvas and meta.extend). */
+ * canvases extend: HFKit.place.extendedFor(place, canvas) (a portrait canvas and meta.extend).
+ *
+ * What a camera can reach of each layer's bands: parallax moves the far layers less, so at the
+ * camera limits (zoom 0.6 at the very top / bottom of the tall world, 1080 x 1920 frame) the top
+ * edge of the frame shows the sky layer from its y ~ 700, far ~ 500, mid ~ 240, ground 0 and front
+ * ~ -160; the bottom edge shows the sky down to y ~ 2900, far ~ 3100, mid ~ 3360, ground 3600 and
+ * front ~ 3760. So the SKY layer's top band is almost never seen in a shot (only in the whole-world
+ * view at REF): continue its gradient seamlessly and stop there, don't over-invest in it. The nearer
+ * layers (mid, ground) carry the visible top detail; the ground (and front) the bottom detail.
+ * test/browser/places.mjs checks the seams at REF and, layer by layer, at those extreme cameras. */
 (function (root) {
   "use strict";
   var K = root.HFKit;
@@ -172,7 +181,7 @@
     var anchors = {}, paths = {};
     Object.keys(a.anchors).forEach(function (k) {
       var fn = a.anchors[k];
-      anchors[k] = function (t) { var q = fn(t); return { x: q.x, y: q.y + dy }; };
+      anchors[k] = function (t) { var q = fn(t), o = {}; for (var j in q) o[j] = q[j]; o.y = q.y + dy; return o; }; // keeps scale etc.
     });
     Object.keys(a.paths).forEach(function (k) { paths[k] = a.paths[k].map(function (q) { return { x: q.x, y: q.y + dy }; }); });
     return { anchors: anchors, paths: paths };

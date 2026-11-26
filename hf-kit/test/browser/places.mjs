@@ -121,7 +121,8 @@ function extendedChecks() {
   let n = 0;
   try {
     const names = Object.keys(K.places).filter((name) => K.places[name].meta.extend);
-    if (names.length < 2) fails.push("expected at least countryside and lab to have meta.extend, got " + names);
+    const missing = Object.keys(K.places).filter((name) => !K.places[name].meta.extend);
+    if (missing.length) fails.push("every place must have meta.extend; missing: " + missing.join(", "));
     for (const name of names) {
       const P = K.places[name], W = K.placeWorld(P, true);
       if (W.height !== 3600) fails.push(name + ": placeWorld height " + W.height);
@@ -223,8 +224,38 @@ function seamSetup(spec) {
     return P.meta.extend;
   } finally { K.setCanvas(null); }
 }
-async function rowDiff(page, y) {
-  const shot = await page.screenshot({ clip: { x: 0, y: y - 2, width: 3840, height: 4 } });
+/* Seam rows at an extreme vertical camera: the tall world on a 1080 x 1920 canvas at zoom 0.6 at
+ * the very top (or bottom) of the world, one layer (spec.layer) shown alone (the others hidden, so
+ * another layer's own edges never land on the row by chance), at the row where its seam lands.
+ * Returns {row, allow} (allow: the layer's seamAllow ranges in screen x), or null when the seam row
+ * is off screen. */
+function extremeSetup(spec) {
+  const K = window.HFKit, PL = K.place;
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+  document.documentElement.style.cssText = document.body.style.cssText = "width:1080px;height:1920px;margin:0";
+  root.style.width = "1080px"; root.style.height = "1920px";
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const P = K.places[spec.name], W = K.placeWorld(P, true);
+    const frame = document.createElement("div");
+    frame.style.cssText = "position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:#FF00FF";
+    root.appendChild(frame);
+    const layers = K.placeLayers(frame, "xseam-place-0", W);
+    const cam = { x: 1920, y: spec.top ? 960 / 0.6 : W.height - 960 / 0.6, zoom: 0.6 };
+    P.mount(layers, { variant: spec.variant, idPrefix: "xseam-place-0", seed: 3, extended: true }).update(2, cam);
+    const order = PL.LAYERS, k = order.indexOf(spec.layer), f = PL.PARALLAX[spec.layer];
+    order.forEach((n, i) => { layers[n].style.visibility = i === k ? "visible" : "hidden"; });
+    const seamY = spec.top ? 720 : 2880;
+    const row = Math.round(PL.toScreen({ x: 0, y: seamY }, cam, f, W).y);
+    if (row < 4 || row > 1916) return null;
+    const band = P.meta.extend[spec.top ? "top" : "bottom"];
+    const allow = band.seamAllow.map((r) => [PL.toScreen({ x: r[0], y: seamY }, cam, f, W).x, PL.toScreen({ x: r[1], y: seamY }, cam, f, W).x]);
+    return { row, allow };
+  } finally { K.setCanvas(null); }
+}
+async function rowDiff(page, y, width = 3840) {
+  const shot = await page.screenshot({ clip: { x: 0, y: y - 2, width, height: 4 } });
   return page.evaluate(async (b64) => {
     const bin = atob(b64), bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -311,6 +342,21 @@ try {
       report.seams[`${name}/${variant}/${y}`] = Math.max(...d);
       report.fails.push(...seamFails(d, ext[band].seamAllow, `${name}/${variant}: seam at y ${y}`));
     }
+  }
+  // the same seams seen at the extreme vertical cameras (zoom 0.6 at the top and the bottom of the
+  // tall world), layer by layer: what parallax shows of each band at its reachable limit
+  const xpage = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
+  xpage.on("pageerror", (e) => errors.push(String(e)));
+  await xpage.goto("file://" + join(KIT, "test", "browser", "harness.html"));
+  for (const s of SCRIPTS) await xpage.addScriptTag({ path: s });
+  report.extremeSeams = {};
+  for (const [name, variants] of extended) for (const variant of variants) for (const top of [true, false]) for (const layer of ["sky", "far", "mid", "ground", "front"]) {
+    const r = await xpage.evaluate(extremeSetup, { name, variant, top, layer });
+    if (!r) continue;
+    const d = await rowDiff(xpage, r.row, 1080);
+    const key = `${name}/${variant}/${top ? "top" : "bottom"}/${layer}@${r.row}`;
+    report.extremeSeams[key] = Math.max(...d);
+    report.fails.push(...seamFails(d, r.allow, `${key}: seam at zoom 0.6, ${top ? "top" : "bottom"} of the world`));
   }
   if (process.argv.includes("--write-golden")) writeFileSync(GOLDEN, JSON.stringify(Object.fromEntries(Object.entries(hashes).map(([k, v]) => [k, v[0]])), null, 1) + "\n");
   const golden = JSON.parse(readFileSync(GOLDEN, "utf8"));

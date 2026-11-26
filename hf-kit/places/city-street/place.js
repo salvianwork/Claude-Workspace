@@ -14,6 +14,8 @@
  *   road       the middle of the road (cars, a sound, a speed tag)
  *   sky        open sky above the low bakery
  * Paths: sidewalk (along the near sidewalk), road (along the far lane, left to right).
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
  *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
@@ -33,6 +35,11 @@
     actorLight: {
       day: { tint: "#FFF3DE", amount: 0.1, rim: "#FFF6DA", rimSide: 1 },
       night: { tint: "#4C5C9E", amount: 0.64, rim: "#FFCF85", rimSide: -1 }, // street lamp at the left
+    },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the city continued up: upper floors and rooftops of the café, office tower and pharmacy (a cornice, a wooden water tower, AC units, a satellite dish, an antenna), chimneys and a roof garden on the yellow flats, a tower crane behind the blocks, a blimp, birds and clouds (stars and a plane's lights at night)", seamAllow: [] },
+      bottom: { draws: "the near sidewalk continued, then the street cut away below it: the paving slab and its gravel bed, soil with a gas pipe, a water main, cable ducts and a sewer, a storm drain from a grate, subway stairs going down, and a subway tunnel with a passing train", seamAllow: [] },
     },
   };
 
@@ -59,6 +66,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors() {
     var fixed = function (x, y, sc) { return function () { var p = { x: x, y: y }; if (sc) p.scale = sc; return p; }; };
     var walk = [], road = [];
     for (var x = 200; x <= 3640; x += 344) walk.push({ x: x, y: 1720 });
@@ -366,6 +376,216 @@
     return s;
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  /* The top band (ground layer): the buildings across the road continued up to their rooftops
+   * (the café's and the pharmacy's top floors, a cornice, a water tower, AC units, a dish), the
+   * glass office tower to its crown, rooftop chimneys and a garden on the yellow flats. Mid layer:
+   * a tower crane rising behind the blocks (under the original), clouds and a flock. Far layer: a
+   * blimp (a plane's lights at night). Sky layer: stars at night (its colour runs on by itself). */
+  function drawTopBand(P, v, L, R) {
+    var night = v === "night", tone = L.tone, out = { sky: "", far: "", mid: "", midUnder: "", ground: "", defs: "" };
+    // ground layer: the café (A, x -300..820): one more storey of brick, a cornice and a water tower
+    var g = "", roofA = 200, roofE = 200;
+    g += tag("rect", { x: -300, y: roofA, width: 1120, height: 230, fill: tone("#B5523B") });
+    for (var by = roofA + 18; by < 720; by += 34) g += tag("path", { d: "M-300 " + by + " H820", stroke: tone("#9A4130"), "stroke-width": 3, opacity: 0.45 });
+    g += windows(-200, 300, 3, 1, 190, 260, 110, 0, L, R, tone("#F3E6D0"), L.win);
+    g += tag("rect", { x: -320, y: roofA - 26, width: 1160, height: 34, rx: 4, fill: tone("#7E3527") }) + tag("rect", { x: -300, y: roofA + 8, width: 1120, height: 12, fill: tone("#9A4130") });
+    for (var dx = -280; dx < 820; dx += 60) g += tag("rect", { x: dx, y: roofA + 20, width: 30, height: 18, fill: tone("#7E3527") }); // dentils
+    // the wooden water tower on the café roof
+    var wt = 260;
+    g += tag("path", { d: "M" + (wt - 60) + " " + (roofA - 26) + " L" + (wt - 46) + " " + (roofA - 96) + " M" + (wt + 60) + " " + (roofA - 26) + " L" + (wt + 46) + " " + (roofA - 96) + " M" + (wt - 56) + " " + (roofA - 40) + " L" + (wt + 50) + " " + (roofA - 90) + " M" + (wt + 56) + " " + (roofA - 40) + " L" + (wt - 50) + " " + (roofA - 90), stroke: tone("#4A3426"), "stroke-width": 7 });
+    g += tag("rect", { x: wt - 74, y: roofA - 104, width: 148, height: 12, rx: 3, fill: tone("#4A3426") });
+    g += tag("path", { d: "M" + (wt - 66) + " " + (roofA - 100) + " V" + (roofA - 176) + " Q" + wt + " " + (roofA - 186) + " " + (wt + 66) + " " + (roofA - 176) + " V" + (roofA - 100) + " Z", fill: tone("#A0683F"), stroke: tone("#5E3B22"), "stroke-width": 5 });
+    for (var st = -44; st <= 44; st += 22) g += tag("path", { d: "M" + (wt + st) + " " + (roofA - 102) + " V" + (roofA - 176), stroke: tone("#7E4E2E"), "stroke-width": 3, opacity: 0.7 });
+    g += tag("path", { d: "M" + (wt - 66) + " " + (roofA - 120) + " H" + (wt + 66) + " M" + (wt - 66) + " " + (roofA - 158) + " H" + (wt + 66), stroke: tone("#3A3A3A"), "stroke-width": 5 });
+    g += tag("path", { d: "M" + (wt - 74) + " " + (roofA - 178) + " L" + wt + " " + (roofA - 222) + " L" + (wt + 74) + " " + (roofA - 178) + " Z", fill: tone("#6E4B32"), stroke: tone("#4A3426"), "stroke-width": 4 });
+    g += tag("path", { d: "M" + (wt + 66) + " " + (roofA - 110) + " h20 v84", stroke: tone("#4A3426"), "stroke-width": 5, fill: "none" });
+    // a chimney stack and a vent on the café roof
+    g += tag("rect", { x: 600, y: roofA - 110, width: 80, height: 90, fill: tone("#9A4130"), stroke: tone("#6E2A1E"), "stroke-width": 4 }) + tag("rect", { x: 592, y: roofA - 122, width: 96, height: 16, fill: tone("#6E2A1E") });
+    g += tag("path", { d: "M-120 " + (roofA - 26) + " v-50 h50 v50", stroke: tone("#868E96"), "stroke-width": 10, fill: "none" });
+    // the glass office (C, x 1560..2380) continued up to its crown and an antenna
+    var top = 70;
+    var off = night ? "#1D2B55" : "#7FB2D8";
+    g += tag("rect", { x: 1560, y: top, width: 820, height: 160, fill: off });
+    for (var cx = 1560; cx <= 2380; cx += 102.5) g += tag("path", { d: "M" + r2(cx) + " " + top + " V230", stroke: tone("#4C6A85"), "stroke-width": 8 });
+    g += tag("path", { d: "M1560 150 H2380", stroke: tone("#4C6A85"), "stroke-width": 6 });
+    if (night) for (var q = 0; q < 6; q++) { var i = (R() * 8) | 0; g += tag("rect", { x: 1566 + i * 102.5, y: 156, width: 90, height: 64, fill: "#FFE6A8", opacity: 0.7 }); }
+    else g += tag("path", { d: "M1700 230 L1780 80 L1840 80 L1760 230 Z", fill: "#FFFFFF", opacity: 0.25 });
+    g += tag("rect", { x: 1540, y: top - 34, width: 860, height: 40, rx: 4, fill: tone("#2F3E4C") }) + tag("rect", { x: 1540, y: top + 2, width: 860, height: 8, fill: tone("#4C6A85") });
+    g += tag("rect", { x: 1700, y: top - 64, width: 220, height: 32, fill: tone("#5C6B77") }) + tag("rect", { x: 2020, y: top - 56, width: 160, height: 24, fill: tone("#5C6B77") });
+    g += tag("path", { d: "M2260 " + (top - 34) + " V10 M2236 40 H2284 M2244 70 H2276", stroke: tone("#3A4048"), "stroke-width": 8 }) + tag("circle", { cx: 2260, cy: 10, r: 9, fill: night ? "#FF6B6B" : tone("#E03131"), "data-blink": 0 });
+    // the yellow flats (D, roof at y 744): chimneys, a roof garden and a satellite dish
+    var roofD = 746;
+    [[2620, 120], [3160, 150]].forEach(function (c) {
+      g += tag("rect", { x: c[0], y: roofD - c[1], width: 70, height: c[1], fill: tone("#C98F36"), stroke: tone("#8A5E1A"), "stroke-width": 4 }) + tag("rect", { x: c[0] - 8, y: roofD - c[1] - 14, width: 86, height: 16, fill: tone("#8A5E1A") }) +
+        tag("rect", { x: c[0] + 14, y: roofD - c[1] - 34, width: 18, height: 22, fill: tone("#5A6470") }) + tag("rect", { x: c[0] + 40, y: roofD - c[1] - 28, width: 16, height: 16, fill: tone("#5A6470") });
+    });
+    // roof garden: planters and little trees behind a railing
+    g += tag("rect", { x: 2740, y: roofD - 56, width: 360, height: 54, rx: 6, fill: tone("#8C6A4A"), stroke: tone("#5A4128"), "stroke-width": 4 });
+    [[2790, 60], [2880, 80], [2990, 64], [3060, 50]].forEach(function (b, k) {
+      g += tag("circle", { cx: b[0], cy: roofD - 52 - b[1] * 0.6, r: b[1] * 0.6, fill: tone(k % 2 ? "#3E8E41" : "#4FA54A"), stroke: tone("#2B6A2E"), "stroke-width": 4 });
+      g += tag("circle", { cx: b[0] + 10, cy: roofD - 64 - b[1] * 0.8, r: b[1] * 0.25, fill: tone("#7CC25A"), opacity: 0.8 });
+    });
+    [2830, 2950, 3040].forEach(function (fx, k) { g += tag("circle", { cx: fx, cy: roofD - 58, r: 10, fill: tone(["#F06595", "#FFD43B", "#FF8787"][k]) }); });
+    var rl = "M2720 " + (roofD - 46) + " H3120 M2720 " + (roofD - 84) + " H3120"; // a railing (its bars clear of the seam row y 720)
+    for (var rx = 2720; rx <= 3120; rx += 100) rl += " M" + rx + " " + (roofD - 84) + " V" + (roofD - 2);
+    g += tag("path", { d: rl, stroke: tone("#3A3A3A"), "stroke-width": 5, fill: "none" });
+    g += tag("path", { d: "M3250 " + (roofD - 22) + " v-40", stroke: tone("#4B5563"), "stroke-width": 7 }) + tag("path", { d: "M3212 " + (roofD - 104) + " a46 46 0 0 0 74 52 Z", fill: tone("#E9ECEF"), stroke: tone("#868E96"), "stroke-width": 4 }) + tag("path", { d: "M3248 " + (roofD - 78) + " l22 -22", stroke: tone("#868E96"), "stroke-width": 4 });
+    // the pharmacy (E, x 3330..4140): one more storey, a cornice, AC units and a billboard frame
+    g += tag("rect", { x: 3330, y: roofE, width: 810, height: 230, fill: tone("#4C7FB5") }) + tag("rect", { x: 3330, y: roofE, width: 120, height: 230, fill: tone("#3D6A9A") });
+    g += windows(3500, 300, 3, 1, 150, 240, 70, 0, L, R, tone("#EAF2F8"), L.win);
+    g += tag("rect", { x: 3310, y: roofE - 26, width: 850, height: 34, rx: 4, fill: tone("#2E5585") }) + tag("rect", { x: 3330, y: roofE + 8, width: 810, height: 10, fill: tone("#3D6A9A") });
+    [[3480, 0], [3640, 1]].forEach(function (a) {
+      g += tag("rect", { x: a[0], y: roofE - 96, width: 120, height: 70, rx: 6, fill: tone("#CED4DA"), stroke: tone("#868E96"), "stroke-width": 4 }) + tag("circle", { cx: a[0] + 60, cy: roofE - 61, r: 24, fill: "none", stroke: tone("#868E96"), "stroke-width": 4 }) +
+        tag("path", { d: "M" + (a[0] + 40) + " " + (roofE - 61) + " h40 M" + (a[0] + 60) + " " + (roofE - 81) + " v40", stroke: tone("#868E96"), "stroke-width": 4 });
+    });
+    g += tag("path", { d: "M3820 " + (roofE - 26) + " V" + (roofE - 70) + " M4060 " + (roofE - 26) + " V" + (roofE - 70) + " M3820 " + (roofE - 70) + " L4060 " + (roofE - 26), stroke: tone("#3A4048"), "stroke-width": 8 });
+    g += tag("rect", { x: 3780, y: roofE - 230, width: 320, height: 160, rx: 8, fill: tone("#FFF8EA"), stroke: tone("#3A4048"), "stroke-width": 8 });
+    g += tag("g", { transform: "translate(3940 " + (roofE - 150) + ") scale(1.3)" }, ICON.cross(tone)) + tag("circle", { cx: 3870, cy: roofE - 150, r: 26, fill: tone("#74C0FC") }) + tag("circle", { cx: 4010, cy: roofE - 150, r: 26, fill: tone("#FF8787") });
+    if (night) g += tag("rect", { x: 3780, y: roofE - 230, width: 320, height: 160, rx: 8, fill: "#FFE3A0", opacity: 0.15 });
+    // pigeons on the café cornice (sat still)
+    [[430, 1], [480, -1]].forEach(function (pg) {
+      g += tag("g", { transform: "translate(" + pg[0] + " " + (roofA - 26) + ") scale(" + (0.8 * pg[1]) + " 0.8)" }, tag("ellipse", { cx: 0, cy: -22, rx: 32, ry: 22, fill: tone("#8E95A3"), stroke: tone("#5C6270"), "stroke-width": 3 }) + tag("circle", { cx: 26, cy: -42, r: 12, fill: tone("#6C7484") }) + tag("path", { d: "M36 -40 l10 4 l-10 3 Z", fill: tone("#E8A33C") }));
+    });
+    out.ground = g;
+    // mid layer: a tower crane rising behind the blocks (drawn under them), clouds, a flock
+    var cr = "", mx = 2620, jy = 420, steel = tone("#F2B33D"), steelD = tone("#B5781F");
+    cr += tag("rect", { x: mx - 30, y: jy, width: 60, height: 1400, fill: "none", stroke: steel, "stroke-width": 8 });
+    var lat = "";
+    for (var ly = jy; ly < 1800; ly += 60) lat += "M" + (mx - 30) + " " + ly + " L" + (mx + 30) + " " + (ly + 60) + " M" + (mx - 30) + " " + ly + " H" + (mx + 30) + " ";
+    cr += tag("path", { d: lat, stroke: steel, "stroke-width": 5 });
+    cr += tag("path", { d: "M" + (mx - 380) + " " + jy + " H" + (mx + 900) + " M" + (mx - 380) + " " + (jy + 40) + " H" + (mx + 900), stroke: steel, "stroke-width": 8 });
+    var jl = "";
+    for (var jx = mx - 380; jx < mx + 900; jx += 50) jl += "M" + jx + " " + (jy + 40) + " L" + (jx + 25) + " " + jy + " L" + (jx + 50) + " " + (jy + 40) + " ";
+    cr += tag("path", { d: jl, stroke: steel, "stroke-width": 4, fill: "none" });
+    cr += tag("path", { d: "M" + mx + " " + (jy - 120) + " L" + (mx - 360) + " " + jy + " M" + mx + " " + (jy - 120) + " L" + (mx + 880) + " " + jy + " M" + (mx - 20) + " " + jy + " L" + mx + " " + (jy - 120) + " L" + (mx + 20) + " " + jy, stroke: steelD, "stroke-width": 5, fill: "none" });
+    cr += tag("rect", { x: mx - 360, y: jy + 40, width: 160, height: 90, fill: tone("#868E96"), stroke: tone("#495057"), "stroke-width": 4 }); // counterweight
+    cr += tag("rect", { x: mx + 30, y: jy + 40, width: 90, height: 80, rx: 6, fill: steel, stroke: steelD, "stroke-width": 4 }) + tag("rect", { x: mx + 56, y: jy + 56, width: 50, height: 36, rx: 4, fill: night ? "#FFD27A" : tone("#BFDCEB") }); // cab
+    cr += tag("path", { d: "M" + (mx + 640) + " " + (jy + 40) + " V" + (jy + 420), stroke: tone("#3A3A3A"), "stroke-width": 4 }) + tag("rect", { x: mx + 610, y: jy + 380, width: 18, height: 22, fill: steelD }) +
+      tag("rect", { x: mx + 520, y: jy + 420, width: 240, height: 30, fill: tone("#A0522D"), stroke: tone("#5E3B22"), "stroke-width": 4 }); // a hoisted beam
+    if (night) cr += tag("circle", { cx: mx, cy: jy - 120, r: 9, fill: "#FF6B6B", "data-blink": 1 }) + tag("circle", { cx: mx + 900, cy: jy, r: 8, fill: "#FF6B6B", "data-blink": 2 });
+    out.midUnder = cr;
+    var mm = "";
+    XCLOUDS.forEach(function (c, i) { mm += A.cloud(c[0], c[1], c[2], L.cloud, "x" + i); });
+    out.mid = tag("g", { "data-part": "xclouds", opacity: night ? 0.55 : 1 }, mm);
+    if (!night) {
+      var fl = "";
+      for (var b = 0; b < 7; b++) fl += tag("path", { d: "M" + (b * 46 - 22 * (b % 2)) + " " + (Math.abs(b - 3) * 18) + " q12 -12 22 0 q10 -12 22 0", stroke: tone("#2F3A44"), "stroke-width": 5, fill: "none", "stroke-linecap": "round" });
+      out.mid += tag("g", { "data-xbirds": 0, transform: "translate(900 330)" }, fl);
+    }
+    // far layer: a blimp (day) or a plane's lights (night); the sky layer: stars at night
+    if (!night) {
+      out.far = tag("g", { "data-blimp": 0, transform: "translate(1300 620)" },
+        tag("ellipse", { cx: 0, cy: 0, rx: 220, ry: 70, fill: tone("#E9ECEF"), stroke: tone("#868E96"), "stroke-width": 5 }) + tag("path", { d: "M-200 -20 Q0 -60 200 -20", stroke: "#FFFFFF", "stroke-width": 10, fill: "none", opacity: 0.6 }) +
+        tag("path", { d: "M180 -10 l70 -50 v100 Z", fill: tone("#E03131") }) + tag("path", { d: "M-150 -30 H150", stroke: tone("#E03131"), "stroke-width": 16 }) + tag("rect", { x: -50, y: 64, width: 100, height: 26, rx: 8, fill: tone("#5C6B77") }));
+    } else {
+      out.far = tag("g", { transform: "translate(1300 600)" }, tag("path", { d: "M-60 0 H60 M-10 0 L-40 -30 M-10 0 L-40 30", stroke: "#2A3466", "stroke-width": 8, "stroke-linecap": "round" }) +
+        tag("circle", { cx: -60, cy: 0, r: 6, fill: "#FF5A5A", "data-blink": 3 }) + tag("circle", { cx: 60, cy: 0, r: 5, fill: "#FFFFFF", "data-blink": 4 }));
+      var st2 = "";
+      for (var k = 0; k < 140; k++) {
+        var sy = 20 + R() * 1000;
+        if (Math.abs(sy - 720) < 8) sy += 16;
+        st2 += tag("circle", { cx: r2(200 + R() * 3440), cy: r2(sy), r: r2(1.3 + R() * 2.6), fill: ["#FFF8E1", "#FFFFFF", "#DCE8FF"][k % 3], opacity: r2(0.35 + R() * 0.55), "data-xstar": k });
+      }
+      out.sky = tag("g", { "data-part": "xstars" }, st2);
+    }
+    return out;
+  }
+  var XCLOUDS = [[400, 300, 0.6], [2000, 160, 0.5], [3300, 420, 0.7], [1200, 560, 0.45]];
+  var XCLOUD_SPAN = [-900, 4600];
+
+  /* The bottom band (ground layer): the near sidewalk continued, then the street cut away below its
+   * front edge: the paving slab, a gravel bed, soil with a gas pipe, a water main, cable ducts and a
+   * sewer fed by a storm drain, subway stairs going down at the left, and the subway tunnel with a
+   * passing train (data-part "train"). Front layer: the bike rack's feet. */
+  function drawBottomBand(P, v, L, R) {
+    var night = v === "night", tone = L.tone;
+    var defs = S.lin(P + "-xsoil", [[0, tone("#8A6A4E")], [1, tone("#5E4532")]]) + S.lin(P + "-xtun", [[0, tone("#E9E1CF")], [1, tone("#CFC4AE")]]) +
+      S.lin(P + "-xshade", [[0, "#000000", 0], [1, "#000000", 0.25]]) + S.rad(P + "-xglow", [[0, "#FFE3A0", night ? 0.55 : 0.35], [1, "#FFE3A0", 0]]);
+    var s = "", cut = 3000;
+    // the sidewalk runs on: more slab joints and a few odd slabs, a grate and a manhole cover
+    s += tag("path", { d: "M-300 2990 H4140", stroke: tone("#A89F90"), "stroke-width": 3, opacity: 0.55 });
+    for (var sl = 0; sl < 10; sl++) s += tag("rect", { x: r2(-200 + R() * 4200), y: 2993, width: r2(180 + R() * 60), height: 72, fill: tone(sl % 2 ? "#E4DED2" : "#B3AB9C"), opacity: 0.2 });
+    var gx = 1720;
+    s += tag("rect", { x: gx - 90, y: 2930, width: 180, height: 46, rx: 4, fill: tone("#5A6470"), stroke: tone("#3A4048"), "stroke-width": 4 });
+    for (var gb = -70; gb <= 70; gb += 20) s += tag("path", { d: "M" + (gx + gb) + " 2936 V2970", stroke: tone("#2E343B"), "stroke-width": 7 });
+    // the cut: slab, gravel, soil
+    s += tag("rect", { x: -300, y: cut, width: 4440, height: 34, fill: tone("#A9A193") }) + tag("rect", { x: -300, y: cut, width: 4440, height: 6, fill: tone("#D8D2C6") });
+    s += tag("rect", { x: -300, y: cut + 34, width: 4440, height: 56, fill: tone("#B8A588") });
+    var grit = "";
+    for (var gi = 0; gi < 220; gi++) grit += tag("ellipse", { cx: r2(-280 + R() * 4400), cy: r2(cut + 40 + R() * 46), rx: r2(4 + R() * 7), ry: r2(3 + R() * 5), fill: tone(["#9C8F79", "#C7B79A", "#7E7466"][gi % 3]) });
+    s += grit;
+    s += tag("rect", { x: -300, y: cut + 90, width: 4440, height: 3340 - cut - 90, fill: "url(#" + P + "-xsoil)" });
+    for (var pb = 0; pb < 50; pb++) { var px = -250 + R() * 4380, py = cut + 110 + R() * 220; s += tag("ellipse", { cx: r2(px), cy: r2(py), rx: r2(8 + R() * 16), ry: r2(6 + R() * 10), fill: tone(pb % 2 ? "#A6927A" : "#7A6450"), opacity: 0.7 }); }
+    // a storm drain from the grate down to the sewer
+    s += tag("rect", { x: gx - 36, y: cut, width: 72, height: 3210 - cut, fill: tone("#8E969C"), stroke: tone("#5F6870"), "stroke-width": 5 }) + tag("rect", { x: gx - 22, y: cut + 6, width: 44, height: 3210 - cut - 6, fill: tone("#4E565C") });
+    // the pipes running along the street
+    var pipe = function (y, r, c, ring) {
+      var o = tag("rect", { x: -300, y: y - r, width: 4440, height: 2 * r, fill: tone(c), stroke: D.shade(tone(c), 0.4), "stroke-width": 4 }) + tag("rect", { x: -300, y: y - r * 0.6, width: 4440, height: Math.max(3, r * 0.28), fill: "#FFFFFF", opacity: 0.28 });
+      for (var x = ring; x < 4140; x += 640) o += tag("rect", { x: x, y: y - r - 5, width: 22, height: 2 * r + 10, rx: 4, fill: D.shade(tone(c), 0.2), stroke: D.shade(tone(c), 0.45), "stroke-width": 3 });
+      return o;
+    };
+    s += pipe(3118, 12, "#F2C230", 120); // gas
+    s += pipe(3172, 24, "#3B82C4", 380); // water main
+    s += tag("path", { d: "M780 3150 v-22 h40 v22 M800 3128 v-18 M786 3108 h28", stroke: tone("#2A5E8E"), "stroke-width": 8, fill: "none" }); // a valve on it
+    // fibre and power cables strung along, low in the soil
+    s += tag("path", { d: "M-300 3228 C600 3238 1200 3220 2000 3230 S3320 3236 4140 3226", stroke: tone("#2E2A24"), "stroke-width": 9, fill: "none" }) + tag("path", { d: "M-300 3242 C800 3250 1600 3236 2400 3246 S3600 3250 4140 3240", stroke: tone("#F08C00"), "stroke-width": 7, fill: "none" });
+    // a duct bank: cables in a concrete casing (cut across, so the ducts show as rings)
+    s += tag("rect", { x: 2420, y: 3200, width: 260, height: 104, rx: 10, fill: tone("#A8A39A"), stroke: tone("#6F6A62"), "stroke-width": 4 });
+    [[2470, 3228, "#F08C00"], [2530, 3228, "#F08C00"], [2590, 3228, "#2F9E44"], [2630, 3274, "#1C7ED6"], [2470, 3274, "#F08C00"], [2530, 3274, "#E03131"]].forEach(function (d) {
+      s += tag("circle", { cx: d[0], cy: d[1], r: 19, fill: tone(d[2]), stroke: D.shade(tone(d[2]), 0.4), "stroke-width": 3 }) + tag("circle", { cx: d[0], cy: d[1], r: 8, fill: tone("#2E2A24") });
+    });
+    // the sewers, cut across: brick rings with a little water; the drain shaft runs into one
+    [[gx, 3262, 56], [3300, 3266, 48], [620, 3270, 44]].forEach(function (c) {
+      var bricks = "";
+      for (var k = 0; k < 16; k++) { var an = k / 16 * Math.PI * 2; bricks += "M" + r2(c[0] + Math.cos(an) * (c[2] - 12)) + " " + r2(c[1] + Math.sin(an) * (c[2] - 12)) + " L" + r2(c[0] + Math.cos(an) * c[2]) + " " + r2(c[1] + Math.sin(an) * c[2]) + " "; }
+      s += tag("circle", { cx: c[0], cy: c[1], r: c[2], fill: tone("#8C4A32"), stroke: tone("#5E2E1E"), "stroke-width": 4 }) + tag("path", { d: bricks, stroke: tone("#6E3424"), "stroke-width": 3 }) +
+        tag("circle", { cx: c[0], cy: c[1], r: c[2] - 12, fill: tone("#3A3530") }) +
+        tag("path", { d: "M" + r2(c[0] - (c[2] - 14)) + " " + (c[1] + 12) + " A" + (c[2] - 12) + " " + (c[2] - 12) + " 0 0 0 " + r2(c[0] + (c[2] - 14)) + " " + (c[1] + 12) + " Z", fill: tone("#5E8E8A") }) +
+        tag("path", { d: "M" + r2(c[0] - c[2] + 18) + " " + (c[1] + 13) + " h" + r2(2 * c[2] - 36), stroke: "#BFE8E4", "stroke-width": 3, opacity: 0.6 });
+    });
+    // roots of the street tree reaching down at the far left, and a few stones
+    s += tag("path", { d: "M160 3092 q-30 60 -90 90 M160 3092 q20 70 -10 130 M160 3092 q60 40 70 110", stroke: tone("#6B4A2F"), "stroke-width": 7, fill: "none", "stroke-linecap": "round", opacity: 0.8 });
+    // the tunnel: a concrete roof, tiled walls, lights, rails, a passing train
+    s += tag("rect", { x: -300, y: 3320, width: 4440, height: 34, fill: tone("#8E8A82") }) + tag("rect", { x: -300, y: 3348, width: 4440, height: 6, fill: tone("#6F6A62") });
+    s += tag("rect", { x: -300, y: 3354, width: 4440, height: 250, fill: "url(#" + P + "-xtun)" });
+    var tiles = "";
+    for (var tx = -300; tx < 4140; tx += 40) tiles += "M" + tx + " 3354 V3600 ";
+    for (var ty = 3394; ty < 3600; ty += 40) tiles += "M-300 " + ty + " H4140 ";
+    s += tag("path", { d: tiles, stroke: tone("#C2B79F"), "stroke-width": 2, opacity: 0.6 });
+    s += tag("rect", { x: -300, y: 3420, width: 4440, height: 14, fill: tone("#2F9E44"), opacity: 0.8 }); // a tile stripe
+    [200, 1100, 2000, 2900, 3800].forEach(function (lx) { s += tag("ellipse", { cx: lx, cy: 3390, rx: 220, ry: 60, fill: "url(#" + P + "-xglow)" }) + tag("rect", { x: lx - 40, y: 3360, width: 80, height: 14, rx: 6, fill: "#FFF3C4" }); });
+    s += tag("g", { "data-part": "train" }, "");
+    s += tag("rect", { x: -300, y: 3506, width: 4440, height: 14, fill: tone("#5A5650") }) + tag("path", { d: "M-300 3510 H4140", stroke: tone("#C9CED3"), "stroke-width": 4 });
+    // subway stairs going down at the left: an opening in the slab, steps in section, a rail and a lamp
+    var sx0 = -40, sx1 = 520;
+    s += tag("path", { d: "M" + sx0 + " " + cut + " L" + sx1 + " " + cut + " L" + sx1 + " 3354 L" + sx0 + " 3354 Z", fill: tone("#D8D2C6") });
+    var steps = "M" + sx0 + " " + cut;
+    for (var k = 0; k < 9; k++) steps += " h" + r2((sx1 - sx0) / 9) + " v" + r2((3354 - cut) / 9);
+    s += tag("path", { d: steps + " L" + sx0 + " 3354 Z", fill: tone("#9A9184"), stroke: tone("#6F685C"), "stroke-width": 4, "stroke-linejoin": "round" });
+    s += tag("path", { d: "M" + sx0 + " " + (cut - 60) + " L" + sx1 + " " + (3354 - 60) + " M" + (sx0 + 4) + " " + (cut - 60) + " V" + cut + " M" + (sx1 - 4) + " " + (3354 - 60) + " V3354", stroke: tone("#2B8A3E"), "stroke-width": 10, fill: "none", "stroke-linecap": "round" });
+    s += tag("path", { d: "M" + (sx1 + 60) + " " + cut + " V" + (cut - 300), stroke: tone("#2B8A3E"), "stroke-width": 12 }) + tag("circle", { cx: sx1 + 60, cy: cut - 330, r: 34, fill: night ? "#FFF3C4" : tone("#B2F2BB"), stroke: tone("#2B8A3E"), "stroke-width": 6 });
+    s += tag("rect", { x: sx1 + 20, y: cut - 250, width: 80, height: 56, rx: 8, fill: tone("#2B8A3E") }) + tag("path", { d: "M" + (sx1 + 34) + " " + (cut - 206) + " h52 M" + (sx1 + 40) + " " + (cut - 238) + " h40 v22 h-40 Z", stroke: "#FFFFFF", "stroke-width": 5, fill: "none" }); // a train pictogram
+    if (night) s += tag("circle", { cx: sx1 + 60, cy: cut - 330, r: 120, fill: "url(#" + P + "-xglow)" });
+    s += tag("rect", { x: -300, y: 3354, width: 4440, height: 246, fill: "url(#" + P + "-xshade)" });
+    // front layer: the bike rack's feet
+    var f = tag("path", { d: "M3920 2870 V2900 M4040 2870 V2900", stroke: tone("#868E96"), "stroke-width": 14 }) + tag("rect", { x: 3896, y: 2896, width: 168, height: 12, rx: 4, fill: tone("#5C6670") });
+    return { defs: defs, body: s, front: f };
+  }
+  function trainMarkup(tone, night) {
+    var s = "";
+    for (var c = 0; c < 3; c++) {
+      var x = c * 620;
+      s += tag("rect", { x: x, y: -150, width: 600, height: 140, rx: 22, fill: tone("#CED4DA"), stroke: tone("#495057"), "stroke-width": 5 });
+      s += tag("rect", { x: x, y: -64, width: 600, height: 16, fill: tone("#1C7ED6") });
+      for (var w = 0; w < 5; w++) s += tag("rect", { x: x + 30 + w * 112, y: -132, width: 84, height: 56, rx: 8, fill: night ? "#FFE6A8" : tone("#8FB8D6"), stroke: tone("#495057"), "stroke-width": 3 });
+      s += tag("circle", { cx: x + 110, cy: -8, r: 14, fill: tone("#343A40") }) + tag("circle", { cx: x + 490, cy: -8, r: 14, fill: tone("#343A40") });
+      if (c < 2) s += tag("rect", { x: x + 600, y: -120, width: 20, height: 90, fill: tone("#495057") });
+    }
+    s += tag("rect", { x: 1840, y: -110, width: 14, height: 22, rx: 4, fill: "#FFF3C4" });
+    return s;
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -377,8 +597,28 @@
       sky: drawSky(P, v, L, D.rng(seed + 1)), far: drawFar(P, v, L, D.rng(seed + 2)), mid: drawMid(P, v, L, D.rng(seed + 3)),
       ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)),
     };
+    var X = PL.extendLayers(layers, opts, meta);
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "city-street-" + name, parts[name].defs, parts[name].body); });
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "city-street-" + name, parts[name].defs, parts[name].body); });
+    var train = null, xclouds = [], blinks = [], xstars = [], blimp = null;
+    if (X.on) { // the bands above and below (tall-world px)
+      var top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+      PL.band(X.over.sky, "top", "", top.sky);
+      PL.band(X.over.far, "top", "", top.far);
+      PL.band(X.under.mid, "top", "", top.midUnder);
+      PL.band(X.over.mid, "top", "", top.mid);
+      PL.band(X.over.ground, "top", "", top.ground);
+      var bg = PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+      PL.band(X.over.front, "bottom", "", bot.front);
+      train = D.el(bg.querySelector('[data-part="train"]'), "g", {});
+      train.innerHTML = trainMarkup(L.tone, night);
+      var q = function (sel) { var o = []; PL.LAYERS.forEach(function (n) { o = o.concat([].slice.call(X.over[n].querySelectorAll(sel)), [].slice.call(X.under[n].querySelectorAll(sel))); }); return o; };
+      xclouds = q("[data-cloud^='x']").map(function (e) { return { e: e, i: +e.getAttribute("data-cloud").slice(1), base: e.getAttribute("transform") }; });
+      blinks = q("[data-blink]");
+      xstars = q("[data-xstar]").filter(function (e, i) { return i % 4 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+      blimp = q("[data-blimp]")[0] || null;
+    }
+    var blimpBase = blimp && blimp.getAttribute("transform");
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
     var stars = [].slice.call(g.sky.querySelectorAll("[data-star]")), starOp = stars.map(function (e) { return +e.getAttribute("opacity"); });
     var cars = CARS.map(function (c) {
@@ -426,6 +666,13 @@
         pg.e.setAttribute("transform", "translate(" + r2(pg.q[0] + Math.sin(t * 0.4 + pg.k) * 30) + " " + r2(pg.q[1] - hop) + ") scale(" + pg.q[2] + " 1)");
         pg.head.setAttribute("transform", "translate(" + r2(peck * 8) + " " + r2(peck * 20) + ")");
       });
+      if (train) { // the subway train runs left to right through the tunnel, wrapping off view
+        train.setAttribute("transform", "translate(" + r2(A.wrap(-240 + t * 620, -3200, 4800)) + " 3586) scale(1.45)");
+        xclouds.forEach(function (c) { var x0 = XCLOUDS[c.i][0], x = A.wrap(x0 + t * (5 + c.i * 1.4), XCLOUD_SPAN[0], XCLOUD_SPAN[1]); c.e.setAttribute("transform", "translate(" + r2(x - x0) + " 0) " + c.base); });
+        blinks.forEach(function (e, i) { e.setAttribute("opacity", ((t * 1.1 + i * 0.37) % 1) < 0.4 ? 1 : 0.2); });
+        xstars.forEach(function (x) { x.e.setAttribute("opacity", r2(x.op * (0.6 + 0.4 * Math.sin(t * 2 + x.k)))); });
+        if (blimp) blimp.setAttribute("transform", "translate(" + r2(D.wobble(t, 3, 0.2) * 40 + t * 6) + " " + r2(D.wobble(t, 7, 0.3) * 10) + ") " + blimpBase);
+      }
       motes.forEach(function (m) {
         var w = D.wobble(t, m.s, 0.4), mx = A.wrap(m.x + t * 5, MOTE_SPAN[0], MOTE_SPAN[1]);
         m.e.setAttribute("cx", r2(mx + w * 40));
@@ -434,7 +681,7 @@
       });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

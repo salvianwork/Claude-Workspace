@@ -190,7 +190,12 @@ test("package.json has the world-sheet script", () => {
 });
 
 // ---- the extended-place contract (vertical) ----------------------------------------------------
-const EXTENDED = ["countryside", "lab"];
+const EXTENDED = Object.keys(EXPECT);
+
+test("every place is extended for vertical (meta.extend on all 11 places)", () => {
+  assert.equal(EXTENDED.length, 11);
+  for (const name of EXTENDED) assert.ok(K.places[name].meta.extend, name + " has no meta.extend");
+});
 
 test("HFKit.placeWorld: 3840x3600 when extended (a place with meta.extend), else 3840x2160", () => {
   assert.equal(typeof K.placeWorld, "function");
@@ -199,12 +204,13 @@ test("HFKit.placeWorld: 3840x3600 when extended (a place with meta.extend), else
     assert.deepEqual(K.placeWorld(K.places[name], true), { width: 3840, height: 3600 }, name);
     assert.deepEqual(K.placeWorld(K.places[name], false), { width: 3840, height: 2160 }, name);
   }
-  // a place not yet extended stays 3840 x 2160 even when asked
-  assert.deepEqual(K.placeWorld(K.places["city-street"], true), { width: 3840, height: 2160 });
+  // a place without meta.extend stays 3840 x 2160 even when asked
+  const plain = { meta: { name: "plain", variants: ["a"] } };
+  assert.deepEqual(K.placeWorld(plain, true), { width: 3840, height: 2160 });
   // vertical canvases use the extension, landscape never does
   assert.equal(K.place.extendedFor(K.places.countryside, K.FORMATS.vertical), true);
   assert.equal(K.place.extendedFor(K.places.countryside, K.FORMATS.landscape), false);
-  assert.equal(K.place.extendedFor(K.places["city-street"], K.FORMATS.vertical), false);
+  assert.equal(K.place.extendedFor(plain, K.FORMATS.vertical), false);
   assert.deepEqual(K.place.refOf({ width: 3840, height: 3600 }), { x: 1920, y: 1800, zoom: 1 });
 });
 
@@ -226,7 +232,7 @@ for (const name of EXTENDED) {
       assert.deepEqual(p.anchorsFor({ variant, seed: 3, extended: false }).paths, base.paths);
       for (const a of p.meta.anchors) for (const t of [0, 2, 9]) {
         const q = base.anchors[a](t), e = ext.anchors[a](t);
-        assert.deepEqual(e, { x: q.x, y: q.y + 720 }, `${variant} ${a}(${t})`);
+        assert.deepEqual(e, { ...q, y: q.y + 720 }, `${variant} ${a}(${t})`); // other fields (scale) kept
         assert.ok(e.y > 720 && e.y < 2880, `${variant} ${a} lies in the original middle band`);
       }
       for (const k of p.meta.paths) assert.deepEqual(ext.paths[k], base.paths[k].map((q) => ({ x: q.x, y: q.y + 720 })), `${variant} path ${k}`);
