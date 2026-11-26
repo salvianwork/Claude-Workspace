@@ -591,9 +591,27 @@ test("a tag or label whose pill crosses the caption band (y 840-1020) warns in v
     // the lake sits at 55 % of the height (y about 1056): a label above it is on the band
     const hit = crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]);
     assert.equal(hit.length, 1, hit.join("\n"));
-    assert.match(hit[0], /^scene 9 beat 1 move 0 \(label\): the label "Lake" crosses the caption band \(y 840-1020\) at \d+\.\d s/);
+    assert.match(hit[0], /^scene 9 beat 1 move 0 \(label\): the label "Lake" crosses the caption band \(y 840-1020, where the caption is then\) at \d+\.\d s/);
     // the bridge is 300 px above the lake: its tag sits well above the band
     assert.deepEqual(crossing([{ do: "tag_follow", target: "bridge", text: "Bridge", at: { word: 8 }, until: { word: 12 } }]), []);
   });
   assert.deepEqual(crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]), [], "landscape has no vertical caption band");
 });
+
+test("the caption band a tag must avoid is the active one: the top band (220-400) while the host is out of his slot", () => vertical(() => {
+  const mk = (moves) => railway({ id: 10, actors: [{ id: "host", start: { slot: "bottom-right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "lake", zoom: 1 }, { do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 2 }, moves: [{ do: "walk_to", who: "host", to: "bridge" }] },
+    { at: { word: 14 }, moves }] });
+  const w = K.worldFor(mk([{ do: "gesture", who: "host", name: "wave" }]), { cast: CAST });
+  const c = K.compileMoves(mk([{ do: "gesture", who: "host", name: "wave" }]), WORDS, w);
+  assert.equal(K.hostAway(c, w, 0.5), false, "in the slot");
+  assert.equal(K.hostAway(c, w, WORDS[14].start), true, "stepped into the world");
+  const warn = (moves) => compile(mk(moves)).warnings.filter((x) => /caption band/.test(x));
+  // the lake sits at y about 1056: a label above it is on the BOTTOM band, which is not active once he is out
+  assert.deepEqual(warn([{ do: "label", target: "lake", text: "Lake", side: "above" }]), []);
+  // a label sitting at the top (y about 300) is on the TOP band, active now
+  const top = warn([{ do: "cut", target: "lake", zoom: 0.8 }, { do: "label", target: "sky", text: "Sky", at: { word: 16 } }]);
+  assert.equal(top.length, 1, top.join("\n"));
+  assert.ok(top.every((x) => /\(y 220-400, where the caption is then\)/.test(x)), top.join("\n"));
+}));

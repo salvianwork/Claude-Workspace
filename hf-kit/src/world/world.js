@@ -157,9 +157,9 @@
     var capEl = div("hf-captions");
     var style = K.resolveStyle(ctx.style);
     var band = K.layout(style).captionBand;
-    if (K.isVertical()) band = { x: K.VERTICAL_CAPTION.x, y: K.VERTICAL.captionBand.top, width: K.VERTICAL_CAPTION.maxWidth, height: K.VERTICAL.captionBand.bottom - K.VERTICAL.captionBand.top };
+    if (K.isVertical()) band = { x: K.VERTICAL_CAPTION.x, y: K.VERTICAL.captionTopBand.top, width: K.VERTICAL_CAPTION.maxWidth, height: K.VERTICAL.captionBand.bottom - K.VERTICAL.captionTopBand.top };
     css(capEl, { left: band.x + "px", top: band.y + "px", width: band.width + "px", height: band.height + "px" });
-    var caps = ctx.captions === false ? null : K.mountCaptions(capEl, { words: words, style: ctx.style });
+    var caps = ctx.captions === false ? null : K.mountCaptions(capEl, { words: words, style: ctx.style, duration: ctx.duration, hostAway: function (t) { return K.hostAway(c, world, t); } });
 
     function screenOf(a, cam) { // an actor's feet in screen px and its mountActor scale
       var slotMult = SLOT.k / WK;

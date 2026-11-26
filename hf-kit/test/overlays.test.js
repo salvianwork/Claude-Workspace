@@ -182,3 +182,33 @@ test("vertical: tags and labels clamp to the text safe zone (x 64-940, y 200-142
   o.update(4, { x: 1850, y: 500 });
   assert.ok(Math.abs(o.box(4).x + o.box(4).width - 1824) < 1e-6, "landscape: 96 px margin");
 });
+
+test("vertical captions swap to the top band (220-400) while the host is away, with a 0.2 s fade and never in both", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const doc = fakeDocument(), el = doc.createElement("div");
+    const words = capWords(SENTENCE);
+    const T = K.VERTICAL.captionTopBand, B = K.VERTICAL.captionBand;
+    assert.deepEqual({ ...T }, { top: 220, bottom: 400 });
+    const away = (t) => t >= 3 && t < 5;   // out of the slot from 3.0 s to 5.0 s
+    const caps = K.mountCaptions(el, { words, duration: 9, hostAway: away });
+    const inBand = (b, band) => b.y >= band.top && b.y + b.height <= band.bottom;
+    const at = (t) => { const b = caps.box(t); return { b, op: Number(caps.el.style.opacity) }; };
+    assert.ok(inBand(at(2.5).b, B) && at(2.5).op === 1, "down while he is in the slot");
+    assert.ok(inBand(at(4).b, T) && at(4).op === 1, "up while he is away");
+    assert.ok(inBand(at(6).b, B) && at(6).op === 1, "back down when he returns");
+    // the swap at 3.0 s: old band fades out over 0.1 s, then the new band fades in over 0.1 s
+    assert.ok(inBand(at(3.04).b, B) && at(3.04).op > 0 && at(3.04).op < 1, "old band fading out");
+    assert.ok(at(3.1 + 1 / 60).op < 0.2, "dark between");
+    assert.ok(inBand(at(3.15).b, T) && at(3.15).op > 0 && at(3.15).op < 1, "new band fading in");
+    assert.equal(at(3.2 + 1 / 30).op, 1);
+    // never both: sample densely, the box is always in exactly one band (or hidden)
+    for (let t = 2.8; t < 5.4; t += 1 / 60) {
+      const { b, op } = at(t);
+      if (op > 0) assert.ok(inBand(b, B) !== inBand(b, T), `t=${t.toFixed(3)} ${JSON.stringify(b)}`);
+    }
+    // no host function: always the bottom band (as before)
+    const plain = K.mountCaptions(doc.createElement("div"), { words });
+    assert.ok(inBand(plain.box(4), B));
+  } finally { K.setCanvas(null); }
+});

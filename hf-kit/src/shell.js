@@ -189,7 +189,25 @@
     var words = opts.words || [];
     var maxWords = opts.maxWords || 7;
     var doc = el.ownerDocument;
-    var vert = isVertical(), VC = VERTICAL_CAPTION, BAND = K.VERTICAL.captionBand;
+    var vert = isVertical(), VC = VERTICAL_CAPTION, BAND = K.VERTICAL.captionBand, TOP = K.VERTICAL.captionTopBand;
+    // vertical: while the host is out of his slot the caption sits in the top band (opts.hostAway(t), a pure
+    // function of t, sampled per frame over opts.duration); it swaps with a 0.2 s fade (old band out over
+    // the first 0.1 s, new band in over the next 0.1 s), never in both bands at once. The caption element
+    // spans y TOP.top to BAND.bottom, the bar's top is placed inside it.
+    var away = null, awayChange = null;
+    if (vert && typeof opts.hostAway === "function") {
+      var nf = Math.ceil((opts.duration || (words.length ? words[words.length - 1].end + 2 : 0)) * 30) + 2;
+      away = []; awayChange = [];
+      for (var fi = 0; fi < nf; fi++) { away.push(!!opts.hostAway(fi / 30)); awayChange.push(fi > 0 && away[fi] !== away[fi - 1] ? fi : (fi > 0 ? awayChange[fi - 1] : -1)); }
+    }
+    function bandAt(t) { // {top, f}: the active band's top edge and its fade factor (0..1)
+      if (!away) return { top: BAND.top, f: 1 };
+      var fr = Math.min(Math.max(Math.floor(t * 30 + 1e-6), 0), away.length - 1), c = awayChange[fr];
+      if (c < 0) return { top: away[fr] ? TOP.top : BAND.top, f: 1 };
+      var dt = t - c / 30, was = away[c - 1], now = away[c];
+      if (dt < 0.1) return { top: was ? TOP.top : BAND.top, f: 1 - dt / 0.1 };
+      return { top: now ? TOP.top : BAND.top, f: Math.min(1, (dt - 0.1) / 0.1) };
+    }
     var fs = vert ? VC.size : style.sizes.caption, onTop = !vert && style.captions.position === "top";
     var pages = vert ? captionPages(words, { size: fs }) : null;
     el.innerHTML = "";
@@ -200,10 +218,10 @@
       background: "rgba(2,6,23,0.72)", boxShadow: "0 10px 34px rgba(2,6,23,0.38), inset 0 0 0 2px rgba(255,255,255,0.06)",
       fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: vert ? String(VC.lineHeight) : "1.3", textAlign: "center",
       color: style.colors.text, whiteSpace: "normal", boxSizing: "border-box", width: "max-content" });
-    if (vert) { bar.style.overflowWrap = "anywhere"; bar.style.top = VC.top + "px"; }
+    if (vert) { bar.style.overflowWrap = "anywhere"; bar.style.top = (BAND.top - TOP.top + VC.top) + "px"; }
     else if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
     el.appendChild(bar);
-    var shown = null, spans = [], opacity = 0, pageNow = null;
+    var shown = null, spans = [], opacity = 0, pageNow = null, bandTop = BAND.top;
     function update(t) {
       if (!words.length) { bar.style.opacity = "0"; opacity = 0; return; }
       var pg = vert ? captionPageAt(pages, words, t) : K.captionPage(words, t, maxWords);
@@ -226,6 +244,11 @@
       });
       var first = words[0].start, last = words[words.length - 1].end;
       opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
+      if (vert) {
+        var bd = bandAt(t);
+        bandTop = bd.top; opacity = D.r2(opacity * bd.f);
+        bar.style.top = (bandTop - TOP.top + VC.top) + "px";
+      }
       bar.style.opacity = opacity;
     }
     /* The pill's box in canvas px at t (vertical only; empty when it is hidden): the real size when the
@@ -236,7 +259,7 @@
       if (!(opacity > 0) || !pageNow) return { x: 0, y: 0, width: 0, height: 0 };
       var w = bar.offsetWidth > 0 ? bar.offsetWidth : pageNow.width;
       var h = bar.offsetHeight > 0 ? bar.offsetHeight : Math.round(pageNow.lines * fs * VC.lineHeight + fs * 0.36);
-      return { x: Math.round((VC.x + (VC.maxWidth - w) / 2) * 100) / 100, y: BAND.top + VC.top, width: w, height: h };
+      return { x: Math.round((VC.x + (VC.maxWidth - w) / 2) * 100) / 100, y: bandTop + VC.top, width: w, height: h };
     }
     update(0);
     return { update: update, el: bar, box: box };
@@ -306,9 +329,11 @@
     return { words: pg.words, current: cur < 0 ? -1 : cur - pg.from, page: pg };
   }
 
-  /* Vertical (1080 x 1920) layout zones. Owner 2026-11-25: host bigger; captions sit above his face zone. */
+  /* Vertical (1080 x 1920) layout zones. Captions: band 840-1020 while the host is in his slot, captionTopBand
+   * 220-400 while he is out of it (mountCaptions opts.hostAway; 2026-11-26). Owner 2026-11-25: host bigger; captions sit above his face zone. */
   var VERTICAL = Object.freeze({
     captionBand: Object.freeze({ top: 840, bottom: 1020 }),
+    captionTopBand: Object.freeze({ top: 220, bottom: 400 }), // the caption while the host is out of his slot
     faceZone: Object.freeze({ top: 1060, bottom: 1400 }),
     safe: Object.freeze({ x0: 64, x1: 940, y0: 200, y1: 1420 }),
   });

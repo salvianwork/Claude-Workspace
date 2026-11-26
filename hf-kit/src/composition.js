@@ -74,7 +74,8 @@
             outfit: pr.outfit || data.presenterOutfit || "blazer", size: pr.size || "small", side: pr.position,
             mouth: s.mouth || [], fps: data.fps || 30, seed: s.id });
         }
-        var caps = K.mountCaptions(api.shell.layers.captions, { words: s.words, style: style });
+        var caps = K.mountCaptions(api.shell.layers.captions, { words: s.words, style: style, duration: s.duration,
+          hostAway: s.kind === "world" && api.compiled ? function (t) { return K.hostAway(api.compiled, api.world, t); } : undefined });
         if (s.kind === "world" && typeof api.boxes === "function" && K.isVertical()) { // the caption pill counts in the safe-zone and overlap reports
           var worldBoxes = api.boxes;
           api.boxes = function (t) {

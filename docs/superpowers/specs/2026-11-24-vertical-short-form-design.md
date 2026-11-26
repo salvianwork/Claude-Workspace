@@ -89,6 +89,7 @@ Formats: vertical-only per video with landscape on request (**owner: A**) vs bot
 - **Captions** sit in the lower-middle of the safe zone (around y 1180–1400), 64 px, max width
   about 860 px, two lines max, word highlight as today.
   > 2026-11-25 owner: host bigger in vertical (face zone 1060–1400, captions 840–1020).
+  > 2026-11-26: captions use a top band (y 220–400, `HFKit.VERTICAL.captionTopBand`) while the host is out of his slot (stepping in, walking, in the world); 0.2 s fade, never in both bands; back to 840–1020 when he returns to the slot.
 - `python -m tools.hf.snapshot <run> --safe-zone` reports any caption, label or tag box outside
   the safe zone (like the overlap report; exit 1 if any). Sage treats it as must-fix.
 

@@ -138,7 +138,7 @@ def test_safe_zone_passes_for_long_captions_inside_the_band(tmp_path, capsys):
     assert caps, "the caption pill is reported as a box in a vertical video"
     for b in caps:
         assert b["w"] <= 860 and b["h"] <= 180, b
-        assert 840 <= b["y"] and b["y"] + b["h"] <= 1020, b
+        assert (840 <= b["y"] and b["y"] + b["h"] <= 1020) or (220 <= b["y"] and b["y"] + b["h"] <= 400), b
     assert snap_mod.main([str(run), "--safe-zone"]) == 0
     assert _safe_zone_report(run) == []
     assert "inside the safe zone" in capsys.readouterr().out
@@ -166,3 +166,20 @@ def test_safe_zone_needs_a_built_composition(tmp_path):
     run = make_world_run(tmp_path)
     with pytest.raises(HFError, match="run python -m tools.hf.build first"):
         snap_mod.safe_zone(run)
+
+
+@needs_browser
+def test_caption_sits_in_the_top_band_while_the_host_is_out_of_his_slot(tmp_path):
+    """Scene 1 of the vertical fixture: the host walks out of the bottom slot at word 1 (about 0.7 s), so the caption
+    is in the band at y 840-1020 before and in the top band y 220-400 after. Scene 2 keeps him in his slot."""
+    from tests.hf.test_format import vertical_shots
+    run = make_world_run(tmp_path, vertical_shots())
+    build(run, KIT, run_check=False)
+    _, _, out = snap_mod._sample(run, KIT, 0.25, "test")
+    def band(b):
+        return "bottom" if 840 <= b["y"] and b["y"] + b["h"] <= 1020 else "top" if 220 <= b["y"] and b["y"] + b["h"] <= 400 else "neither"
+    caps = {(s["scene"], s["t"]): band(b) for s in out["samples"] for b in s["boxes"] if b["kind"] == "caption"}
+    assert caps and "neither" not in caps.values(), caps
+    assert caps[(1, 0.5)] == "bottom"
+    assert all(v == "top" for (sc, t), v in caps.items() if sc == 1 and t >= 2.0), caps
+    assert all(v == "bottom" for (sc, t), v in caps.items() if sc == 2), caps

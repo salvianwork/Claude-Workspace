@@ -45,11 +45,12 @@ def vertical_shots() -> dict:
         for a in scene["actors"]:
             if a.get("start", {}).get("slot"):
                 a["start"] = {"slot": slot}
-    # a tag in vertical stays clear of the caption band (y 840-1020) and inside the safe zone: the camera
-    # pulls out over the bridge and the tag rides the sky above it (the landscape pulse tag crosses the band)
+    # a tag in vertical stays clear of the active caption band and inside the safe zone: by then the host is
+    # out of his slot, so captions are in the top band (y 220-400) and the tag on the far rail sits below it
+    # (the landscape pulse tag crosses the caption)
     mv = s["scenes"][0]["beats"][1]["moves"]
     mv[:] = [m for m in mv if m["do"] not in ("tag_follow", "follow")]
-    mv += [{"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "tag_follow", "target": "sky", "text": "Sky"}]
+    mv += [{"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "tag_follow", "target": "rail-far", "text": "Far rail"}]
     return s
 
 
@@ -203,11 +204,9 @@ def test_vertical_snapshots_are_1080_by_1920(tmp_path):
 def test_overlap_report_runs_in_the_composition_size(tmp_path):
     run = make_world_run(tmp_path, vertical_shots())
     build(run, KIT, run_check=False)
-    # overlap.mjs checks its viewport is the canvas (else HFError). The host starts in the bottom slot,
-    # below the caption band, and the fixture's tags stay clear of captions. The one expected hit: scene 1's
-    # step-in (walk_to at word 1), where his face climbs out of the slot through the caption band.
-    assert snap_mod.overlap(run) == [{"scene": 1, "t": 1.5, "a": {"kind": "caption", "id": "caption"},
-                                      "b": {"kind": "face", "id": "host"}}]
+    # overlap.mjs checks its viewport is the canvas (else HFError). The host starts in the bottom slot; when
+    # he steps into the world the caption moves to the top band, so nothing overlaps.
+    assert snap_mod.overlap(run) == []
 
 
 # ---- render (slow) ---------------------------------------------------------------------------

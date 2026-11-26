@@ -830,8 +830,19 @@
    * (y 840-1020). Same placement rules as overlays.js (a tag above its point by LEAD, below near the
    * top; a label centred, or beside / above / below by `side`), clamped to the text safe zone. Returns the
    * first time (s) it crosses the band, or null. Not in landscape (no vertical caption band). */
-  var CAPTION_BAND = { top: 840, bottom: 1020 }, SAFE_Y = { y0: 200, y1: 1420 };
-  function captionBandCrossing(o, out, camFn) {
+  var CAPTION_BAND = { top: 840, bottom: 1020 }, CAPTION_TOP_BAND = { top: 220, bottom: 400 }, SAFE_Y = { y0: 200, y1: 1420 };
+  /* Is a host actor out of his slot (stepped into the world, or walking) at t? Vertical captions then sit in
+   * the top band. compiled = compileMoves output (compiled.actors tracks), world = worldFor output. */
+  function hostAway(compiled, world, t) {
+    return Object.keys(world.actors).some(function (id) {
+      var a = world.actors[id];
+      if (!a.host || !compiled.actors[id]) return false;
+      var st = actorAt(compiled.actors[id], t);
+      return st.visible && st.mode !== "slot";
+    });
+  }
+  K.hostAway = hostAway;
+  function captionBandCrossing(o, out, camFn, world) {
     var c = canvas();
     if (!(c.height > c.width) || o.kind === "title" || o.target === undefined) return null;
     var isTag = o.kind === "tag", fs = isTag ? 38 : 34, H = Math.round(fs * 1.28 + 2 * Math.round(fs * 0.24)), lead = isTag ? 66 : 20;
@@ -845,7 +856,8 @@
       if (s === "auto") s = q.y - lead - H < SAFE_Y.y0 ? "below" : "above";
       var cy = s === "above" ? q.y - lead - H / 2 : s === "below" ? q.y + lead + H / 2 : q.y;
       var y0 = Math.min(Math.max(cy - H / 2, SAFE_Y.y0), SAFE_Y.y1 - H);
-      if (y0 + H > CAPTION_BAND.top && y0 < CAPTION_BAND.bottom) return t;
+      var band = hostAway(out, world, t) ? CAPTION_TOP_BAND : CAPTION_BAND; // the caption sits where the host is not
+      if (y0 + H > band.top && y0 < band.bottom) return { t: t, band: band };
     }
     return null;
   }
@@ -1010,8 +1022,8 @@
       if (mv.target !== undefined) o.target = mv.target;
       if (mv.side !== undefined) o.side = mv.side;
       out.overlays.push(o);
-      var cross = captionBandCrossing(o, out, cam);
-      if (cross !== null) out.warnings.push(p.tag + ": the " + (o.kind === "tag" ? "tag" : o.kind) + " \"" + o.text + "\" crosses the caption band (y " + CAPTION_BAND.top + "-" + CAPTION_BAND.bottom + ") at " + cross.toFixed(1) + " s and would sit on the caption: reframe so its target is clear of the band, or move it to another beat");
+      var cross = captionBandCrossing(o, out, cam, world);
+      if (cross !== null) out.warnings.push(p.tag + ": the " + (o.kind === "tag" ? "tag" : o.kind) + " \"" + o.text + "\" crosses the caption band (y " + cross.band.top + "-" + cross.band.bottom + ", where the caption is then) at " + cross.t.toFixed(1) + " s and would sit on the caption: reframe so its target is clear of the band, or move it to another beat");
     });
 
     // camera overrun (main keys and dives) against the scene duration
