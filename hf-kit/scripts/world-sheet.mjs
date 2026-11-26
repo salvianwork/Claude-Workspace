@@ -125,6 +125,14 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 1100, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · the rooftops", { x: 3000, y: 560, zoom: 1.6 }, null],
   ],
+  home: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "sofa", dx: 300, dy: 120, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the kitchen", { anchor: "kitchen", dy: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1500, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2300, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the fan and rafters", { x: 1250, y: 560, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">
