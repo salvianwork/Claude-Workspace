@@ -81,7 +81,7 @@ after the topic is the owner's notes. If there is no topic, ask for one in the c
    python -m tools.pipeline.status init "<topic>"
    ```
 2. Write the owner's notes into `<run_dir>/brief.md`, on the lines after `Owner notes:`
-   (verbatim; write `none` if there are none), and add two lines at the end of the file, after
+   (verbatim; write `none` if there are none), and add three lines at the end of the file, after
    `language: en`: `type: <type>` (`explainer` or `what-if`; `type: propose` when there was no
    `--type`), `audience: <audience>` and `format: <format>` (`vertical` or `landscape`).
    Change nothing else in `brief.md`. The agents read the type, audience and format there.
@@ -371,10 +371,22 @@ waiter and end your turn.
    ```
    Print `⏸ Waiting for you: gate <n> (<step>) did not pass after 3 rounds.`, then the open
    must-fix items: the `## Must-fix` section of the last review file, word for word (or what
-   was wrong with the last attempt, if there is no review file). Ask: **accept** anyway, give
+   was wrong with the last attempt, if there is no review file). **A failed vertical render**
+   (gate 4, `format: vertical`, no `<run_dir>/04-video/out/video.mp4`): add the error from
+   `04-video/notes.md` (the Animator's error line, or the last `error:` line of
+   `04-video/render.log`) to the request `--body`, in plain words, and print it too. Ask:
+   **accept** anyway, give
    **directions**, or **cancel**, then `…or answer on the studio board.` Start the waiter and
    end your turn (4.0). The `Notification` hook tells the owner.
-3. **accept** → `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
+3. **accept** → for gate 4, first check that the video exists:
+   ```bash
+   python -c "import sys, pathlib; print('OK' if pathlib.Path(sys.argv[1]).is_file() else 'MISSING')" "<run_dir>/04-video/out/video.mp4"
+   ```
+   `MISSING` → there is nothing to accept (section 6 needs the video): do **not** record the
+   acceptance. Print that the render failed so no video exists, and that only **directions** or
+   **cancel** are possible; open the same stuck-gate request again (2) with the body starting
+   `There is no video to accept: the render failed. Give directions or cancel.` and wait again.
+   Otherwise (and for gates 1 to 3): `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
    and 2: accepting also counts as the owner's approval at that checkpoint).
    **directions** → save `review/owner-gate-<n>-<k>.md`, start a new cycle for gate `n`,
    section 3 for step `s` with round 1 and that file as `feedback_file`.
@@ -534,6 +546,11 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
 
 ## 8. Resume (`--resume <run_dir>`)
 
+0. **Format.** Read `format:` in `<run_dir>/brief.md`. If the line is missing (a run made before
+   `--format` existed): the format is `landscape` when `<run_dir>/03-design/shots.json` exists
+   and has no `"schema":2` (schema 1), and `vertical` otherwise (no shots yet, or schema 2).
+   Append the resolved `format: <format>` line to the end of `brief.md` (nothing else changes),
+   so the agents read it there, and use it as `<format>` from now on.
 1. Show and read the recorded state (if it fails, print the error and stop):
    ```bash
    python -m tools.pipeline.status show "<run_dir>"

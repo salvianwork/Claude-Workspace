@@ -530,3 +530,24 @@ def test_failed_vertical_render_stops_the_run_never_switches_format():
     stuck = text.split("## 5. A gate is stuck", 1)[1].split("\n## 6", 1)[0]
     for needle in ["remotion", "landscape-only", "vertical", "never switch", "format"]:
         assert needle in stuck.lower(), needle
+
+
+def test_accept_after_a_failed_render_needs_a_video():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    stuck = text.split("## 5. A gate is stuck", 1)[1].split("\n## 6", 1)[0]
+    flat = " ".join(stuck.split())
+    for needle in ["04-video/out/video.mp4", "MISSING", "do **not** record the acceptance",
+                   "only **directions** or **cancel**", "There is no video to accept",
+                   "04-video/notes.md", "--body"]:
+        assert needle in flat, needle
+    # the video check comes before the acceptance is recorded
+    assert flat.index("MISSING") < flat.index("owner accepted gate")
+
+
+def test_resume_resolves_a_missing_format():
+    text = MAKE_VIDEO.read_text(encoding="utf-8")
+    resume = " ".join(text.split("## 8. Resume", 1)[1].split())
+    for needle in ["`format:` in `<run_dir>/brief.md`", "03-design/shots.json", "schema 1",
+                   "`landscape`", "`vertical`", "Append the resolved `format: <format>` line"]:
+        assert needle in resume, needle
+    assert resume.index("Format.") < resume.index("Show and read the recorded state")

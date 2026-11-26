@@ -77,10 +77,10 @@ Run every command from the workspace root and quote paths (they may contain spac
 Read `01-script/script.md` and `brief.md`. Run:
 
 ```bash
-python -m tools.pipeline.checks story "<run_dir>/01-script/script.md"
+python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>
 ```
 
-It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
+(`<format>` is `format:` in `brief.md`, `vertical` when missing.) It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
 
 **Must-fix if:**
 - [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the quill section) and check that the work follows `lessons.md` (Everyone plus the Quill section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.

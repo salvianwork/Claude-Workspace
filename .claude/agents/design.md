@@ -286,9 +286,7 @@ Every `at.word` / `until.word` is a word index of **that** scene in `02-voice/wo
 
 ## `shots.json` (schema 2)
 
-The example below is a **landscape** one (side slots). A vertical `shots.json` is the same
-with `"format":"vertical"` (or no `format`, the default) and `bottom-left` / `bottom-right`
-host slots.
+The first example below is a **landscape** one (side slots); the vertical one follows it.
 
 ```json
 {"schema":2,"format":"landscape","type":"explainer","audience":"all-ages",
@@ -326,6 +324,31 @@ host slots.
    "transition":"slide"}]}
 ```
 
+A **vertical** `shots.json` (`"format":"vertical"`, the default) uses the bottom slots and the tall
+camera moves. The scene starts high on the sky, `pan_down` reveals the barn on the ground, the host
+walks out to it (his one step-in), and the `343 m/s` tag sits on the barn, beside it, clear of both
+caption bands:
+
+```json
+{"schema":2,"format":"vertical","type":"explainer","audience":"all-ages",
+ "cast":[{"id":"host","character":"host","outfit":"lab-coat"}],
+ "scenes":[
+  {"id":1,"kind":"world","place":"countryside","variant":"day","new_place":false,
+   "facts":["sound travels about 343 m/s in air"],
+   "actors":[{"id":"host","start":{"slot":"bottom-left"}}],
+   "beats":[
+    {"at":{"word":0},"action":"host asks from the bottom corner while the view starts high on the sky",
+     "moves":[{"do":"say","who":"host"},
+              {"do":"gesture","who":"host","name":"think"}]},
+    {"at":{"word":6},"action":"the view slides down from the sky to the barn and a tag names the speed",
+     "moves":[{"do":"pan_down","to":"barn","at":{"word":6}},
+              {"do":"label","target":"barn","text":"343 m/s","side":"right","at":{"word":12}}]},
+    {"at":{"word":14},"action":"host walks out to the barn and points at it",
+     "moves":[{"do":"walk_to","who":"host","to":"barn"},
+              {"do":"point","who":"host","target":"barn","at":{"word":20}}]}],
+   "transition":"fade"}]}
+```
+
 - Top level: `"schema":2`, `format` (`vertical` or `landscape`), `type`, `audience`, `cast` (the host, with his outfit), `scenes`.
 - Every scene: `id`, `"kind":"world"`, `place`, `variant`, `new_place`, `facts`, `actors`
   (each `id`, `start`; extras also `character` `extra-<n>` and `outfit`), `beats` (each `at`,
@@ -345,14 +368,15 @@ Total: 96.2 s, 7 scenes, host step-ins: scenes 1, 4; new place: none; custom mov
 ## Scene 1: <scene title from the script>
 - **Place:** `countryside`, variant `day` (library) | new place `volcano-island` (variant `day`)
 - **Duration:** 12.4 s (372 frames)
+- **Framing:** vertical — action in the middle band; `pan_down` from the sky to the barn; tag clear of the caption bands (y 840–1020 host in slot, y 220–400 host out)
 - **Idea:** <the one idea this scene shows, from "Viewer should understand">
-- **Host:** step-in — starts in the right slot, walks to `rail-near` | talks from the left slot
-- **Cast:** friend (`extra-1`, casual) at `rail-far` | none
+- **Host:** step-in — starts in the bottom-left slot, walks to `barn` | talks from the bottom-right slot
+- **Cast:** none | friend (`extra-1`, casual) at `rail-far`
 - **Beats:**
-  1. "Have you ever…" (0) — host waves, then walks to the rail; camera pulls out ×0.8
-  2. "Strike the rail…" (9) — host strikes on "strike" (14); pulse races to the friend; tag "≈5,960 m/s"; push in on the friend ×1.4 on "friend" (17)
-  3. "Your friend…" (19) — the friend hears it and jumps, surprised
-- **Text on screen:** tag "≈5,960 m/s" (2 words in 12.4 s)
+  1. "Have you ever…" (0) — host asks from the bottom-left slot, thinking; the view starts high on the sky
+  2. "Sound travels…" (6) — `pan_down` from the sky to the barn on "travels"; label "343 m/s" on the barn, right side, on (12)
+  3. "Walk out…" (14) — host walks out to the barn and points at it on (20)
+- **Text on screen:** label "343 m/s" (1 word in 12.4 s)
 - **Scale:** true to scale | not to scale — label "not to scale" on `craft`
 - **Facts:** <each fact the scene shows>
 - **Kit warnings:** none | `<the warning>` — kept on purpose: <why>
