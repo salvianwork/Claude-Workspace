@@ -1,0 +1,788 @@
+{
+ "schema": 2,
+ "format": "vertical",
+ "type": "explainer",
+ "audience": "all-ages",
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "explorer"
+  }
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "white sunlight is a mix of all the colours of the rainbow (a prism spreads them out: red bent least, violet most)"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the clear blue sky over the farm; the host asks from the bottom-left corner, thinking",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 450,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious"
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "a beam of white sunlight slants in and passes through a glass prism, which fans it out into all the colours of the rainbow",
+     "moves": [
+      {
+       "do": "custom",
+       "name": "white-light",
+       "params": {
+        "from": {
+         "x": 700,
+         "y": -300
+        },
+        "split": 1.68,
+        "prismSize": 190
+       },
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 6
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "White light",
+       "side": "above",
+       "at": {
+        "word": 7
+       },
+       "until": {
+        "word": 11
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Every colour",
+       "side": "above",
+       "at": {
+        "word": 12
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 12
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "air is made of tiny gas molecules (mostly nitrogen and oxygen) that sunlight passes through"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the white sunbeam crosses the sky; the host points at it",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 450,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "custom",
+       "name": "white-light",
+       "params": {
+        "from": {
+         "x": 700,
+         "y": -300
+        },
+        "split": 99,
+        "showPrism": false
+       },
+       "at": {
+        "t": 0.1
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 4
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 8
+     },
+     "action": "the camera dives into the air the light crosses: tiny gas molecules fly about, far apart",
+     "moves": [
+      {
+       "do": "dive",
+       "target": "sky",
+       "into": "lattice",
+       "params": {
+        "state": "gas"
+       },
+       "at": {
+        "word": 8
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 11
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "cut"
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "blue light has a shorter wavelength than red",
+    "air molecules scatter blue light strongly, in all directions",
+    "not to scale: a molecule is far smaller than a light wave"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "in the sky, drawn huge, a short choppy blue light wave travels in toward the air molecules",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 450,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "custom",
+       "name": "wave-hit",
+       "params": {
+        "color": "#2F7BFF",
+        "wavelength": 70,
+        "hit": 4.5,
+        "scatter": true,
+        "scale": 2.0,
+        "spread": 1.2,
+        "packet": 700,
+        "from": 900
+       },
+       "at": {
+        "t": 0.2
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Blue: short waves",
+       "side": "above",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "side": "below",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "talk",
+       "at": {
+        "word": 2
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 7
+     },
+     "action": "the wave hits a molecule, which flashes and sends blue light off in every direction",
+     "moves": [
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 13
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "surprised",
+       "at": {
+        "word": 14
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "cut"
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "red light has a longer wavelength and is scattered much less: most of it passes straight through",
+    "not to scale"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "a long, lazy red light wave travels in toward the same molecules",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 450,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "custom",
+       "name": "wave-hit",
+       "params": {
+        "color": "#E53935",
+        "wavelength": 170,
+        "hit": 3.4,
+        "scatter": false,
+        "scale": 2.0,
+        "spread": 1.2,
+        "packet": 800,
+        "from": 900
+       },
+       "at": {
+        "t": 0.2
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Red: long waves",
+       "side": "above",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "side": "below",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think",
+       "at": {
+        "word": 2
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 7
+     },
+     "action": "the red wave passes straight through and carries on, the molecule barely stirring",
+     "moves": [
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 8
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 12
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "cut"
+  },
+  {
+   "id": 5,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "scattered blue light reaches the eye from every part of the sky, so the sky looks blue"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "rail-near"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host stands by the meadow rail and looks up; blue light streams down to him from every part of the sky",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "rail-near",
+       "zoom": 1.4,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_up",
+       "by": 250,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious"
+      },
+      {
+       "do": "custom",
+       "name": "sky-rays",
+       "params": {
+        "anchor": "rail-near",
+        "eye": 380
+       },
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 8
+     },
+     "action": "more blue rays arrive from left and right; the host turns and smiles",
+     "moves": [
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-left",
+       "at": {
+        "word": 8
+       }
+      },
+      {
+       "do": "label",
+       "target": "rail-near",
+       "text": "Blue from everywhere",
+       "side": "right",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 14
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 6,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "sunset",
+   "new_place": false,
+   "facts": [
+    "at sunset sunlight crosses much more of the atmosphere",
+    "most blue light is scattered out of the beam, leaving reds and oranges"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the view slides down the evening sky to the horizon, where the Sun is low",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.8,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 850,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 2
+     },
+     "action": "a long, low beam of sunlight crosses the sky; blue sparks peel off it along the way and only orange and red reach the far end",
+     "moves": [
+      {
+       "do": "custom",
+       "name": "sunset-beam",
+       "params": {
+        "sun": {
+         "x": 480,
+         "y": 520
+        },
+        "to": {
+         "x": -700,
+         "y": 420
+        }
+       },
+       "at": {
+        "word": 3
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Long path through air",
+       "side": "below",
+       "at": {
+        "word": 4
+       },
+       "until": {
+        "word": 8
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "Blue scattered away",
+       "side": "below",
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "surprised",
+       "at": {
+        "word": 12
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 18
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 7,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "a blue sky is sunlight scattered by the molecules of the air",
+    "not to scale"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "back in the blue sky: once more a blue wave hits a molecule and bounces off in every direction",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.85,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "pan_down",
+       "by": 450,
+       "at": {
+        "t": 0
+       }
+      },
+      {
+       "do": "custom",
+       "name": "wave-hit",
+       "params": {
+        "color": "#2F7BFF",
+        "wavelength": 70,
+        "hit": 2.0,
+        "scatter": true,
+        "scale": 2.0,
+        "spread": 1.2,
+        "packet": 700,
+        "from": 900
+       },
+       "at": {
+        "t": 0.1
+       }
+      },
+      {
+       "do": "label",
+       "target": "sky",
+       "text": "not to scale",
+       "side": "below",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "talk",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 9
+     },
+     "action": "the host invites the viewer to look at the next sunset and tell him the colours",
+     "moves": [
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "wave",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 16
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  }
+ ]
+}

@@ -1,0 +1,748 @@
+{
+ "schema": 2,
+ "format": "vertical",
+ "type": "explainer",
+ "audience": "all-ages",
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "lab-coat"
+  }
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "a steel railway runs through the countryside"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the view starts high in the summer sky over the farm; the host asks from the bottom-left corner, thinking",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.8
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious"
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 3
+     },
+     "action": "the view slides down from the sky to the railway bridge over the lake; the host points at the steel rail",
+     "moves": [
+      {
+       "do": "pan_down",
+       "to": "lake"
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "bridge",
+       "at": {
+        "word": 6
+       }
+      },
+      {
+       "do": "label",
+       "target": "bridge",
+       "text": "Steel rail",
+       "side": "above",
+       "at": {
+        "word": 8
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "sound needs a medium to travel through",
+    "sound travels about 343 m/s in air",
+    "the rings spread at 172 px/s: the same ratio as the ripples (745) and the pulse (3,000) in later scenes, 343 : 1,480 : 5,960"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "rail-near"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host stands at the rail with a hammer and talks",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "rail-near",
+       "zoom": 1.5
+      },
+      {
+       "do": "hold",
+       "who": "host",
+       "prop": "hammer"
+      },
+      {
+       "do": "say",
+       "who": "host",
+       "until": {
+        "word": 5
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 6
+     },
+     "action": "the host strikes the rail; slow rings of sound spread through the air around him as the camera eases back",
+     "moves": [
+      {
+       "do": "use",
+       "who": "host",
+       "prop": "hammer",
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "rings",
+       "target": "rail-near",
+       "at": {
+        "word": 7
+       },
+       "count": 3,
+       "interval": 0.6,
+       "speed": 172,
+       "radius": 900,
+       "color": "#E8F4FF"
+      },
+      {
+       "do": "pull_out",
+       "target": "rail-near",
+       "zoom": 0.7,
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "label",
+       "target": "rail-near",
+       "text": "Air: 343 m/s",
+       "side": "right",
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 11
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "sound travels about 1,480 m/s in water, more than four times its speed in air"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the camera drops to the lake under the trestle bridge; the host points at it from the bottom-right corner",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "lake",
+       "zoom": 1.4
+      },
+      {
+       "do": "pan_down",
+       "by": 380
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "lake",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 4
+     },
+     "action": "quick ripples of sound race out through the water, much faster than the rings in the air",
+     "moves": [
+      {
+       "do": "rings",
+       "target": "lake",
+       "at": {
+        "word": 4
+       },
+       "count": 6,
+       "interval": 0.5,
+       "speed": 745,
+       "radius": 700,
+       "squash": 0.45,
+       "color": "#FFFFFF",
+       "width": 20
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "surprised",
+       "at": {
+        "word": 6
+       }
+      },
+      {
+       "do": "label",
+       "target": "lake",
+       "text": "Water: 1,480 m/s",
+       "side": "above",
+       "at": {
+        "word": 10
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 4,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "sound travels nearly 6,000 m/s (about 5,960 m/s) in steel",
+    "about 17 times its speed in air (5,960 / 343 ≈ 17)",
+    "the pulse moves at 3,000 px/s, in the same ratio as the rings and ripples"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "anchor": "rail-near"
+     }
+    },
+    {
+     "id": "friend",
+     "character": "extra-1",
+     "outfit": "casual",
+     "start": {
+      "anchor": "rail-far"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host strikes the rail; a bright pulse races along the steel and the camera follows it to his friend far down the track",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "rail-near",
+       "zoom": 1.5
+      },
+      {
+       "do": "hold",
+       "who": "host",
+       "prop": "hammer"
+      },
+      {
+       "do": "use",
+       "who": "host",
+       "prop": "hammer",
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "pulse_along",
+       "path": "rail",
+       "from": "rail-near",
+       "to": "rail-far",
+       "speed": 3000,
+       "at": {
+        "word": 4
+       }
+      },
+      {
+       "do": "tag_follow",
+       "target": "pulse",
+       "text": "Steel: ≈6,000 m/s"
+      },
+      {
+       "do": "follow",
+       "target": "pulse",
+       "zoom": 0.9,
+       "at": {
+        "word": 4
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 11
+     },
+     "action": "the friend jumps as the pulse reaches him; a label says how much faster steel is",
+     "moves": [
+      {
+       "do": "react",
+       "who": "friend",
+       "expression": "surprised",
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "jump",
+       "who": "friend",
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "label",
+       "target": "rail-far",
+       "text": "17× faster than air",
+       "side": "left",
+       "at": {
+        "word": 13
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 5,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "particles in a gas (air) are far apart"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host wonders from the bottom-right corner as the view looks up into the clear air over the farm",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "sky",
+       "zoom": 0.9
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "think"
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "curious"
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 3
+     },
+     "action": "the camera dives into the air: gas particles fly about far apart, each one taking time to reach the next",
+     "moves": [
+      {
+       "do": "dive",
+       "target": "sky",
+       "into": "lattice",
+       "params": {
+        "state": "gas"
+       },
+       "at": {
+        "word": 3
+       }
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "sky",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "shrug",
+       "at": {
+        "word": 13
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 6,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "particles in a solid are packed tightly and bonded"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the host points at the steel rail and the camera dives into it: the particles are packed tight and linked, jiggling together",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "rail-near",
+       "zoom": 1.1
+      },
+      {
+       "do": "point",
+       "who": "host",
+       "target": "rail-near"
+      },
+      {
+       "do": "dive",
+       "target": "rail-near",
+       "into": "lattice",
+       "params": {
+        "state": "solid"
+       },
+       "at": {
+        "word": 2
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 11
+     },
+     "action": "inside the steel, each push passes quickly from particle to particle; the host is pleased",
+     "moves": [
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-across",
+       "at": {
+        "word": 11
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 15
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 7,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "sound through the rail reaches the friend before the sound through the air"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-left"
+     }
+    },
+    {
+     "id": "friend",
+     "character": "extra-1",
+     "outfit": "casual",
+     "start": {
+      "anchor": "rail-far"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "at the far end of the track, the pulse arrives through the rail and the friend jumps",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "friend",
+       "zoom": 0.95
+      },
+      {
+       "do": "pulse_along",
+       "path": "rail",
+       "from": "bridge",
+       "to": "rail-far",
+       "speed": 3000,
+       "at": {
+        "word": 7
+       }
+      },
+      {
+       "do": "tag_follow",
+       "target": "pulse",
+       "text": "Rail: first"
+      },
+      {
+       "do": "jump",
+       "who": "friend",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "react",
+       "who": "friend",
+       "expression": "surprised",
+       "at": {
+        "word": 9
+       }
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "point-right",
+       "at": {
+        "word": 1
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 10
+     },
+     "action": "a moment later the sound through the air reaches him; he turns, surprised again",
+     "moves": [
+      {
+       "do": "gesture",
+       "who": "friend",
+       "name": "surprised",
+       "at": {
+        "word": 12
+       }
+      },
+      {
+       "do": "label",
+       "target": "rail-far",
+       "text": "Air: later",
+       "side": "left",
+       "at": {
+        "word": 12
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 13
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  },
+  {
+   "id": 8,
+   "kind": "world",
+   "place": "countryside",
+   "variant": "day",
+   "new_place": false,
+   "facts": [
+    "sound travels fastest through solids"
+   ],
+   "actors": [
+    {
+     "id": "host",
+     "start": {
+      "slot": "bottom-right"
+     }
+    },
+    {
+     "id": "friend",
+     "character": "extra-1",
+     "outfit": "casual",
+     "start": {
+      "anchor": "rail-far"
+     }
+    }
+   ],
+   "beats": [
+    {
+     "at": {
+      "word": 0
+     },
+     "action": "the pulse races along the rail once more into the frame and the friend jumps as it arrives",
+     "moves": [
+      {
+       "do": "cut",
+       "target": "friend",
+       "zoom": 0.85
+      },
+      {
+       "do": "pulse_along",
+       "path": "rail",
+       "from": "rail-near",
+       "to": "rail-far",
+       "speed": 3000,
+       "at": {
+        "word": 1
+       }
+      },
+      {
+       "do": "tag_follow",
+       "target": "pulse",
+       "text": "Fastest: solids"
+      },
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "celebrate",
+       "at": {
+        "word": 2
+       }
+      },
+      {
+       "do": "jump",
+       "who": "friend",
+       "at": {
+        "word": 3
+       }
+      }
+     ]
+    },
+    {
+     "at": {
+      "word": 5
+     },
+     "action": "the host waves the viewer back to watch again",
+     "moves": [
+      {
+       "do": "gesture",
+       "who": "host",
+       "name": "wave",
+       "at": {
+        "word": 5
+       }
+      },
+      {
+       "do": "react",
+       "who": "host",
+       "expression": "happy",
+       "at": {
+        "word": 10
+       }
+      }
+     ]
+    }
+   ],
+   "transition": "fade"
+  }
+ ]
+}

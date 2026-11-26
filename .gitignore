@@ -34,4 +34,11 @@ tests/fixtures/hf/world/*/04-video/*
 !tests/fixtures/hf/world/*/04-video/hf/
 tests/fixtures/hf/world/*/04-video/hf/*
 !tests/fixtures/hf/world/*/04-video/hf/scenes/
+# Vertical short fixture runs (tests/fixtures/hf/vertical/<name>): the same rule
+tests/fixtures/hf/vertical/*/02-voice/*.wav
+tests/fixtures/hf/vertical/*/review/
+tests/fixtures/hf/vertical/*/04-video/*
+!tests/fixtures/hf/vertical/*/04-video/hf/
+tests/fixtures/hf/vertical/*/04-video/hf/*
+!tests/fixtures/hf/vertical/*/04-video/hf/scenes/
 .studio/

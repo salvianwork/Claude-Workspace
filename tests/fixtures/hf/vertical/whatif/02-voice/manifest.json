@@ -1,0 +1,45 @@
+{
+  "language": "en",
+  "engine": "kokoro",
+  "voice": "am_adam",
+  "speed": 1.0,
+  "sample_rate": 24000,
+  "scenes": [
+    {
+      "id": 1,
+      "file": "scene-01.wav",
+      "duration_s": 6.475
+    },
+    {
+      "id": 2,
+      "file": "scene-02.wav",
+      "duration_s": 7.1
+    },
+    {
+      "id": 3,
+      "file": "scene-03.wav",
+      "duration_s": 6.075
+    },
+    {
+      "id": 4,
+      "file": "scene-04.wav",
+      "duration_s": 6.125
+    },
+    {
+      "id": 5,
+      "file": "scene-05.wav",
+      "duration_s": 5.475
+    },
+    {
+      "id": 6,
+      "file": "scene-06.wav",
+      "duration_s": 6.725
+    },
+    {
+      "id": 7,
+      "file": "scene-07.wav",
+      "duration_s": 7.525
+    }
+  ],
+  "total_s": 45.5
+}

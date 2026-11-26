@@ -70,10 +70,22 @@ If the update notes mention new packages, also run `cd hf-kit`, then `npm ci`, t
    - **Claude Code** starts in the same window.
 2. **Ask for a video.** Type into Claude Code, for example:
    ```
-   /make-video "What if the Moon disappeared?" --type what-if
+   /make-video "Why is the sky blue?"
    ```
-   - Types available now: `explainer` and `what-if`. Story, action and other types come later.
+   - This makes a **vertical short** (1080 × 1920, for phones), the default: about 45–75 seconds,
+     a hook in the first two seconds, one idea every 5–8 seconds, and a last line that invites a
+     rewatch or a comment. The host talks from the bottom corner of the tall frame and steps into
+     the scene once or twice; captions sit in the middle of the screen (at the top while he is in
+     the scene), and labels and tags stay inside the phone-safe area.
+   - Want the old wide video (1920 × 1080, 1–3 minutes) instead? Add `--format landscape`:
+     ```
+     /make-video "Why is the sky blue?" --format landscape
+     ```
+   - Types available now: `explainer` and `what-if` (add `--type what-if`, e.g.
+     `/make-video "What if the Moon disappeared?" --type what-if`). Story, action and other types
+     come later.
    - Optional: `--audience teens` or `--audience adults` (the default is all ages).
+   - Examples of finished vertical shorts: `docs\hf\vertical-*-sheet.png`.
 3. **Watch the team work** in the studio: Quill writes, Echo records, Iris plans,
    Flip animates, and Sage checks each step.
 4. **Approve when asked.** A card appears on the studio's big board (or a question in the chat):
@@ -90,7 +102,7 @@ If the update notes mention new packages, also run `cd hf-kit`, then `npm ci`, t
 ## Part D — Where your video is
 
 The run folder is printed at the start, for example:
-`videos\2026-11-25-what-if-the-moon-disappeared\`
+`videos\2026-11-26-why-is-the-sky-blue\`
 - **Final video:** `04-video\out\video.mp4`
 - **Script:** `01-script\script.md`
 - **Music and sound credits:** `04-video\credits.md` (keep these for posting)

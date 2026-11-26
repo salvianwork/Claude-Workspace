@@ -203,3 +203,102 @@ real number.
 - volcano: the eruption's sub-timings (`flow`, `cool`, `grow`) are seconds after the burst
   word, taken from the word times; a re-recorded voice would need them updated.
 - The transcript check flags spelling only ("metres"/"meters", "vapour"/"vapor").
+
+## Vertical (Vertical Short-Form, 1080 × 1920 shorts)
+
+Three vertical shorts made end to end the way the agent team makes them, following the agent
+files step by step for `format: vertical` (the default): a script to the **short recipe** (hook
+of about 2 s as the first sentence, one idea per 5–8 s, a last line that invites a rewatch or a
+comment, `checks story --format vertical`), Kokoro voice `am_adam` at speed 1.0 (`.venv-voice`,
+`HF_HUB_OFFLINE=1`) checked with `tools.review.transcript voice`, a vertical schema-2 shot list
+(bottom slots, tall reveals with `pan_down` / `pan_up`, tags and labels clear of the active
+caption band), then `tools.hf.shots validate`, `tools.hf.build` (with `hyperframes check`),
+`tools.hf.snapshot`, `--overlap`, `--safe-zone`, `tools.audio.mix` and
+`tools.render.render --engine hyperframes --workers 1`. No reviewer subagents were run (a
+supervised fixture task); I looked at every snapshot set, extra frames at chosen times and each
+contact sheet, and fixed what I saw (below). A fast test (`tests/hf/test_vertical_fixtures.py`)
+validates every `tests/fixtures/hf/vertical/*` shot list, warnings included.
+
+| Video | Inputs | Type, places | Host step-ins | New drawing | Contact sheet | Video (not in git) |
+|---|---|---|---|---|---|---|
+| sound | `tests/fixtures/hf/vertical/sound/` | explainer; countryside (rings, ripples, pulse, dives into gas and solid lattices) | 2 (scenes 2, 4) | none (kit only) | `vertical-sound-sheet.png` | `vertical-sound.mp4` |
+| whatif | `tests/fixtures/hf/vertical/whatif/` | what-if; space, ocean surface and underwater, forest `moonless` | 1 (scene 4) | customs `moon-vanish`, `tide-gauge`, `axis-wobble` (from the world fixture) and a new `coral-spawn` | `vertical-whatif-sheet.png` | `vertical-whatif.mp4` |
+| short | `tests/fixtures/hf/vertical/short/` | explainer "Why is the sky blue?"; countryside `day` and `sunset` | 1 (scene 5) | customs `white-light`, `wave-hit`, `sky-rays`, `sunset-beam` | `vertical-short-sheet.png` | `vertical-short.mp4` |
+
+All three: `shots validate` OK with no warnings, `hyperframes check` clean, overlap report `[]`,
+safe-zone report `[]`, render log ends with `video written` and has no warning or error line,
+1080 × 1920 at 30 fps. `sound` and `whatif` keep the facts of the world fixtures (the tide claim
+stays "a third to a half"), rewritten as shorts; `short` is new. Music: the same generated
+stand-in pad as above (a scratch library outside the repo), no sound effects.
+
+### Timings (same cloud machine: Linux, 4 CPUs, 15 GB RAM; render workers = 1)
+
+Every render ran with `--workers 1`, one at a time: on this machine vertical renders with 2
+workers were cancelled under load ("render_cancelled_parent_exited") during Task 6. The render
+column is `hyperframes render took … s` from `render.log`; the full `tools.render.render` call
+adds its rebuild, `hyperframes check` and the mux.
+
+| Video | Length | Scenes | Voice synth (all scenes) | Build + check | Snapshots / overlap / safe-zone | Render (`hyperframes render`) | Full render call | Render ÷ length |
+|---|---|---|---|---|---|---|---|---|
+| sound | 52.0 s | 8 | 128 s (first call: model load) | 130 s | 17 s / 2 s / 3 s | 288.8 s | 417 s | 5.6× |
+| whatif | 45.5 s | 7 | 19 s (+ 3 short re-records, 10–13 s each, to reach 45 s) | 82–85 s | 16 s / 2 s / 3 s | 408.8 s | 496 s | 9.0× |
+| short | 46.5 s | 7 | 21 s (+ 1 re-record, 11 s) | 127 s | 16 s / 2 s / 3 s | 336.5 s | 468 s | 7.2× |
+
+The audio mix took about 3 s per video. Authoring (my own wall clock, from the first script line
+to the last fix): about 10 minutes reading the plan, agent files and kit; 5 minutes for three
+scripts; 5 minutes of voice and transcript checks; then about 11 minutes for `sound` (kit only,
+3 look/fix rounds), about 20 minutes for `whatif` (one new custom, 3 adapted, 4 rounds) and about
+30 minutes for `short` (four new customs, 3 rounds and one bug), partly while the previous video
+rendered. In all about **75 minutes for 144 s of finished vertical video**, of which about
+**17 minutes of render** with one worker (23 minutes for the full render calls).
+
+**Honest note.** One worker renders a 45–52 s short in 5–7 minutes here (5.6–9× its length;
+the space and ocean scenes of `whatif` are the slowest). That is a safe setting, not a fast one:
+the landscape fixtures above rendered with 2 workers (3.3–10× their length, not measured
+side by side), but vertical renders with 2 workers were cancelled under load on this 4-CPU machine, so it is worth one try of 2 workers on the owner's PC before
+choosing a default. The render tool picks its workers in `tools/hf/render.py`: `--workers N`
+when given (`tools.render.render` and `tools.hf.render` both pass it through), otherwise
+`default_workers()` = half the CPUs, at least 1 (2 here). There is no automatic retry with
+fewer workers yet; a cancelled render simply fails.
+
+### What I saw and fixed (three or more look/fix rounds per video)
+
+The main lesson, for every vertical shot: a camera move onto an **anchor** puts that point at
+55 % of the frame height (y ≈ 1056), right under the caption band, while a move onto an
+**actor** puts his feet at y 700. So most anchor shots open with a short `pan_down` (by 300–850
+world px, about a second) that lifts the ground or the thing into the middle band; the world's
+bottom edge limits how far a pan can go at low zoom (the camera clamps), so the closer shots use
+a higher zoom.
+
+- **sound:** the rail sat under the captions in every anchor shot → the opening pans to the lake
+  so the bridge rail lands above the captions; the lake shot is closer (zoom 1.4) with a pan down
+  (at zoom 1.0 the world edge stopped the pan); the host's step-ins first framed him small with
+  the top caption band over his head → framed on the rail at zoom 1.5 so his head sits below the
+  band; "Air: later" covered the friend's face → moved to the rail; the last scene's tag on the
+  pulse crossed the captions → framed on the friend instead, the pulse races in.
+- **whatif:** the Moon was under the captions and the frame was mostly black → zoom 1.0 and a pan
+  down, with Earth's limb behind the host; two labels on the Moon overlapped → left and right; the
+  forest walk framed the host tiny in a dark frame → he stands by the log at zoom 1.1 and the view
+  pans up to the stars; the axis sat outside the narrow frame and later swung across the space
+  station → framed on the Moon's (covered) place, axis leaning −15° with a 5° swing; the rooftop
+  Moon of `rooftop-night` stays at the right edge of a vertical frame at any zoom (parallax and
+  the world edge) → the last scene returns to the space view of scene 1 with the real Moon back
+  (a bookend). New custom `coral-spawn` (pink bundles rising from the reef).
+- **short:** the molecules and light waves were too small to read on a phone → a `scale`
+  parameter (×2) with labels above and below; the custom's arrows were `NaN` in the browser (a
+  loop variable shadowed the scale) → fixed, checked with a small node harness, and the build
+  check is clean; scene 2's beam showed a prism with nothing coming out → no prism there; the
+  host's step-in was small with soil filling the frame → zoom 1.4 with a pan up; the
+  sky-rays label covered his face when he turned → moved to his feet; two sunset labels touched
+  for one sample → the first ends a word earlier.
+
+### Known limits (not fixed)
+
+- Labels and tags are small on a phone (about 30–35 px text in the 1080 px frame): readable at
+  full size, tight at 360 px wide. Their size is the kit's, not the fixtures'.
+- Many anchor shots spend their lower half on the cut-away ground under the host (soil, rock):
+  it is drawn and not empty, but it is the part of the frame the viewer looks at least.
+- The opening pan of an anchor shot takes about a second, so the first frames of those scenes
+  still show the target under the captions.
+- `rooftop-night`'s Moon cannot be centred in a vertical frame (see whatif above).
+- The transcript check flags spelling only ("metres"/"meters", "colour"/"color").
