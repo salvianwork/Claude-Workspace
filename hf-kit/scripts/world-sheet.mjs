@@ -165,6 +165,14 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 2200, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · below", { x: 2300, y: 3000, zoom: 1.6 }, null],
   ],
+  "inside-body": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "heart", dx: 100, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "lab-coat", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the stomach", { anchor: "stomach", dx: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1920, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1920, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the neck", { x: 1920, y: 600, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">
