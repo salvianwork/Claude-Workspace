@@ -157,6 +157,14 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 1500, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · below the bed", { x: 1500, y: 3000, zoom: 1.6 }, null],
   ],
+  space: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "craft", dx: -100, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the moon", { anchor: "moon", dx: 200, dy: 100, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2300, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2200, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · below", { x: 2300, y: 3000, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">

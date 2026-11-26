@@ -16,6 +16,9 @@
  *   open    open space with nothing behind it (a tag, a title, a comparison)
  * Path: orbit (an arc around the planet, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -36,6 +39,11 @@
       "earth-orbit": { tint: "#EEF3FF", amount: 0.16, rim: "#FFFFFF", rimSide: 1 }, // hard sunlight from the right
       "deep-space": { tint: "#7F8FC4", amount: 0.46, rim: "#FFE6BE", rimSide: 1 },
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "more of the sky: stars all the way up, a glowing nebula and a far spiral galaxy, a comet with its tail; in Earth orbit a space telescope and a cargo capsule on its way to the station; in deep space a second ringless moon and a passing comet", seamAllow: [] },
+      bottom: { draws: "earth-orbit: the Earth continued below the limb (continents, cloud swirls, a hurricane, the night side with city lights, a satellite passing over); deep-space: an asteroid field and the cratered surface of a big asteroid with a little lander drilling into it", seamAllow: [[2150, 2460], [3400, 3640]] }, // earth-orbit: two of the original's clouds have their edges on the row (at the test's t)
+    },
   };
 
   var GEO = {
@@ -44,6 +52,10 @@
   };
 
   function anchorsFor(opts) {
+    PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var v = PL.variantOf(meta, opts), G = GEO[v], p = G.planet;
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var orbit = [], R = v === "earth-orbit" ? p.r + 520 : p.r * 1.75;
@@ -185,6 +197,123 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  function comet(x, y, len, a, P) { // the tail fades away from the head (gradient ids: P + "-xtail")
+    return tag("g", { transform: "translate(" + x + " " + y + ") rotate(" + a + ")" }, tag("path", { d: "M0 -22 Q" + (-len * 0.5) + " -50 " + (-len) + " -90 L" + (-len) + " 90 Q" + (-len * 0.5) + " 50 0 22 Z", fill: "url(#" + P + "-xtail)" }) +
+      tag("path", { d: "M0 -8 L" + (-len * 0.8) + " -20 L" + (-len * 0.8) + " 20 L0 8 Z", fill: "url(#" + P + "-xtail2)" }) + tag("circle", { r: 60, fill: "#BFEAFF", opacity: 0.25 }) + tag("circle", { r: 24, fill: "#FFFFFF" }));
+  }
+  function crater(x, y, r, c) { return tag("ellipse", { cx: x, cy: y, rx: r, ry: r * 0.45, fill: D.shade(c, 0.25), stroke: D.tint(c, 0.15), "stroke-width": Math.max(3, r * 0.12) }) + tag("ellipse", { cx: x - r * 0.15, cy: y - r * 0.08, rx: r * 0.6, ry: r * 0.22, fill: D.shade(c, 0.4), opacity: 0.6 }); }
+  function asteroid(x, y, r, c, rot) {
+    var d = "";
+    for (var k = 0; k < 9; k++) { var a = k / 9 * Math.PI * 2, rr = r * (0.8 + ((k * 37) % 10) / 40); d += (k ? " L" : "M") + r2(x + Math.cos(a) * rr) + " " + r2(y + Math.sin(a) * rr * 0.8); }
+    return tag("g", { "data-xrock": 1, "data-c": x + "," + y, transform: "rotate(" + rot + " " + x + " " + y + ")" }, tag("path", { d: d + " Z", fill: c, stroke: D.shade(c, 0.4), "stroke-width": 5, "stroke-linejoin": "round" }) +
+      tag("circle", { cx: x + r * 0.2, cy: y - r * 0.2, r: r * 0.2, fill: D.shade(c, 0.25) }) + tag("circle", { cx: x - r * 0.3, cy: y + r * 0.2, r: r * 0.12, fill: D.shade(c, 0.25) }) + tag("path", { d: "M" + r2(x - r * 0.5) + " " + r2(y - r * 0.5) + " q" + r2(r * 0.4) + " " + r2(-r * 0.2) + " " + r2(r * 0.8) + " 0", stroke: D.tint(c, 0.25), "stroke-width": 5, fill: "none" }));
+  }
+  /* The top band. Sky: stars all the way up. Far: a nebula and a far spiral galaxy. Mid: a comet.
+   * Ground: a space telescope and a cargo capsule (earth-orbit), or a small red moon (deep-space). */
+  function drawTopBand(P, v, R) {
+    var out = { sky: "", far: "", mid: "", ground: "", defs: "" }, deep = v === "deep-space";
+    var st = "";
+    for (var k = 0; k < 220; k++) { var sy = 10 + R() * 1060; if (Math.abs(sy - 720) < 8) sy += 16; st += tag("circle", { cx: r2(-200 + R() * 4240), cy: r2(sy), r: r2(1.2 + R() * (R() < 0.06 ? 4 : 2.2)), fill: ["#FFF8E1", "#FFFFFF", "#DCE8FF", "#FFE2C4"][k % 4], opacity: r2(0.35 + R() * 0.6), "data-xstar": k }); }
+    out.sky = tag("g", { "data-part": "xstars" }, st);
+    out.defs = S.rad(P + "-xneb1", [[0, deep ? "#FF9F6A" : "#9F7AEA", 0.42], [0.5, deep ? "#D0508A" : "#5F6AD0", 0.18], [1, "#2A3A90", 0]]) + S.rad(P + "-xneb2", [[0, "#5FF0D0", 0.35], [0.6, "#3A9FD0", 0.12], [1, "#2A3A90", 0]]) +
+      S.rad(P + "-xgal", [[0, "#FFF4E0", 0.95], [0.25, "#E8DCF0", 0.5], [1, "#B8B4E0", 0]]) +
+      S.lin(P + "-xtail", [[0, "#BFEAFF", 0.5], [1, "#BFEAFF", 0]], [1, 0, 0, 0]) + S.lin(P + "-xtail2", [[0, "#FFFFFF", 0.8], [1, "#E6F7FF", 0]], [1, 0, 0, 0]);
+    var f = tag("ellipse", { cx: 2700, cy: 820, rx: 900, ry: 380, fill: "url(#" + P + "-xneb1)", transform: "rotate(-20 2700 820)" }) + tag("ellipse", { cx: 3000, cy: 960, rx: 600, ry: 300, fill: "url(#" + P + "-xneb2)" }) + tag("ellipse", { cx: 2300, cy: 700, rx: 400, ry: 200, fill: "url(#" + P + "-xneb1)", opacity: 0.7 });
+    f += A.stars(R, 60, 2000, 500, 1400, 700, { scale: 0.7, colors: ["#FFE6F0", "#E6F7FF", "#FFFFFF"] });
+    // a far spiral galaxy: a bright core and two arms
+    var gx = 1300, gy = 820, arms = "";
+    for (var a = 0; a < 2; a++) { var d = ""; for (var i = 0; i <= 24; i++) { var th = a * Math.PI + i * 0.22, rr = 14 + i * 9; d += (i ? " L" : "M") + r2(gx + Math.cos(th) * rr) + " " + r2(gy + Math.sin(th) * rr * 0.45); } arms += tag("path", { d: d, stroke: "#D8D0F4", "stroke-width": 16, fill: "none", opacity: 0.35, "stroke-linecap": "round" }); }
+    f += tag("g", { transform: "rotate(-24 " + gx + " " + gy + ")" }, tag("ellipse", { cx: gx, cy: gy, rx: 240, ry: 110, fill: "url(#" + P + "-xgal)" }) + arms);
+    out.far = f;
+    out.mid = comet(deep ? 500 : 2700, deep ? 400 : 440, 700, deep ? 160 : 200, P);
+    if (!deep) { // a space telescope and a cargo capsule heading for the station
+      var g = tag("g", { transform: "translate(900 300) rotate(-12)" }, tag("rect", { x: -150, y: -50, width: 300, height: 100, rx: 20, fill: "#D8DDE3", stroke: "#7A838E", "stroke-width": 5 }) + tag("path", { d: "M150 -50 h40 v100 h-40", fill: "#3A3F48", stroke: "#7A838E", "stroke-width": 4 }) +
+        tag("path", { d: "M-60 -50 v100 M40 -50 v100", stroke: "#B8BEC8", "stroke-width": 4 }) + tag("rect", { x: -100, y: -200, width: 70, height: 140, fill: "#2E4E8E", stroke: "#C9A040", "stroke-width": 4 }) + tag("rect", { x: -100, y: 60, width: 70, height: 140, fill: "#2E4E8E", stroke: "#C9A040", "stroke-width": 4 }) +
+        tag("path", { d: "M-100 -130 h70 M-100 130 h70", stroke: "#4C72C0", "stroke-width": 3 }));
+      g += tag("g", { "data-part": "xcapsule", transform: "translate(2300 380)" }, tag("path", { d: "M-60 -50 L40 -36 L40 36 L-60 50 Z", fill: "#F1F3F5", stroke: "#7A838E", "stroke-width": 5 }) + tag("rect", { x: 40, y: -30, width: 50, height: 60, fill: "#C9A040", stroke: "#8A6A20", "stroke-width": 4 }) +
+        tag("path", { d: "M-60 -50 l-30 0 l20 -20 M-60 50 l-30 0 l20 20", stroke: "#2E4E8E", "stroke-width": 14 }) + tag("path", { d: "M90 0 l40 -14 v28 Z", fill: "#7FE3FF", opacity: 0.8, "data-xflame": 1 }) + tag("circle", { cx: -30, cy: 0, r: 10, fill: "#5FA8E6" }));
+      out.ground = g;
+    } else {
+      out.defs += S.rad(P + "-xred", [[0, "#E08A5A"], [1, "#8A4A30"]], { cx: 0.62, cy: 0.38, r: 0.6 });
+      var mx = 3300, my = 300, mr = 150, mm = tag("circle", { cx: mx, cy: my, r: mr, fill: "url(#" + P + "-xred)" });
+      [[-40, -40, 30], [50, 30, 22], [-60, 60, 16], [30, -80, 12]].forEach(function (c) { mm += tag("circle", { cx: mx + c[0], cy: my + c[1], r: c[2], fill: "#7A3E26", opacity: 0.6 }); });
+      mm += tag("path", { d: "M" + mx + " " + (my - mr) + " A" + mr + " " + mr + " 0 0 0 " + mx + " " + (my + mr) + " A" + (mr * 0.5) + " " + mr + " 0 0 1 " + mx + " " + (my - mr) + " Z", fill: "#04050C", opacity: 0.8 });
+      out.ground = mm;
+    }
+    return out;
+  }
+  /* The bottom band. Earth orbit: the Earth runs on below (clipped to its disc): continents, cloud
+   * swirls, a hurricane, the night side with city lights, a satellite passing over (data-part
+   * "xsat"). Deep space: an asteroid field and a big cratered asteroid's surface with a lander. */
+  function drawBottomBand(P, v, R) {
+    var s = "", defs = "", G = GEO[v], p = G.planet;
+    if (v === "earth-orbit") {
+      var cy0 = p.y + 720; // the disc in tall px
+      defs += '<clipPath id="' + P + '-xdisc"><circle cx="' + p.x + '" cy="' + cy0 + '" r="' + p.r + '"/></clipPath>' +
+        '<linearGradient id="' + P + '-xterm" gradientUnits="userSpaceOnUse" x1="-500" y1="0" x2="4300" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.05"/><stop offset="0.28" stop-color="#FFFFFF" stop-opacity="0.12"/><stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.55"/><stop offset="0.5" stop-color="#FFFFFF"/></linearGradient>' +
+        '<mask id="' + P + '-xnight" maskUnits="userSpaceOnUse" x="-500" y="2800" width="4800" height="900"><rect x="-500" y="2800" width="4800" height="900" fill="url(#' + P + '-xterm)"/></mask>'; // the night side: the original's terminator lies over its own Earth, so the new land and clouds fade out under it
+      var land = "";
+      [[700, 3100, 1.6, 0], [2300, 3180, 1.9, 1], [3500, 3060, 1.3, 0], [1400, 3440, 1.5, 1], [3000, 3480, 1.2, 0]].forEach(function (c) {
+        var x = c[0], y = c[1], k = c[2];
+        land += tag("path", { d: "M" + x + " " + y + " q" + r2(120 * k) + " " + r2(-80 * k) + " " + r2(260 * k) + " " + r2(-30 * k) + " q" + r2(140 * k) + " " + r2(20 * k) + " " + r2(160 * k) + " " + r2(120 * k) + " q" + r2(-40 * k) + " " + r2(130 * k) + " " + r2(-200 * k) + " " + r2(150 * k) + " q" + r2(-160 * k) + " " + r2(10 * k) + " " + r2(-220 * k) + " " + r2(-90 * k) + " q" + r2(-60 * k) + " " + r2(-90 * k) + " 0 " + r2(-150 * k) + " Z", fill: c[3] ? "#5E9A48" : "#9C8A5A", opacity: 0.95 });
+        land += tag("path", { d: "M" + r2(x + 60 * k) + " " + r2(y + 20 * k) + " q" + r2(80 * k) + " " + r2(-30 * k) + " " + r2(160 * k) + " " + r2(10 * k), stroke: "#3E7A36", "stroke-width": 24, fill: "none", opacity: 0.6 });
+        land += tag("path", { d: "M" + r2(x + 120 * k) + " " + r2(y - 30 * k) + " l" + r2(30 * k) + " " + r2(-20 * k) + " l" + r2(30 * k) + " " + r2(20 * k), stroke: "#F1F3F5", "stroke-width": 10, fill: "none", opacity: 0.8 }); // snowy peaks
+      });
+      var cl = "";
+      for (var c = 0; c < 26; c++) { var cx = -200 + R() * 4300, cy = 2990 + R() * 580, w = 100 + R() * 260; cl += tag("path", { d: "M" + r2(cx - w) + " " + r2(cy) + " q" + r2(w * 0.5) + " " + r2(-w * 0.18) + " " + r2(w) + " " + r2(-w * 0.04) + " q" + r2(w * 0.6) + " " + r2(-w * 0.2) + " " + r2(w) + " " + r2(w * 0.12) + " q" + r2(-w) + " " + r2(w * 0.2) + " " + r2(-w * 2) + " " + r2(-w * 0.08) + " Z", fill: "#FFFFFF", opacity: 0.75 }); }
+      var hx = 2900, hy = 3250, sw = "";
+      for (var a = 0; a < 3; a++) { var d = ""; for (var i = 0; i <= 18; i++) { var th = a * 2.09 + i * 0.3, rr = 16 + i * 12; d += (i ? " L" : "M") + r2(hx + Math.cos(th) * rr) + " " + r2(hy + Math.sin(th) * rr * 0.55); } sw += tag("path", { d: d, stroke: "#FFFFFF", "stroke-width": 26, fill: "none", opacity: 0.8, "stroke-linecap": "round" }); }
+      cl += tag("ellipse", { cx: hx, cy: hy, rx: 120, ry: 66, fill: "#FFFFFF", opacity: 0.6 }) + sw + tag("ellipse", { cx: hx, cy: hy, rx: 14, ry: 8, fill: "#3C93D8" });
+      s += tag("g", { "clip-path": "url(#" + P + "-xdisc)" }, tag("g", { mask: "url(#" + P + "-xnight)" }, land + tag("g", { "data-part": "xclouds" }, cl)) +
+        A.stars(R, 110, -300, 2900, 1500, 700, { colors: ["#FFD27A", "#FFE6A8", "#FFC864"], bright: 0, scale: 0.9 }));
+      s += tag("g", { "data-part": "xsat", transform: "translate(1800 3200)" }, tag("rect", { x: -30, y: -24, width: 60, height: 48, rx: 6, fill: "#C9A040", stroke: "#8A6A20", "stroke-width": 4 }) + tag("rect", { x: -150, y: -18, width: 110, height: 36, fill: "#2E4E8E", stroke: "#B8BEC8", "stroke-width": 3 }) +
+        tag("rect", { x: 40, y: -18, width: 110, height: 36, fill: "#2E4E8E", stroke: "#B8BEC8", "stroke-width": 3 }) + tag("path", { d: "M0 24 v24 M-14 48 h28", stroke: "#D8DDE3", "stroke-width": 5 }));
+      return { defs: defs, body: s };
+    }
+    // deep space: an asteroid field and a big asteroid's surface along the bottom
+    var cols = ["#6E6A78", "#7A6E62", "#5E5A66", "#8A7E70"];
+    [[400, 3000, 60], [1100, 3120, 40], [2100, 2960, 50], [2900, 3080, 70], [3600, 2980, 44], [1700, 3220, 30], [3300, 3260, 36], [700, 3280, 26]].forEach(function (q, i) { s += asteroid(q[0], q[1], q[2], cols[i % 4], i * 37); });
+    for (var dust = 0; dust < 60; dust++) s += tag("circle", { cx: r2(-200 + R() * 4240), cy: r2(2920 + R() * 380), r: r2(2 + R() * 5), fill: "#8A8494", opacity: 0.6 });
+    var surf = [];
+    for (var x = -300; x <= 4140; x += 140) surf.push([x, 3380 + Math.sin(x / 520) * 40 + Math.sin(x / 170) * 14]);
+    defs += S.lin(P + "-xground", [[0, "#8A8494"], [1, "#4E4A58"]]);
+    s += tag("path", { d: S.smooth(surf, false) + " L4140 3700 L-300 3700 Z", fill: "url(#" + P + "-xground)", stroke: "#3A3640", "stroke-width": 6 });
+    [[300, 3470, 80], [1300, 3520, 120], [2600, 3460, 70], [3400, 3540, 140], [2000, 3570, 50], [800, 3570, 40]].forEach(function (q) { s += crater(q[0], q[1], q[2], "#7A7484"); });
+    for (var pb = 0; pb < 30; pb++) { var px = -250 + R() * 4380; s += tag("circle", { cx: r2(px), cy: r2(3420 + R() * 170 + Math.sin(px / 520) * 40), r: r2(4 + R() * 10), fill: "#5E5A66" }); }
+    // the lander on its legs, drilling
+    var lx = 2250, ly = 3400;
+    s += tag("g", { transform: "translate(" + lx + " " + ly + ")" }, tag("path", { d: "M-70 -10 L-110 40 M70 -10 L110 40 M-120 40 h30 M90 40 h30", stroke: "#B8BEC8", "stroke-width": 8, "stroke-linecap": "round" }) +
+      tag("rect", { x: -80, y: -80, width: 160, height: 80, rx: 10, fill: "#C9A040", stroke: "#8A6A20", "stroke-width": 5 }) + tag("path", { d: "M-80 -50 h160", stroke: "#E8C870", "stroke-width": 4 }) +
+      tag("path", { d: "M-40 -80 Q0 -170 40 -80 Z", fill: "#F1F3F5", stroke: "#7A838E", "stroke-width": 4 }) + tag("path", { d: "M0 -80 V-130", stroke: "#7A838E", "stroke-width": 4 }) + tag("circle", { cx: 0, cy: -134, r: 7, fill: "#FF6B6B", "data-xblink": 1 }) +
+      tag("rect", { x: 80, y: -50, width: 140, height: 40, fill: "#2E4E8E", stroke: "#B8BEC8", "stroke-width": 3 }) + tag("rect", { x: -220, y: -50, width: 140, height: 40, fill: "#2E4E8E", stroke: "#B8BEC8", "stroke-width": 3 }) +
+      tag("path", { d: "M0 0 V60", stroke: "#8A929D", "stroke-width": 12 }) + tag("g", { "data-xdrill": 1 }, tag("path", { d: "M-10 60 L10 60 L0 90 Z", fill: "#5A5F6B" })) + tag("ellipse", { cx: 0, cy: 70, rx: 60, ry: 14, fill: "#B4ACA0", opacity: 0.5 }));
+    return { defs: defs, body: s };
+  }
+  function mountBands(X, P, v, seed) {
+    var top = drawTopBand(P, v, D.rng(seed + 31)), bot = drawBottomBand(P, v, D.rng(seed + 32));
+    PL.band(X.over.sky, "top", "", top.sky);
+    PL.band(X.over.far, "top", top.defs, top.far);
+    PL.band(X.over.mid, "top", "", top.mid);
+    PL.band(X.over.ground, "top", "", top.ground);
+    var bg = PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    var q = function (sel) { var o = []; PL.LAYERS.forEach(function (n) { o = o.concat([].slice.call(X.over[n].querySelectorAll(sel))); }); return o; };
+    var xstars = q("[data-xstar]").filter(function (e, i) { return i % 5 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+    var cap = q('[data-part="xcapsule"]')[0], flame = q("[data-xflame]")[0], sat = bg.querySelector('[data-part="xsat"]'), cl = bg.querySelector('[data-part="xclouds"]');
+    var rocks = [].slice.call(bg.querySelectorAll("[data-xrock]")).map(function (e) { var c = e.getAttribute("data-c").split(","); return { e: e, x: +c[0], y: +c[1], r0: +/rotate\(([-\d.]+)/.exec(e.getAttribute("transform"))[1] }; });
+    var blink = bg.querySelector("[data-xblink]"), drill = bg.querySelector("[data-xdrill]");
+    return function (t) {
+      xstars.forEach(function (x) { x.e.setAttribute("opacity", r2(x.op * (0.6 + 0.4 * Math.sin(t * 2 + x.k)))); });
+      if (cap) cap.setAttribute("transform", "translate(" + r2(2300 + Math.sin(t * 0.1) * 60) + " " + r2(380 + Math.sin(t * 0.13) * 20) + ")");
+      if (flame) flame.setAttribute("opacity", r2(0.5 + 0.4 * Math.sin(t * 13)));
+      if (sat) sat.setAttribute("transform", "translate(" + r2(A.wrap(1800 + t * 40, -400, 4300)) + " " + r2(3200 - Math.sin(t * 0.05) * 30) + ")");
+      if (cl) cl.setAttribute("transform", "translate(" + r2(A.wrap(t * 9, 0, 400) - 200) + " 0)");
+      rocks.forEach(function (r, k) { r.e.setAttribute("transform", "rotate(" + r2(r.r0 + t * (3 + k)) + " " + r.x + " " + r.y + ")"); });
+      if (blink) blink.setAttribute("opacity", (t % 1.4) < 0.3 ? 1 : 0.25);
+      if (drill) drill.setAttribute("transform", "translate(" + r2(Math.sin(t * 30) * 2) + " 0)");
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -193,7 +322,9 @@
     var seed = opts.seed === undefined ? 14 : opts.seed | 0;
     var parts = { sky: drawSky(P, v, D.rng(seed + 1)), far: drawFar(P, v, D.rng(seed + 2)), mid: drawMid(P, v, D.rng(seed + 3)), ground: drawGround(P, v, D.rng(seed + 4)), front: drawFront(P, v, D.rng(seed + 5)) };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "space-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "space-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, seed) : null; // the bands above and below (tall-world px)
     var G = GEO[v];
     var craft = g.ground.querySelector('[data-part="craft"]'), craftBase = craft.getAttribute("transform");
     var cloudG = g.ground.querySelector('[data-part="clouds"]');
@@ -201,13 +332,14 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       // the craft drifts and turns very slowly (no sudden moves in orbit)
       craft.setAttribute("transform", "translate(" + r2(D.wobble(t, 3, 0.15) * 18) + " " + r2(D.wobble(t, 7, 0.12) * 12) + ") " + craftBase + " rotate(" + r2(Math.sin(t * 0.12) * 2.5) + ")");
       if (cloudG) cloudG.setAttribute("transform", "translate(" + r2(A.wrap(t * 9, 0, 400) - 200) + " 0)"); // Earth turns under the clouds' view
       rocks.forEach(function (e, k) { var c = [[160, 2000], [3720, 220], [3600, 2040]][k]; e.setAttribute("transform", "rotate(" + r2(t * (4 + k * 2)) + " " + c[0] + " " + c[1] + ")"); });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 
