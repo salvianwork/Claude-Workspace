@@ -16,6 +16,9 @@
  *   canopy    up in the oak's branches (a bird, a nest, a tag)
  * Path: trail (along the trail, left to right, over the bridge).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -36,6 +39,11 @@
       night: { tint: "#3E5A8E", amount: 0.68, rim: "#C4D8FF", rimSide: 1 },
       moonless: { tint: "#2C4174", amount: 0.74, rim: "#A9BDF0", rimSide: 1 }, // starlight only: darker, a faint cool rim
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the tree canopy above: the woods' crowns closing overhead with light shafts through the gaps, the big oak's trunk rising into its crown (a squirrel, a beehive, a woodpecker), a leafy bough across the front with vines, birds by day; bats and stars at night (many more stars when moonless)", seamAllow: [] },
+      bottom: { draws: "the forest floor cut away: a lip of grass and leaf litter, the stream's channel in section, dark soil with the oak's roots, mycelium threads, a rabbit burrow with sleeping rabbits, a mole in its tunnel, an ant nest, worms, a squirrel's acorn cache, then stones and bedrock with groundwater", seamAllow: [] },
+    },
   };
 
   var G = { back: 1330, oak: { x: 3000, base: 1520 }, log: { x0: 1060, x1: 1560, y: 1600 }, bridge: { x0: 2030, x1: 2420, y: 1620 } };
@@ -50,6 +58,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var path = [];
     for (var x = 120; x <= 3720; x += 400) path.push({ x: x, y: r2(trailY(x)) });
@@ -222,6 +233,163 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  /* The top band: the canopy closing overhead. Mid layer: a roof of crowns over the woods (it hides
+   * the tops of the mid trunks) with gaps the light shafts come through. Ground layer: the oak's
+   * trunk rising into its crown, with a squirrel, a beehive and a woodpecker. Front layer: the big
+   * trunk at the left runs on up and a leafy bough crosses the top, the vines hanging from it. Far
+   * layer: birds (day) or bats (night). Sky layer: stars (night; many more when moonless). */
+  function drawTopBand(P, v, L, R) {
+    var tone = L.tone, night = v !== "day", out = { sky: "", far: "", mid: "", ground: "", front: "", defs: "" };
+    // mid: the canopy roof
+    var m = tag("rect", { x: -1600, y: -400, width: 7200, height: 700, fill: tone("#3B7434") });
+    var cols = ["#3F7E36", "#4C8A40", "#5A9A48", "#36702F"];
+    for (var i = 0; i < 70; i++) { var cx = -1500 + i * 100 + R() * 60, cy = 220 + R() * 160, r = 120 + R() * 110; m += tag("circle", { cx: r2(cx), cy: r2(cy), r: r2(r), fill: tone(cols[i % 4]) }); }
+    for (var j = 0; j < 46; j++) { var lx = -1500 + j * 150 + R() * 80, ly = 470 + R() * 60, lr = 90 + R() * 60; m += tag("circle", { cx: r2(lx), cy: r2(ly), r: r2(lr), fill: tone(cols[(j + 1) % 4]) }) + tag("circle", { cx: r2(lx + lr * 0.3), cy: r2(ly - lr * 0.35), r: r2(lr * 0.4), fill: tone("#79BC57"), opacity: night ? 0.3 : 0.55 }); }
+    // gaps of sky in the canopy (the shafts start under them)
+    [[1500, 120, 90], [1900, 70, 120], [2500, 150, 80], [3100, 60, 100], [700, 160, 70]].forEach(function (g) { m += tag("ellipse", { cx: g[0], cy: g[1], rx: g[2], ry: g[2] * 0.6, fill: L.sky[0][1] }); });
+    var rayOp = v === "moonless" ? 0.07 : night ? 0.22 : 0.42;
+    out.defs += S.lin(P + "-xray", [[0, night ? "#C4D8FF" : "#FFF6C8", 0], [0.5, night ? "#C4D8FF" : "#FFF6C8", rayOp], [1, night ? "#C4D8FF" : "#FFF6C8", rayOp]]);
+    [[1500, 260], [1900, 380], [2500, 300], [3100, 200]].forEach(function (q) { m += tag("path", { d: "M" + (q[0] + 120) + " 100 L" + (q[0] + q[1] - 60) + " 100 L" + (q[0] + q[1] - 160) + " 430 L" + (q[0] - 90) + " 430 Z", fill: "url(#" + P + "-xray)" }); });
+    out.mid = m;
+    // ground: the oak rising into its crown
+    var O = G.oak, ox = O.x, g = "";
+    out.defs += '<linearGradient id="' + P + '-xbark" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="' + tone("#7A5A3C") + '"/><stop offset="0.5" stop-color="' + tone("#8C6A48") + '"/><stop offset="1" stop-color="' + tone("#5E4430") + '"/></linearGradient>';
+    g += tag("path", { d: "M" + (ox - 130) + " 440 L" + (ox - 118) + " 160 L" + (ox + 130) + " 160 L" + (ox + 150) + " 440 Z", fill: "url(#" + P + "-xbark)", stroke: tone("#4A3424"), "stroke-width": 6 });
+    for (var bl = 0; bl < 7; bl++) g += tag("path", { d: "M" + (ox - 90 + bl * 30) + " 430 q" + ((bl % 2) * 16 - 8) + " -130 " + (bl % 3 * 8 - 8) + " -260", stroke: tone("#4A3424"), "stroke-width": 5, fill: "none", opacity: 0.45 });
+    g += tag("path", { d: "M" + (ox - 60) + " 300 Q" + (ox - 300) + " 200 " + (ox - 560) + " 210 M" + (ox + 80) + " 260 Q" + (ox + 320) + " 160 " + (ox + 600) + " 190", stroke: tone("#6E5236"), "stroke-width": 44, fill: "none", "stroke-linecap": "round" });
+    [[ox - 620, 150, 220], [ox - 300, 80, 260], [ox + 40, 40, 300], [ox + 380, 90, 260], [ox + 680, 170, 200], [ox - 820, 280, 150], [ox + 860, 300, 140]].forEach(function (c, k) {
+      g += tag("circle", { cx: c[0], cy: c[1], r: c[2], fill: tone(k % 2 ? "#3E8E41" : "#4FA54A"), stroke: tone("#2B6A2E"), "stroke-width": 5 }) + tag("circle", { cx: c[0] + c[2] * 0.3, cy: c[1] - c[2] * 0.3, r: c[2] * 0.45, fill: tone("#79BC57"), opacity: 0.6 });
+    });
+    // a woodpecker on the trunk, a beehive under the left branch, a squirrel on the right one
+    var wy = 360;
+    g += tag("path", { d: "M" + (ox - 118) + " " + wy + " q-30 -6 -36 24 q10 30 30 34 Z", fill: tone("#2E2A24") }) + tag("path", { d: "M" + (ox - 150) + " " + (wy + 10) + " q-6 -22 12 -30 l10 10 Z", fill: tone("#E03131") }) + tag("path", { d: "M" + (ox - 156) + " " + (wy + 4) + " l-24 4 l24 4 Z", fill: tone("#5C4A38") }) + tag("circle", { cx: ox - 146, cy: wy + 2, r: 3, fill: "#FFF" });
+    var hx = ox - 420, hy = 240;
+    g += tag("path", { d: "M" + hx + " " + hy + " v20", stroke: tone("#5E4430"), "stroke-width": 6 }) + tag("path", { d: "M" + (hx - 46) + " " + (hy + 40) + " q46 -40 92 0 q20 50 -10 96 q-36 30 -72 0 q-30 -46 -10 -96 Z", fill: tone("#E8B23A"), stroke: tone("#9A6A10"), "stroke-width": 5 }) +
+      tag("path", { d: "M" + (hx - 44) + " " + (hy + 64) + " h88 M" + (hx - 46) + " " + (hy + 92) + " h92 M" + (hx - 38) + " " + (hy + 118) + " h76", stroke: tone("#B9841A"), "stroke-width": 5 }) + tag("ellipse", { cx: hx, cy: hy + 110, rx: 12, ry: 8, fill: tone("#3A2A1E") });
+    if (!night) for (var b = 0; b < 3; b++) g += tag("g", { "data-bee": b, transform: "translate(" + (hx + 60 + b * 40) + " " + (hy + 90 + b * 20) + ")" }, tag("ellipse", { rx: 9, ry: 6, fill: "#FFD43B", stroke: "#2E2A24", "stroke-width": 2 }) + tag("ellipse", { cx: 0, cy: -8, rx: 6, ry: 4, fill: "#FFFFFF", opacity: 0.8 }));
+    var sx = ox + 430, sy = 176;
+    g += tag("g", { transform: "translate(" + sx + " " + sy + ")" }, tag("path", { d: "M-30 0 q-50 -20 -40 -80 q30 10 30 50 Z", fill: tone("#C8692E"), stroke: tone("#7A3A14"), "stroke-width": 3 }) + tag("ellipse", { cx: 0, cy: -16, rx: 30, ry: 20, fill: tone("#D9772E"), stroke: tone("#7A3A14"), "stroke-width": 3 }) +
+      tag("circle", { cx: 26, cy: -30, r: 14, fill: tone("#D9772E"), stroke: tone("#7A3A14"), "stroke-width": 3 }) + tag("circle", { cx: 32, cy: -33, r: 3, fill: "#111" }) + tag("path", { d: "M20 -42 l4 -10 l6 8", fill: tone("#D9772E"), stroke: tone("#7A3A14"), "stroke-width": 2 }) + tag("circle", { cx: 38, cy: -18, r: 7, fill: tone("#8C5E3C") }));
+    out.ground = g;
+    // front: the big trunk at the left runs on up, a bough crosses the top, vines hang from it
+    var f = tag("path", { d: "M-300 -260 L110 -260 L120 340 L-300 340 Z", fill: tone("#5E4430") }) + tag("path", { d: "M110 -260 L120 340", stroke: tone("#3A2A1E"), "stroke-width": 8 }) + tag("path", { d: "M40 -260 V340", stroke: tone("#7A5A3C"), "stroke-width": 20, opacity: 0.7 });
+    f += tag("path", { d: "M60 560 C700 420 1500 470 2200 440 S3500 380 4300 470", stroke: tone("#5E4430"), "stroke-width": 64, fill: "none", "stroke-linecap": "round" }) + tag("path", { d: "M60 546 C700 406 1500 456 2200 426 S3500 366 4300 456", stroke: tone("#7A5A3C"), "stroke-width": 14, fill: "none", opacity: 0.6 });
+    f += tag("path", { d: "M-300 600 Q-80 520 110 560", stroke: tone("#5E4430"), "stroke-width": 70, fill: "none" });
+    var leaves = [[300, 470], [800, 430], [1300, 450], [2600, 420], [3000, 390], [3500, 400], [3900, 440]];
+    leaves.forEach(function (q, k) {
+      for (var n = 0; n < 7; n++) { var a = n / 7 * Math.PI * 2, lx2 = q[0] + Math.cos(a) * 70, ly2 = q[1] + Math.sin(a) * 40 - 30; f += tag("ellipse", { cx: r2(lx2), cy: r2(ly2), rx: 50, ry: 24, fill: tone(n % 2 ? "#4FA54A" : "#3E8E41"), stroke: tone("#2B6A2E"), "stroke-width": 3, transform: "rotate(" + r2(a * 57.3) + " " + r2(lx2) + " " + r2(ly2) + ")" }); }
+    });
+    for (var h = 0; h < 6; h++) {
+      var vx = 650 + h * 560 + R() * 80, len = 120 + R() * 160, vy = 470;
+      if (vx > 1550 && vx < 2350) continue;
+      f += tag("path", { d: "M" + r2(vx) + " " + vy + " Q" + r2(vx + 24) + " " + r2(vy + len * 0.5) + " " + r2(vx) + " " + r2(vy + len), stroke: tone("#2F6E2A"), "stroke-width": 6, fill: "none" });
+      for (var lv = 0; lv < 4; lv++) f += tag("ellipse", { cx: r2(vx + (lv % 2 ? 20 : -20)), cy: r2(vy + len * (lv + 1) / 5), rx: 24, ry: 13, fill: tone(lv % 2 ? "#4FA54A" : "#3E8E41") });
+    }
+    out.front = f;
+    // far: birds (day) or bats (night)
+    var fl = "";
+    for (var k2 = 0; k2 < 9; k2++) {
+      var bx = 900 + k2 * 260 + R() * 120, by = 560 + R() * 240, s = 0.6 + R() * 0.5;
+      fl += night ? tag("path", { d: "M" + r2(bx) + " " + r2(by) + " q-20 -18 -44 -6 q10 6 6 16 q14 -10 38 -10 q24 0 38 10 q-4 -10 6 -16 q-24 -12 -44 6 Z", fill: "#0A1024", transform: "scale(1)", "data-xflap": k2, opacity: 0.85 })
+        : tag("path", { d: "M" + r2(bx) + " " + r2(by) + " q" + r2(14 * s) + " " + r2(-14 * s) + " " + r2(28 * s) + " 0 q" + r2(14 * s) + " " + r2(-14 * s) + " " + r2(28 * s) + " 0", stroke: tone("#2F3A44"), "stroke-width": 5, fill: "none", "stroke-linecap": "round", "data-xflap": k2 });
+    }
+    out.far = tag("g", { "data-part": "xflock" }, fl);
+    // sky: stars at night
+    if (night) {
+      var st = "", n2 = v === "moonless" ? 300 : 130;
+      for (var q2 = 0; q2 < n2; q2++) { var sy2 = 20 + R() * 1000; if (Math.abs(sy2 - 720) < 8) sy2 += 16; st += tag("circle", { cx: r2(200 + R() * 3440), cy: r2(sy2), r: r2(1.2 + R() * (v === "moonless" ? 3 : 2.4)), fill: ["#FFF8E1", "#FFFFFF", "#DCE8FF"][q2 % 3], opacity: r2(0.35 + R() * 0.6), "data-xstar": q2 }); }
+      out.sky = tag("g", { "data-part": "xstars" }, st);
+    }
+    return out;
+  }
+
+  /* The bottom band (ground layer): the forest floor cut away below a lip of grass and leaf litter:
+   * the stream's channel in section, dark soil with the oak's roots and mycelium threads, a rabbit
+   * burrow with two rabbits asleep, a mole in its tunnel, an ant nest, worms, an acorn cache, then
+   * stones, groundwater and bedrock. Front layer: the big trunk's roots. */
+  function drawBottomBand(P, v, L, R) {
+    // the ground in section is toned more gently than the scene at night, so it stays readable
+    var tone = v === "day" ? L.tone : v === "night" ? A.toner(0.22, "#13284E", 0.3) : A.toner(0.28, "#0E1C3C", 0.34), s = "", lipY = function (x) { return 2985 + Math.sin(x / 210) * 10 + Math.sin(x / 77) * 4; };
+    var defs = S.lin(P + "-xsoil", [[0, tone("#5A3F2C")], [0.6, tone("#4A3424")], [1, tone("#3E2C20")]]) + S.lin(P + "-xrock", [[0, tone("#7E7A70")], [1, tone("#55524A")]]) +
+      S.lin(P + "-xgw", [[0, tone("#5FA8D3"), 0], [1, tone("#3F86C0"), 0.55]]);
+    var lip = [];
+    for (var x = -300; x <= 4140; x += 60) lip.push([x, lipY(x)]);
+    var under = tag("rect", { x: -300, y: 3200, width: 4440, height: 600, fill: tone("#3E2C20") });
+    s += tag("path", { d: smooth(lip, false) + " L4140 3600 L-300 3600 Z", fill: "url(#" + P + "-xsoil)" });
+    // the stream's channel in section (it reaches the cut at x ~ 2050..2600)
+    s += tag("path", { d: "M2040 " + r2(lipY(2040) - 2) + " Q2080 3120 2320 3130 Q2560 3120 2600 " + r2(lipY(2600) - 2) + " Z", fill: tone("#6E5A44") });
+    s += tag("path", { d: "M2058 " + r2(lipY(2058) + 4) + " Q2100 3100 2320 3108 Q2540 3100 2582 " + r2(lipY(2582) + 4) + " Z", fill: tone("#3E9AC6") }) + tag("path", { d: "M2070 " + r2(lipY(2070) + 10) + " H2570", stroke: tone("#BFEAFF"), "stroke-width": 4, opacity: 0.6, "stroke-dasharray": "40 30" });
+    for (var pb = 0; pb < 14; pb++) { var px = 2120 + R() * 400; s += tag("ellipse", { cx: r2(px), cy: r2(3100 - Math.abs(px - 2320) * 0.25 + R() * 10), rx: 12 + R() * 10, ry: 7 + R() * 5, fill: tone(["#A6927A", "#8E8A80", "#C7B79A"][pb % 3]) }); }
+    s += tag("g", { transform: "translate(2380 3070)" }, tag("ellipse", { rx: 30, ry: 12, fill: tone("#FF8787"), stroke: tone("#A83232"), "stroke-width": 3 }) + tag("path", { d: "M26 0 l18 -12 v24 Z", fill: tone("#FF8787") }) + tag("circle", { cx: -14, cy: -3, r: 3, fill: "#111" })); // a little fish
+    // the grass lip and the leaf litter on it
+    s += tag("path", { d: smooth(lip.map(function (q) { return [q[0], q[1] - 6]; }), false), stroke: tone("#4A8236"), "stroke-width": 16, fill: "none" });
+    for (var lf = 0; lf < 110; lf++) {
+      var lx = -280 + R() * 4400; if (lx > 2030 && lx < 2610) continue;
+      var ly = lipY(lx) - 12 - R() * 50, a = R() * 180;
+      s += tag("ellipse", { cx: r2(lx), cy: r2(ly), rx: 18 + R() * 10, ry: 8 + R() * 4, fill: tone(["#D9822B", "#C8692E", "#E8B23A", "#A0522D", "#8C6A48"][lf % 5]), transform: "rotate(" + r2(a) + " " + r2(lx) + " " + r2(ly) + ")" });
+    }
+    for (var gr = 0; gr < 60; gr++) { var gx = -280 + R() * 4400; if (gx > 2030 && gx < 2610) continue; var gy = lipY(gx) - 4; s += tag("path", { d: "M" + r2(gx) + " " + r2(gy) + " l-6 -24 M" + r2(gx) + " " + r2(gy) + " l3 -28 M" + r2(gx) + " " + r2(gy) + " l9 -20", stroke: tone(gr % 2 ? "#3E7F32" : "#6FA84E"), "stroke-width": 5, "stroke-linecap": "round" }); }
+    // a lighter topsoil streak, mycelium threads under the mushrooms
+    s += tag("path", { d: smooth([[-300, 3060], [700, 3050], [1500, 3070], [2900, 3050], [4140, 3066]], false), stroke: tone("#6E5236"), "stroke-width": 24, fill: "none", opacity: 0.5 });
+    var my = "";
+    for (var mi = 0; mi < 12; mi++) { var mx = [400, 1100, 3300, 3550][mi % 4] + R() * 160 - 80; my += "M" + r2(mx) + " 3010 q" + r2((R() - 0.5) * 120) + " " + r2(40 + R() * 40) + " " + r2((R() - 0.5) * 200) + " " + r2(90 + R() * 70) + " "; }
+    s += tag("path", { d: my, stroke: tone("#EDE3D0"), "stroke-width": 2.5, fill: "none", opacity: 0.6 });
+    // the oak's roots spreading down (oak at x 3000)
+    var roots = [[3000, 3000, 2700, 3260, 2520, 3420, 26], [3000, 3000, 3150, 3300, 3420, 3470, 24], [3000, 3000, 2960, 3350, 3020, 3560, 30], [3000, 3000, 3500, 3120, 3800, 3200, 16], [3000, 3000, 2500, 3080, 2300, 3200, 14]];
+    roots.forEach(function (r) { s += tag("path", { d: "M" + r[0] + " " + r[1] + " Q" + r[2] + " " + r[3] + " " + r[4] + " " + r[5], stroke: tone("#7A5A3C"), "stroke-width": r[6], fill: "none", "stroke-linecap": "round" }) + tag("path", { d: "M" + r[0] + " " + r[1] + " Q" + r[2] + " " + r[3] + " " + r[4] + " " + r[5], stroke: tone("#9C7350"), "stroke-width": r[6] * 0.3, fill: "none", opacity: 0.6 }); });
+    s += tag("path", { d: "M2620 3340 q-60 30 -80 90 M3300 3380 q40 50 30 110 M2990 3480 q-40 40 -30 90", stroke: tone("#7A5A3C"), "stroke-width": 8, fill: "none", "stroke-linecap": "round" });
+    // the rabbit burrow: an opening at the lip, a sloping tunnel, a round chamber with two rabbits
+    var bx0 = 900, chx = 1250, chy = 3260;
+    s += tag("path", { d: "M" + (bx0 - 40) + " " + r2(lipY(bx0 - 40)) + " Q" + (bx0 + 60) + " 3120 " + (chx - 120) + " " + chy + " L" + (chx - 80) + " " + (chy + 60) + " Q" + (bx0 + 40) + " 3200 " + (bx0 + 50) + " " + r2(lipY(bx0 + 50)) + " Z", fill: tone("#2E2018") });
+    s += tag("ellipse", { cx: chx, cy: chy + 20, rx: 190, ry: 100, fill: tone("#2E2018") }) + tag("ellipse", { cx: chx, cy: chy + 90, rx: 170, ry: 26, fill: tone("#C9A066"), opacity: 0.8 }); // straw bedding
+    [[chx - 60, 1], [chx + 70, -1]].forEach(function (rb) {
+      s += tag("g", { transform: "translate(" + rb[0] + " " + (chy + 80) + ") scale(" + rb[1] + " 1)", "data-xrabbit": 1 }, tag("ellipse", { cx: 0, cy: -34, rx: 62, ry: 40, fill: tone("#B9A48C"), stroke: tone("#6E5A44"), "stroke-width": 4 }) +
+        tag("circle", { cx: 50, cy: -46, r: 28, fill: tone("#B9A48C"), stroke: tone("#6E5A44"), "stroke-width": 4 }) + tag("ellipse", { cx: 40, cy: -82, rx: 12, ry: 30, fill: tone("#B9A48C"), stroke: tone("#6E5A44"), "stroke-width": 3, transform: "rotate(-60 40 -70)" }) +
+        tag("path", { d: "M54 -48 q6 4 12 0", stroke: "#2E2A24", "stroke-width": 3, fill: "none" }) + tag("circle", { cx: -60, cy: -30, r: 14, fill: tone("#F4EEE6") }));
+    });
+    // a mole tunnel with the mole, an ant nest, worms, an acorn cache
+    s += tag("path", { d: "M-300 3330 C200 3300 500 3380 700 3350", stroke: tone("#2E2018"), "stroke-width": 60, fill: "none", "stroke-linecap": "round" });
+    s += tag("g", { transform: "translate(560 3356)" }, tag("ellipse", { rx: 58, ry: 28, fill: tone("#3A3A44"), stroke: tone("#1E1E24"), "stroke-width": 3 }) + tag("ellipse", { cx: 60, cy: 4, rx: 16, ry: 9, fill: tone("#F4A7B9") }) + tag("path", { d: "M40 22 l14 8 M30 24 l8 10", stroke: tone("#F4A7B9"), "stroke-width": 6, "stroke-linecap": "round" }));
+    var ant = "";
+    [[1820, 3150, 50], [1700, 3260, 44], [1900, 3330, 56], [1760, 3420, 40]].forEach(function (c) { ant += tag("ellipse", { cx: c[0], cy: c[1], rx: c[2], ry: c[2] * 0.5, fill: tone("#2E2018") }) + tag("ellipse", { cx: c[0] - 10, cy: c[1] + 6, rx: 8, ry: 5, fill: tone("#F4EEE6") }) + tag("ellipse", { cx: c[0] + 12, cy: c[1] + 4, rx: 8, ry: 5, fill: tone("#F4EEE6") }); });
+    ant += tag("path", { d: "M1840 3000 Q1800 3080 1820 3150 Q1760 3200 1700 3260 Q1800 3300 1900 3330 Q1800 3380 1760 3420", stroke: tone("#2E2018"), "stroke-width": 14, fill: "none" });
+    for (var an = 0; an < 6; an++) ant += tag("circle", { cx: 1780 + an * 22, cy: 3150 + an * 40 + (an % 2) * 10, r: 5, fill: tone("#1E1E24") });
+    s += ant;
+    [[1450, 3130, 0], [2750, 3400, 1], [3600, 3180, 2]].forEach(function (w) { s += tag("path", { d: "M" + w[0] + " " + w[1] + " q20 -16 40 0 q20 16 40 0 q20 -16 40 0", stroke: tone("#E58A9A"), "stroke-width": 12, fill: "none", "stroke-linecap": "round" }); });
+    s += tag("ellipse", { cx: 3420, cy: 3080, rx: 80, ry: 46, fill: tone("#2E2018") });
+    [[3390, 3090], [3430, 3076], [3460, 3096], [3410, 3104]].forEach(function (q) { s += tag("ellipse", { cx: q[0], cy: q[1], rx: 14, ry: 17, fill: tone("#A0703F"), stroke: tone("#5E4430"), "stroke-width": 2 }) + tag("path", { d: "M" + (q[0] - 13) + " " + (q[1] - 8) + " q13 -12 26 0 Z", fill: tone("#6E5236") }); });
+    // stones, groundwater and bedrock
+    for (var st = 0; st < 40; st++) { var sx = -250 + R() * 4380, sy = 3160 + R() * 280, sr = 8 + R() * 18; if ((Math.abs(sx - 1250) < 240 && sy > 3130 && sy < 3400) || (sx > 1620 && sx < 1980) || (sx < 760 && Math.abs(sy - 3340) < 60)) continue; s += tag("ellipse", { cx: r2(sx), cy: r2(sy), rx: r2(sr * 1.3), ry: r2(sr), fill: tone(st % 3 ? "#8E8A80" : "#A6927A"), stroke: tone("#5C584F"), "stroke-width": 3 }); }
+    s += tag("rect", { x: -300, y: 3420, width: 4440, height: 80, fill: "url(#" + P + "-xgw)" });
+    var rock = [];
+    for (var rx = -300; rx <= 4140; rx += 120) rock.push([rx, 3490 + Math.sin(rx / 300) * 16 + R() * 10]);
+    s += tag("path", { d: smooth(rock, false) + " L4140 3600 L-300 3600 Z", fill: "url(#" + P + "-xrock)", stroke: tone("#4A473F"), "stroke-width": 5 });
+    s += tag("path", { d: "M300 3510 l40 50 l-10 40 M1500 3500 l-30 60 M2600 3520 l20 40 l40 20 M3500 3505 l-20 70", stroke: tone("#4A473F"), "stroke-width": 4, fill: "none" });
+    // front: the big trunk's roots into the ground
+    var f = tag("path", { d: "M-300 2960 Q0 3000 100 3200 Q140 3320 60 3420 M120 2950 Q260 3050 360 3240 M-200 2980 Q-160 3200 -260 3400", stroke: tone("#5E4430"), "stroke-width": 46, fill: "none", "stroke-linecap": "round" }) +
+      tag("path", { d: "M-300 2900 H320 L330 2990 Q200 3010 -300 3000 Z", fill: tone("#5E4430") });
+    return { defs: defs, under: under, body: s, front: f };
+  }
+  function mountBands(X, P, v, L, seed) {
+    var top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+    PL.band(X.over.sky, "top", "", top.sky);
+    PL.band(X.over.far, "top", "", top.far);
+    PL.band(X.over.mid, "top", top.defs, top.mid);
+    var tg = PL.band(X.over.ground, "top", "", top.ground);
+    PL.band(X.over.front, "top", "", top.front);
+    PL.band(X.under.ground, "bottom", "", bot.under);
+    PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    PL.band(X.over.front, "bottom", "", bot.front);
+    var flock = X.over.far.querySelector('[data-part="xflock"]'), bees = [].slice.call(tg.querySelectorAll("[data-bee]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    var xstars = [].slice.call(X.over.sky.querySelectorAll("[data-xstar]")).filter(function (e, i) { return i % 4 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+    return function (t) {
+      if (flock) flock.setAttribute("transform", "translate(" + r2(A.wrap(t * 50, -800, 1400)) + " " + r2(D.wobble(t, 4, 0.4) * 20) + ")");
+      bees.forEach(function (b, i) { b.e.setAttribute("transform", b.base + " translate(" + r2(D.wobble(t, i + 2, 1.6) * 30) + " " + r2(D.wobble(t, i + 9, 1.4) * 20) + ")"); });
+      xstars.forEach(function (x) { x.e.setAttribute("opacity", r2(x.op * (0.6 + 0.4 * Math.sin(t * 2 + x.k)))); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -234,7 +402,9 @@
       ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)),
     };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "forest-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "forest-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, L, seed) : null; // the bands above and below (tall-world px)
     var stars = [].slice.call(g.sky.querySelectorAll("[data-star]")), starOp = stars.map(function (e) { return +e.getAttribute("opacity"); });
     var rays = [].slice.call(g.mid.querySelectorAll("[data-ray]"));
     var deerHead = g.mid.querySelector('[data-part="deer"] [data-head]');
@@ -259,6 +429,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       stars.forEach(function (e, k) { if (k % 4 === 0) e.setAttribute("opacity", r2(starOp[k] * (0.6 + 0.4 * Math.sin(t * 2 + k)))); });
       rays.forEach(function (e, k) { e.setAttribute("opacity", r2(0.7 + 0.3 * Math.sin(t * 0.5 + k * 1.7))); });
       if (deerHead) { var graze = Math.max(0, Math.sin(t * 0.6)); deerHead.setAttribute("transform", "rotate(" + r2(graze * 38) + " 100 -110)"); }
@@ -277,7 +448,7 @@
       });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

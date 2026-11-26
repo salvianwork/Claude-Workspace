@@ -14,6 +14,9 @@
  *   seats   the top of a pupil's desk in the first row
  * Path: aisle (along the front of the room, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -33,6 +36,11 @@
       day: { tint: "#FFF4E4", amount: 0.08 },
       afternoon: { tint: "#FFB070", amount: 0.3, rim: "#FFD08A", rimSide: -1 }, // low sun through the windows at the left
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the ceiling continued toward the viewer: tiles in perspective with more light panels, a projector on a ceiling mount aimed at the board, a mobile of the planets turning slowly, paper lanterns and paper stars, an air vent, a speaker and a smoke detector", seamAllow: [] },
+      bottom: { draws: "the wooden floor continued (the windows' sunbeams run on and fade), a paper plane, pencils, a crumpled ball of paper and a basketball on the floor, and a nearer row of pupils' desks with chairs, books, a lunchbox and a pencil case", seamAllow: [] },
+    },
   };
 
   var G = {
@@ -46,6 +54,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var aisle = [];
     for (var x = 260; x <= 3580; x += 332) aisle.push({ x: x, y: 1680 });
@@ -239,6 +250,129 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  var XVP = { x: 1920, y: 1600 }; // the room's vanishing point (tall px)
+  /* The top band (ground layer): the ceiling runs on toward the viewer as tiles in perspective
+   * (the lines fade in above the seam, so nothing steps at y 720), rows of light panels, a projector
+   * on its mount aimed at the board, a planet mobile (turning: data-part "mobile"), paper lanterns
+   * and stars, an air vent, a speaker and a smoke detector. */
+  function drawTopBand(P, v, L, R) {
+    var room = L.room, s = "", warm = L.sun;
+    var defs = '<linearGradient id="' + P + '-xceil" gradientUnits="userSpaceOnUse" x1="0" y1="722" x2="0" y2="0"><stop offset="0" stop-color="' + room("#F7F1E4") + '"/><stop offset="1" stop-color="' + room("#E8DDC6") + '"/></linearGradient>' +
+      '<linearGradient id="' + P + '-xline" gradientUnits="userSpaceOnUse" x1="0" y1="712" x2="0" y2="600"><stop offset="0" stop-color="' + room("#CDBF9F") + '" stop-opacity="0"/><stop offset="1" stop-color="' + room("#CDBF9F") + '"/></linearGradient>' +
+      S.lin(P + "-xpanel", [[0, "#FFFFFF"], [1, "#FFF6DA"]]) + S.rad(P + "-xglow", [[0, "#FFF6DA", warm ? 0.25 : 0.55], [1, "#FFF6DA", 0]]);
+    s += tag("rect", { x: -300, y: -200, width: 4440, height: 922, fill: "url(#" + P + "-xceil)" });
+    // tile grid: lines toward the viewer from the vanishing point, and rows parallel to the wall
+    var lines = "", k = XVP.y - 720;
+    for (var gx = -3000; gx <= 6840; gx += 320) lines += "M" + r2(XVP.x + (gx - XVP.x)) + " 720 L" + r2(XVP.x + (gx - XVP.x) * (XVP.y + 200) / k) + " -200 ";
+    s += tag("path", { d: lines, stroke: "url(#" + P + "-xline)", "stroke-width": 4 });
+    [640, 530, 380, 170].forEach(function (yy) { s += tag("path", { d: "M-300 " + yy + " H4140", stroke: room("#CDBF9F"), "stroke-width": 4 }); });
+    // light panels between the lines, one row per band of tiles
+    var xOn = function (gx, y) { return XVP.x + (gx - XVP.x) * (XVP.y - y) / k; };
+    [[640, 530, [200, 1480, 2760]], [530, 380, [-120, 1160, 2440, 3720]], [380, 170, [200, 1480, 2760]]].forEach(function (row, ri) {
+      row[2].forEach(function (g0, i) {
+        var y0 = row[0] - 14, y1 = row[1] + 14, a = xOn(g0, y0), b = xOn(g0 + 640, y0), c = xOn(g0 + 640, y1), d = xOn(g0, y1);
+        s += tag("path", { d: "M" + r2(a) + " " + y0 + " L" + r2(b) + " " + y0 + " L" + r2(c) + " " + y1 + " L" + r2(d) + " " + y1 + " Z", fill: room("#E9ECEF"), stroke: room("#ADB5BD"), "stroke-width": 4 });
+        s += tag("path", { d: "M" + r2(a + 16) + " " + (y0 - 10) + " L" + r2(b - 16) + " " + (y0 - 10) + " L" + r2(c - 20) + " " + (y1 + 10) + " L" + r2(d + 20) + " " + (y1 + 10) + " Z", fill: "url(#" + P + "-xpanel)" });
+        if (!warm) s += tag("ellipse", { cx: r2((a + b) / 2), cy: (y0 + y1) / 2 + 40, rx: 460, ry: 140, fill: "url(#" + P + "-xglow)" });
+      });
+    });
+    // an air vent, a speaker, a smoke detector
+    s += tag("rect", { x: 3000, y: 580, width: 220, height: 40, rx: 6, fill: room("#E9EEF0"), stroke: room("#8A99A3"), "stroke-width": 4 }) + tag("path", { d: "M3016 592 h188 M3016 600 h188 M3016 608 h188", stroke: room("#8A99A3"), "stroke-width": 3 });
+    s += tag("circle", { cx: 900, cy: 600, r: 36, fill: room("#F1F3F5"), stroke: room("#8A99A3"), "stroke-width": 4 }) + tag("circle", { cx: 900, cy: 600, r: 18, fill: "none", stroke: room("#ADB5BD"), "stroke-width": 4 });
+    s += tag("ellipse", { cx: 2620, cy: 610, rx: 36, ry: 11, fill: room("#FFFDF7"), stroke: room("#A89A80"), "stroke-width": 3 }) + tag("circle", { cx: 2634, cy: 610, r: 4, fill: "#E03131", "data-blink": 0 });
+    // the projector on a ceiling mount, aimed down at the board
+    var px = 2050, py = 590;
+    s += tag("path", { d: "M" + px + " 400 V" + (py - 40), stroke: room("#5F6E78"), "stroke-width": 16 }) + tag("rect", { x: px - 50, y: 390, width: 100, height: 20, rx: 6, fill: room("#5F6E78") });
+    s += tag("rect", { x: px - 130, y: py - 44, width: 260, height: 90, rx: 18, fill: room("#F1F3F5"), stroke: room("#6C7A86"), "stroke-width": 5 }) + tag("circle", { cx: px - 70, cy: py + 2, r: 30, fill: room("#3A4651"), stroke: room("#6C7A86"), "stroke-width": 5 }) +
+      tag("circle", { cx: px - 70, cy: py + 2, r: 14, fill: "#9FD8FF", opacity: 0.85 }) + tag("rect", { x: px + 20, y: py - 20, width: 80, height: 10, rx: 4, fill: room("#ADB5BD") }) + tag("circle", { cx: px + 90, cy: py + 24, r: 6, fill: "#51CF66", "data-blink": 1 });
+    // paper lanterns and paper stars on strings
+    [[420, 420, "#FF8787"], [3480, 380, "#74C0FC"], [3060, 300, "#FFD43B"]].forEach(function (ln) {
+      s += tag("path", { d: "M" + ln[0] + " 170 V" + (ln[1] - 70), stroke: room("#868E96"), "stroke-width": 3 });
+      s += tag("ellipse", { cx: ln[0], cy: ln[1], rx: 76, ry: 74, fill: room(ln[2]), stroke: D.shade(room(ln[2]), 0.3), "stroke-width": 4 });
+      s += tag("path", { d: "M" + (ln[0] - 70) + " " + (ln[1] - 22) + " q70 16 140 0 M" + (ln[0] - 74) + " " + ln[1] + " q74 16 148 0 M" + (ln[0] - 70) + " " + (ln[1] + 22) + " q70 16 140 0", stroke: D.shade(room(ln[2]), 0.25), "stroke-width": 3, fill: "none" }) +
+        tag("rect", { x: ln[0] - 30, y: ln[1] - 84, width: 60, height: 14, rx: 4, fill: room("#3A4651") }) + tag("rect", { x: ln[0] - 30, y: ln[1] + 70, width: 60, height: 14, rx: 4, fill: room("#3A4651") });
+    });
+    var star = function (x, y, r, c) { var d = ""; for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; d += (i ? " L" : "M") + r2(x + Math.cos(a) * rr) + " " + r2(y + Math.sin(a) * rr); } return tag("path", { d: d + " Z", fill: room(c), stroke: D.shade(room(c), 0.3), "stroke-width": 3 }); };
+    [[1100, 470, "#FFD43B"], [1260, 540, "#B197FC"], [2560, 470, "#8CE99A"], [2780, 520, "#FFA94D"], [700, 520, "#74C0FC"]].forEach(function (st, i) { s += tag("path", { d: "M" + st[0] + " " + (i % 2 ? 380 : 170) + " V" + (st[1] - 40), stroke: room("#868E96"), "stroke-width": 2 }) + star(st[0], st[1], 40, st[2]); });
+    // the planet mobile over the middle of the room (it turns in update)
+    s += tag("path", { d: "M1660 170 V250", stroke: room("#868E96"), "stroke-width": 3 }) + tag("g", { "data-part": "mobile" }, "");
+    return { defs: defs, body: s };
+  }
+
+  /* The bottom band (ground layer): the floorboards continued (the windows' sunbeams run on and fade
+   * out), a paper plane, pencils, a crumpled paper ball and a basketball, then a nearer row of
+   * pupils' desks with chairs (bigger: closer to the viewer), books, a lunchbox and a pencil case. */
+  function drawBottomBand(P, v, L, R) {
+    var room = L.room, s = "";
+    var defs = S.lin(P + "-xshade", [[0, "#000000", 0], [1, "#000000", 0.24]]);
+    var under = tag("rect", { x: -300, y: 3200, width: 4440, height: 600, fill: room("#B5814E") });
+    var rows = [2930, 3110, 3330, 3600], pl = "";
+    rows.forEach(function (yy, i) { if (!i) return; pl += "M-300 " + yy + " H4140 "; var step = 280 + (i + 7) * 60; for (var px = -300 + (i % 2) * step / 2; px < 4140; px += step) pl += "M" + px + " " + rows[i - 1] + " V" + yy + " "; });
+    s += tag("path", { d: pl, stroke: room("#9A6A3C"), "stroke-width": 3, opacity: 0.5 });
+    // the sunbeams run on (each: opacity A/2 x (1 - u) across its last row, u over its full width)
+    var A0 = L.sun ? 0.5 : 0.3, k = L.sun ? 1500 : 800;
+    defs += '<linearGradient id="' + P + '-xbeamfade" gradientUnits="userSpaceOnUse" x1="0" y1="2880" x2="0" y2="3300"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>' +
+      '<mask id="' + P + '-xbeammask" maskUnits="userSpaceOnUse" x="-300" y="2870" width="4440" height="500"><rect x="-300" y="2870" width="4440" height="500" fill="url(#' + P + '-xbeamfade)"/></mask>';
+    G.wins.forEach(function (W, i) {
+      var x0 = W.x, x1 = W.x + W.w + k;
+      defs += '<linearGradient id="' + P + '-xbeam' + i + '" gradientUnits="userSpaceOnUse" x1="' + x0 + '" y1="0" x2="' + x1 + '" y2="0"><stop offset="0" stop-color="#FFF1C9" stop-opacity="' + A0 / 2 + '"/><stop offset="1" stop-color="#FFF1C9" stop-opacity="0"/></linearGradient>';
+      var lft = function (y) { return W.x + k * 0.6 + (y - 2880) * k * 0.6 / 1060; }, rgt = function (y) { return W.x + W.w + k + (y - 2880) * k / 1060; };
+      s += tag("path", { d: "M" + r2(lft(2880)) + " 2880 L" + r2(rgt(2880)) + " 2880 L" + r2(rgt(3300)) + " 3300 L" + r2(lft(3300)) + " 3300 Z", fill: "url(#" + P + "-xbeam" + i + ")", mask: "url(#" + P + "-xbeammask)" });
+    });
+    // things on the floor
+    s += tag("path", { d: "M1500 3010 l150 -40 l-70 60 Z M1500 3010 l80 20 l0 -30 Z", fill: room("#FFFFFF"), stroke: room("#ADB5BD"), "stroke-width": 3, "stroke-linejoin": "round" });
+    s += tag("path", { d: "M2200 3060 l120 -16", stroke: room("#F2C230"), "stroke-width": 12, "stroke-linecap": "round" }) + tag("path", { d: "M2320 3044 l14 -2", stroke: room("#3A2F28"), "stroke-width": 8 }) + tag("path", { d: "M2240 3090 l110 10", stroke: room("#E03131"), "stroke-width": 12, "stroke-linecap": "round" });
+    s += tag("circle", { cx: 2560, cy: 3020, r: 30, fill: room("#F8F9FA"), stroke: room("#ADB5BD"), "stroke-width": 4 }) + tag("path", { d: "M2540 3010 l20 10 l14 -16 M2546 3036 l24 -6", stroke: room("#ADB5BD"), "stroke-width": 3, fill: "none" });
+    s += tag("ellipse", { cx: 1210, cy: 3150, rx: 66, ry: 12, fill: "#000", opacity: 0.15 }) + tag("circle", { cx: 1200, cy: 3090, r: 60, fill: room("#F08C00"), stroke: room("#9A5A00"), "stroke-width": 5 }) + tag("path", { d: "M1140 3090 h120 M1200 3030 v120 M1158 3046 q30 44 0 88 M1242 3046 q-30 44 0 88", stroke: room("#5A3A00"), "stroke-width": 4, fill: "none" });
+    // a nearer row of desks with chairs
+    var desk = function (x, base, sc, i) {
+      var o = "", top = -230;
+      o += tag("ellipse", { cx: 0, cy: 6, rx: 230, ry: 18, fill: "#000", opacity: 0.14 });
+      o += tag("path", { d: "M-170 " + top + " V0 M170 " + top + " V0", stroke: room("#6C7A86"), "stroke-width": 14 });
+      o += tag("rect", { x: -186, y: top + 20, width: 372, height: 110, rx: 6, fill: room("#6C7A86"), stroke: room("#47525C"), "stroke-width": 4 });
+      o += tag("rect", { x: -160, y: top + 40, width: 120, height: 70, rx: 3, fill: room(["#2BA3A8", "#C0504D", "#8064A2"][i]) }) + tag("rect", { x: -30, y: top + 50, width: 90, height: 60, rx: 3, fill: room(["#E8A33C", "#4F81BD", "#9BBB59"][i]) });
+      o += tag("rect", { x: -210, y: top - 8, width: 420, height: 30, rx: 8, fill: room("#E2B77F"), stroke: room("#9C6B45"), "stroke-width": 5 });
+      if (i === 0) o += tag("rect", { x: -150, y: top - 60, width: 130, height: 54, rx: 10, fill: room("#FF8787"), stroke: room("#A83232"), "stroke-width": 4 }) + tag("path", { d: "M-110 " + (top - 60) + " q25 -26 50 0", stroke: room("#A83232"), "stroke-width": 6, fill: "none" }); // a lunchbox
+      if (i === 1) o += tag("rect", { x: -140, y: top - 24, width: 150, height: 18, rx: 3, fill: room("#FFF3BF"), transform: "rotate(-5 -65 " + top + ")" }) + tag("rect", { x: 40, y: top - 30, width: 130, height: 26, rx: 12, fill: room("#7048E8"), stroke: room("#4C2EA8"), "stroke-width": 3 }); // a worksheet and a pencil case
+      if (i === 2) o += book(-160, top - 6, 140, 30, "#2F9E44", room) + book(-150, top - 36, 120, 26, "#E8590C", room) + tag("path", { d: "M60 " + (top - 14) + " l100 -10", stroke: room("#1C7ED6"), "stroke-width": 10, "stroke-linecap": "round" });
+      var cc = room(["#FFD43B", "#69DB7C", "#4DABF7"][i]), cd = D.shade(cc, 0.35), steel = room("#6C7A86"), steelL = room("#8C99A3"), cx = 230;
+      o += tag("path", { d: "M" + (cx + 34) + " -20 L" + (cx + 40) + " -176 M" + (cx + 176) + " -20 L" + (cx + 170) + " -176", stroke: steelL, "stroke-width": 9, "stroke-linecap": "round" });
+      o += tag("path", { d: "M" + cx + " 0 L" + (cx + 6) + " -156 M" + (cx + 142) + " 0 L" + (cx + 136) + " -156", stroke: steel, "stroke-width": 11, "stroke-linecap": "round" });
+      o += tag("path", { d: "M" + (cx - 10) + " -150 L" + (cx + 150) + " -150 L" + (cx + 184) + " -182 L" + (cx + 24) + " -182 Z", fill: cc, stroke: cd, "stroke-width": 5, "stroke-linejoin": "round" });
+      o += tag("path", { d: "M" + (cx + 140) + " -160 L" + (cx + 146) + " -360 M" + (cx + 176) + " -186 L" + (cx + 182) + " -384", stroke: steel, "stroke-width": 10, "stroke-linecap": "round" });
+      o += tag("path", { d: "M" + (cx + 130) + " -300 Q" + (cx + 164) + " -296 " + (cx + 196) + " -324 L" + (cx + 196) + " -400 Q" + (cx + 164) + " -372 " + (cx + 130) + " -376 Z", fill: cc, stroke: cd, "stroke-width": 5, "stroke-linejoin": "round" });
+      return tag("g", { transform: "translate(" + x + " " + base + ") scale(" + sc + ")" }, o);
+    };
+    s += desk(420, 3570, 1.75, 0) + desk(1820, 3590, 1.75, 1) + desk(3220, 3570, 1.75, 2);
+    s += tag("rect", { x: -300, y: 3150, width: 4440, height: 450, fill: "url(#" + P + "-xshade)" });
+    return { defs: defs, under: under, body: s };
+  }
+  function mountBands(X, P, v, L, seed) {
+    var room = L.room, top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+    var tg = PL.band(X.over.ground, "top", top.defs, top.body);
+    PL.band(X.under.ground, "bottom", "", bot.under);
+    PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    var mob = D.el(tg.querySelector('[data-part="mobile"]'), "g", {});
+    var PLAN = [[150, 26, "#FFA94D", 0], [250, 22, "#74C0FC", 1], [340, 30, "#E8590C", 0], [-170, 34, "#E9C46A", 1], [-280, 20, "#8CE99A", 0]];
+    mob.innerHTML = tag("path", { d: "M1360 250 H1960 M1460 330 H1860", stroke: room("#868E96"), "stroke-width": 4 }) + tag("path", { d: "M1660 250 V330", stroke: room("#868E96"), "stroke-width": 3 }) +
+      tag("circle", { cx: 1660, cy: 400, r: 50, fill: "#FFD43B", stroke: room("#E8A33C"), "stroke-width": 5 }) + tag("path", { d: "M1660 330 V350", stroke: room("#868E96"), "stroke-width": 3 });
+    var bodies = PLAN.map(function (p) {
+      var e = D.el(mob, "g", {});
+      e.innerHTML = tag("path", { d: "M0 0 V" + (60 + p[1]), stroke: room("#868E96"), "stroke-width": 2 }) + tag("circle", { cx: 0, cy: 60 + p[1] * 2, r: p[1], fill: room(p[2]), stroke: D.shade(room(p[2]), 0.3), "stroke-width": 4 }) +
+        (p[1] > 28 ? tag("ellipse", { cx: 0, cy: 60 + p[1] * 2, rx: p[1] * 1.7, ry: p[1] * 0.35, fill: "none", stroke: room("#C9A24A"), "stroke-width": 4 }) : "");
+      return { e: e, p: p };
+    });
+    var blinks = [].slice.call(tg.querySelectorAll("[data-blink]"));
+    return function (t) {
+      bodies.forEach(function (b, i) { // the arms swing slowly (the mobile turns in a draught)
+        var a = t * 0.5 + i * 1.3, x = 1660 + b.p[0] * Math.cos(a * 0.6), y = (b.p[3] ? 330 : 250) + 4 * Math.sin(a);
+        b.e.setAttribute("transform", "translate(" + r2(x) + " " + r2(y) + ")");
+      });
+      blinks.forEach(function (e, i) { e.setAttribute("opacity", ((t * 0.8 + i * 0.5) % 1) < 0.3 ? 1 : 0.25); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -251,7 +385,9 @@
       ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)),
     };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "classroom-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "classroom-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, L, seed) : null; // the bands above and below (tall-world px)
     var clockG = g.ground.querySelector('[data-part="clock"]'), ink = L.room("#3A4651");
     var hh = D.el(clockG, "path", { stroke: ink, "stroke-width": 8, "stroke-linecap": "round" }), mh = D.el(clockG, "path", { stroke: ink, "stroke-width": 5, "stroke-linecap": "round" });
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform"), x0: +/translate\(([-\d.]+)/.exec(e.getAttribute("transform"))[1] }; });
@@ -260,6 +396,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       var mins = (t / 60 + 0.15) % 1, hrs = (t / 720 + (L.sun ? 0.62 : 0.4)) % 1;
       hh.setAttribute("d", "M2960 300 L" + r2(2960 + Math.sin(hrs * 6.283) * 30) + " " + r2(300 - Math.cos(hrs * 6.283) * 30));
       mh.setAttribute("d", "M2960 300 L" + r2(2960 + Math.sin(mins * 6.283) * 46) + " " + r2(300 - Math.cos(mins * 6.283) * 46));
@@ -272,7 +409,7 @@
       });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

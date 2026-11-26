@@ -602,13 +602,16 @@
    * strata start below y 3000, so the original's soil runs on unbroken across the seam (y 2880). */
   function drawBottomBand(P, v, pal, tone, R) {
     var under = tag("rect", { x: -300, y: 2860, width: 4440, height: 940, fill: tone("#4C3526") });
+    // at night the ground in section is toned more gently than the scene, so the strata, the roots
+    // and the fossil stay readable (the soil behind the original keeps the scene's tone)
+    if (v === "night") tone = function (c) { return D.mix(D.shade(c, 0.16), "#24366E", 0.26); };
     var defs = S.lin(P + "-xclay", [[0, tone("#8E5E3E")], [1, tone("#6F4630")]]) +
       S.lin(P + "-xsand", [[0, tone("#C9A066")], [0.55, tone("#B08A58")], [1, tone("#7F8F94")]]) +
       S.lin(P + "-xrock", [[0, tone("#868A98")], [1, tone("#4E5160")]]) +
       S.lin(P + "-xwater", [[0, tone("#5FA8D3"), 0], [1, tone("#3F86C0"), 0.6]]) +
       S.lin(P + "-xroot", [[0, tone("#4A321F"), 0], [0.2, tone("#4A321F"), 1], [1, tone("#3E2A1A"), 1]]) +
       S.lin(P + "-xrootc", [[0, tone("#8A6142"), 0], [0.2, tone("#8A6142"), 1], [1, tone("#9C7350"), 1]]) +
-      S.lin(P + "-xdeep", [[0, "#000000", 0], [1, "#000000", 0.28]]);
+      S.lin(P + "-xdeep", [[0, "#000000", 0], [1, "#000000", v === "night" ? 0.12 : 0.28]]);
     var s = "";
     // darker deep soil streaks just below the original (no edge: soft bands)
     for (var q = 0; q < 14; q++) {

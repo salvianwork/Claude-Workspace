@@ -133,6 +133,22 @@ const VSHOTS = {
     ["bottom of the world, zoom 1", { x: 2300, y: 2640, zoom: 1 }, null],
     ["close, zoom 1.6 · the fan and rafters", { x: 1250, y: 560, zoom: 1.6 }, null],
   ],
+  classroom: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "board", dx: 200, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "blazer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the desk", { anchor: "desk", dx: 60, dy: -60, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1800, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1700, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the mobile and projector", { x: 1850, y: 560, zoom: 1.6 }, null],
+  ],
+  forest: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "trail", dx: 330, dy: -330, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the stream", { anchor: "stream", dy: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2900, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1500, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the burrow", { x: 1250, y: 3200, zoom: 1.6 }, null],
+  ],
 };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">

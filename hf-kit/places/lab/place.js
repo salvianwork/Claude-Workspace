@@ -439,6 +439,21 @@
     // a grey conduit along the beam's top, with junction boxes and a cable dropping to each lamp's line
     s += tag("rect", { x: -300, y: 684, width: 4440, height: 14, rx: 7, fill: room("#B9C2C8"), stroke: room("#7F8A93"), "stroke-width": 3 });
     [300, 1250, 2200, 3150].forEach(function (jx) { s += tag("rect", { x: jx - 30, y: 676, width: 60, height: 32, rx: 5, fill: room("#D3D9DE"), stroke: room("#7F8A93"), "stroke-width": 3 }) + tag("circle", { cx: jx, cy: 692, r: 5, fill: room("#7F8A93") }); });
+    // the beam's face (the original's top strip, y 720..890) gets a little detail, clear of the
+    // seam row: a cable tray with cables, safety pictogram signs, an emergency light, a dial
+    s += tag("rect", { x: -300, y: 748, width: 4440, height: 18, fill: room("#C9D1D6"), stroke: room("#8A99A3"), "stroke-width": 3 });
+    s += tag("path", { d: "M-300 760 C600 774 1400 762 2200 772 S3600 766 4140 774", stroke: room("#4C6EF5"), "stroke-width": 5, fill: "none" }) + tag("path", { d: "M-300 764 C800 780 1600 770 2400 780 S3700 772 4140 780", stroke: room("#F08C00"), "stroke-width": 5, fill: "none" });
+    for (var tc = -200; tc < 4140; tc += 440) s += tag("rect", { x: tc, y: 744, width: 14, height: 40, rx: 3, fill: room("#8A99A3") });
+    var sign = function (x, kind) {
+      var o = tag("rect", { x: x - 44, y: 796, width: 88, height: 70, rx: 8, fill: room(kind ? "#2F9E44" : "#1C7ED6"), stroke: room("#FFFFFF"), "stroke-width": 5 });
+      if (kind) o += tag("ellipse", { cx: x, cy: 826, rx: 22, ry: 12, fill: "#FFFFFF" }) + tag("circle", { cx: x, cy: 826, r: 7, fill: room("#2F9E44") }) + tag("path", { d: "M" + (x - 14) + " 846 v10 M" + x + " 848 v12 M" + (x + 14) + " 846 v10", stroke: "#FFFFFF", "stroke-width": 5, "stroke-linecap": "round" });
+      else o += tag("path", { d: "M" + (x - 26) + " 830 q0 -16 14 -16 h24 q14 0 14 16 q0 14 -14 14 h-6 l-6 -8 l-6 8 h-6 q-14 0 -14 -14 Z", fill: "#FFFFFF" }) + tag("path", { d: "M" + (x - 30) + " 826 h-8 M" + (x + 30) + " 826 h8", stroke: "#FFFFFF", "stroke-width": 5 });
+      return o;
+    };
+    s += sign(2380, 0) + sign(2500, 1) + sign(820, 1);
+    s += tag("rect", { x: 1560, y: 792, width: 150, height: 56, rx: 10, fill: room("#F8F9FA"), stroke: room("#8A99A3"), "stroke-width": 4 }) + tag("rect", { x: 1576, y: 806, width: 46, height: 28, rx: 6, fill: dim ? "#FFF3C4" : room("#E9ECEF"), stroke: room("#ADB5BD"), "stroke-width": 3 }) +
+      tag("rect", { x: 1648, y: 806, width: 46, height: 28, rx: 6, fill: dim ? "#FFF3C4" : room("#E9ECEF"), stroke: room("#ADB5BD"), "stroke-width": 3 }) + tag("circle", { cx: 1635, cy: 840, r: 4, fill: "#51CF66" });
+    s += tag("circle", { cx: 3000, cy: 830, r: 38, fill: room("#FFFDF7"), stroke: room("#5F6E78"), "stroke-width": 6 }) + tag("path", { d: "M2976 830 a24 24 0 0 1 48 0", stroke: room("#E03131"), "stroke-width": 5, fill: "none" }) + tag("path", { d: "M3000 830 l14 -16", stroke: room("#3A4651"), "stroke-width": 4, "stroke-linecap": "round" });
     return { defs: defs, body: s };
   }
 
