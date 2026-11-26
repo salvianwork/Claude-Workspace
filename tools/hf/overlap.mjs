@@ -6,8 +6,10 @@
 //
 // request = {kit: "<hf-kit dir>", comp: "<04-video/hf>", browser: "<Chrome executable>", step: 0.5,
 //            width, height}   (the composition size, data.json; default 1920 x 1080)
-// report  = {samples: [{scene, t, boxes: [{kind: "face" | "tag" | "label", id, x, y, w, h}]}],
-//            errors: ["..."], viewport: {width, height}, canvas: {width, height} (HFKit.CANVAS)}
+// report  = {samples: [{scene, t, boxes: [{kind: "face" | "tag" | "label" | "caption", id, x, y, w, h}]}],
+//            errors: ["..."], viewport: {width, height}, canvas: {width, height} (HFKit.CANVAS),
+//            safe: {x0, x1, y0, y1} (HFKit.VERTICAL.safe, the text safe zone of a vertical frame)}
+//            "caption" boxes (the pill) are reported for vertical videos only.
 //            t = the scene's own time (s), sampled every `step` s from 0.
 // The page is opened from disk (file://); it loads nothing from the network. Each world scene is
 // updated to t (mountComposition's mounted[i].update) and its boxes read with api.boxes(t).
@@ -35,7 +37,8 @@ try {
   const out = await page.evaluate((step) => {
     const v = window.video;
     const size = { viewport: { width: window.innerWidth, height: window.innerHeight },
-      canvas: window.HFKit ? { width: window.HFKit.CANVAS.width, height: window.HFKit.CANVAS.height } : null };
+      canvas: window.HFKit ? { width: window.HFKit.CANVAS.width, height: window.HFKit.CANVAS.height } : null,
+      safe: window.HFKit && window.HFKit.VERTICAL ? { ...window.HFKit.VERTICAL.safe } : null };
     if (!v || !v.mounted) return { samples: [], errors: ["the composition did not mount (no window.video)"], ...size };
     const samples = [], errs = [];
     v.mounted.forEach((m, i) => {

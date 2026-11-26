@@ -115,6 +115,8 @@
     follow: m("camera", ["target"], ["zoom", "at"], "follow a moving actor or `pulse` (slew-limited, never a whip pan). Walkers are followed by default while no camera move runs"),
     cut: m("camera", ["target"], ["zoom", "at"], "an instant cut to a target (after a dive: back out of the inside view)"),
     dive: m("camera", ["target", "into"], ["params", "zoom", "at"], "push in to zoom >= 3 (default 3.2, up to 3x/s) on the target, then cut to the inside view HFKit.insides[into]: {INSIDES}"),
+    pan_up: m("camera", [], ["to", "by", "at"], "pan the view up (a tall reveal, ground to sky) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's top edge"),
+    pan_down: m("camera", [], ["to", "by", "at"], "pan the view down (sky to ground) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's bottom edge"),
     custom: m("custom", ["name"], ["params", "at", "until"], "a scene-specific piece: needs 04-video/hf/scenes/scene-<id>.js registering HFKit.customs[name]"),
   };
   Object.keys(FX).forEach(function (name) {
@@ -124,7 +126,7 @@
   // the pinned table's order
   var ORDER = ["enter", "exit", "walk_to", "run_to", "jump", "point", "gesture", "react", "hold", "use", "say",
     "burst", "rings", "pulse_along", "speed_lines", "splash", "sparkle", "smoke", "glow", "tag_follow", "label", "title",
-    "push_in", "pull_out", "follow", "cut", "dive", "custom"];
+    "push_in", "pull_out", "follow", "cut", "dive", "pan_up", "pan_down", "custom"];
   var ORDERED = {};
   ORDER.forEach(function (n) { ORDERED[n] = MOVES[n]; });
   MOVES = ORDERED;
@@ -283,6 +285,11 @@
           else if (!world.insides[mv.into]) e = "unknown inside \"" + mv.into + "\"";
           else if (world.insides[mv.into].check) e = world.insides[mv.into].check(mv.params);
         }
+        break;
+      case "pan_up": case "pan_down":
+        if ((mv.to === undefined) === (mv.by === undefined)) e = "needs `to` (an anchor) or `by` (world px), not both and not neither";
+        else if (mv.to !== undefined) e = anchorErr(mv.to);
+        else if (!(num(mv.by) && mv.by > 0)) e = "`by` must be a number of world px above 0 (got " + JSON.stringify(mv.by) + "); the move's name gives the direction";
         break;
       case "custom":
         if (!world.customs[mv.name]) e = "no HFKit.customs[\"" + mv.name + "\"] (register it in 04-video/hf/scenes/scene-" + ctx.sceneId + ".js)";
@@ -681,6 +688,23 @@
         prevLand = t1; inside = mv.into;
         return;
       }
+      if (mv.do === "pan_up" || mv.do === "pan_down") { // a vertical pan: the same zoom, to an anchor or by world px
+        var ps = Math.max(prevLand, p.beatStart), pa = poseAt(ps), pz = cur.zoom, pkey = "cam-" + (n++), ptp = null, pfocus;
+        if (mv.to !== undefined) {
+          ptp = points(mv.to, p.t, "body");
+          pfocus = clampFocus(aim(ptp, pz, false), pz);
+        } else pfocus = clampFocus({ x: pa.x, y: pa.y + (mv.do === "pan_up" ? -mv.by : mv.by) }, pz);
+        anchors[pkey] = norm(pfocus);
+        var pd = Math.max(0.8, moveTime(pa, { x: pfocus.x, y: pfocus.y, zoom: pz }, K.WORLD_LIMITS) * 1.04);
+        var pstart = Math.max(ps, p.explicit ? p.t : ps), pland = pstart + pd;
+        landed.push({ p: p, t: pland });
+        var plast = keys[keys.length - 1];
+        if (pstart > plast.t + 1e-6) keys.push({ t: pstart, frame: Object.assign({}, plast.frame) });
+        keys.push({ t: pland, frame: { focus: pkey, zoom: pz } });
+        cur = { target: ptp ? mv.to : null, point: ptp ? ptp : { x: pfocus.x, y: pfocus.y + AIM * canvas().height / pz }, zoom: pz, follow: false, name: pkey };
+        prevLand = pland;
+        return;
+      }
       // push_in / pull_out / follow: an eased move that lands on `at` when it is given
       var follow = mv.do === "follow" || (mv.do === "pull_out" && cur.follow && mv.target === undefined);
       var start0 = Math.max(prevLand, p.beatStart);
@@ -768,6 +792,31 @@
     return clampView(camPose(c.camera, c.camAnchors, t), c.bounds);
   }
   function clampView(cam, bounds) { var p = clampFocus(cam, cam.zoom, bounds); return { x: p.x, y: p.y, zoom: cam.zoom }; }
+
+  /* Anchors used together in one beat of a vertical shot (Review Focus 2): a tall frame shows about 1800
+   * world px across at 1x, so anchors more than SPREAD_MAX px apart horizontally can't both be framed.
+   * One warning per such beat, naming the scene, the beat and the spread. Camera moves and a pulse's from / to are left
+   * out (the camera is how the frame gets from one anchor to the other, and it follows a pulse). */
+  var SPREAD_MAX = 1700;
+  function spreadWarnings(parsed, world, sid) {
+    var c = canvas();
+    if (!(c.height > c.width)) return [];
+    var byBeat = {}, out = [];
+    parsed.forEach(function (p) {
+      if (MOVES[p.mv.do].group === "camera" || p.mv.do === "pulse_along") return; // the camera follows a pulse along its path
+      ["to", "from", "target"].forEach(function (k) {
+        var a = world.anchors[p.mv[k]];
+        if (a) (byBeat[p.bi] = byBeat[p.bi] || {})[p.mv[k]] = a(0).x;
+      });
+    });
+    Object.keys(byBeat).sort(function (a, b) { return a - b; }).forEach(function (bi) {
+      var names = Object.keys(byBeat[bi]).sort(function (a, b) { return byBeat[bi][a] - byBeat[bi][b]; });
+      if (names.length < 2) return;
+      var lo = names[0], hi = names[names.length - 1], spread = Math.round(byBeat[bi][hi] - byBeat[bi][lo]);
+      if (spread > SPREAD_MAX) out.push("scene " + sid + " beat " + bi + ": anchors \"" + lo + "\" and \"" + hi + "\" are " + spread + " world px apart horizontally (more than " + SPREAD_MAX + "; a vertical frame shows about 1800 px across): pan or cut between them in separate beats instead");
+    });
+    return out;
+  }
 
   // ---- the compiler ---------------------------------------------------------------------------
   function compileMoves(scene, words, world) {
@@ -872,6 +921,7 @@
     var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration), bounds);
     p2.errors.concat(c2.errors).forEach(function (x) { errors.push(x[0].tag + ": " + x[1]); });
     c2.warnings.forEach(function (x) { out.warnings.push(x[0].tag + ": " + x[1]); });
+    spreadWarnings(parsed, world, sid).forEach(function (x) { out.warnings.push(x); });
     // a strike that had to wait for its actor more than 0.5 s after its word: say how to fix it
     actorMoves.forEach(function (u) {
       if (u.mv.do !== "use" || !(u.actual > u.t0 + 0.5)) return;

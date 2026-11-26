@@ -145,6 +145,10 @@ function checkWorld(s, out) {
     if (c.overrun > 0 && c.overrun <= OVERRUN_FAIL)
       out.warnings.push(`camera finishes ${c.overrun.toFixed(2)} s after the scene ends (the end of the move is cut)`);
   }
+  if (K.isVertical()) { // vertical captions: at most 2 lines in 860 px (Review Focus 3); a word wider than a line can't wrap
+    K.captionPages(s.words).filter((pg) => pg.over).forEach((pg) =>
+      out.warnings.push(`caption word "${pg.words[0].display || pg.words[0].text}" is wider than the ${K.VERTICAL_CAPTION.maxWidth} px caption line (the pill breaks it); reword the narration`));
+  }
   if (P.meta.notToScale && !hasNotToScale(scene))
     out.errors.push(`place ${name} is not to scale: add a "not to scale" tag or label to the scene`);
 }

@@ -473,3 +473,43 @@ def test_cli_validate_allow_step_ins(wrun, capsys):
     assert _cli(wrun, shots) == 1
     assert "steps into the world in 0 scene(s)" in capsys.readouterr().err
     assert _cli(wrun, shots, "--allow-step-ins") == 0
+
+
+# ---- vertical: the anchor-spread warning and caption fit (Task 6; Review Focus 2 and 3) ---------
+
+def _vertical(shots):
+    shots.pop("format", None)
+    return shots
+
+
+def test_vertical_anchor_spread_warns_naming_scene_beat_and_spread(wrun):
+    shots, words, manifest = _w(wrun)
+    _vertical(shots)
+    # rail-near (x 760) and barn (x 3460) in one beat: 2700 world px apart
+    shots["scenes"][0]["beats"][0]["moves"].append({"do": "burst", "target": "barn"})
+    errs, warns = review_shots(shots, words, manifest, PROPS, scenes_dir=wrun / "04-video" / "hf" / "scenes")
+    spread = [w for w in warns if "apart horizontally" in w]
+    assert errs == [], errs
+    assert len(spread) == 1, warns
+    assert spread[0].startswith('scene 1 beat 0: anchors "rail-near" and "barn" are 2700 world px apart horizontally '
+                                "(more than 1700;"), spread[0]
+    # the same shot in landscape shows the whole width: no warning
+    shots["format"] = "landscape"
+    _, warns = review_shots(shots, words, manifest, PROPS, scenes_dir=wrun / "04-video" / "hf" / "scenes")
+    assert not any("apart horizontally" in w for w in warns)
+
+
+def test_vertical_caption_word_wider_than_a_line_warns(wrun):
+    shots, words, manifest = _w(wrun)
+    _vertical(shots)
+    words["scenes"][0]["words"][3]["display"] = "supercalifragilisticexpialidocious"
+    errs, warns = review_shots(shots, words, manifest, PROPS, scenes_dir=wrun / "04-video" / "hf" / "scenes")
+    assert errs == [], errs
+    assert any(w.startswith("scene 1: caption word \"supercalifragilisticexpialidocious\" is wider than the 860 px") for w in warns), warns
+
+
+def test_vertical_default_world_fixture_has_no_spread_or_caption_warnings(wrun):
+    shots, words, manifest = _w(wrun)
+    _vertical(shots)
+    _, warns = review_shots(shots, words, manifest, PROPS, scenes_dir=wrun / "04-video" / "hf" / "scenes")
+    assert not any("apart horizontally" in w or "caption word" in w for w in warns), warns

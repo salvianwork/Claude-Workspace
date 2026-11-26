@@ -75,6 +75,14 @@
             mouth: s.mouth || [], fps: data.fps || 30, seed: s.id });
         }
         var caps = K.mountCaptions(api.shell.layers.captions, { words: s.words, style: style });
+        if (s.kind === "world" && typeof api.boxes === "function" && K.isVertical()) { // the caption pill counts in the safe-zone and overlap reports
+          var worldBoxes = api.boxes;
+          api.boxes = function (t) {
+            var out = worldBoxes(t), b = caps.box(t);
+            if (b.width > 0) out.push({ kind: "caption", id: "caption", x: b.x, y: b.y, w: b.width, h: b.height });
+            return out;
+          };
+        }
         parts = { api: api, pres: pres, caps: caps };
       } catch (e) {
         report(s.id, "mount failed", e);

@@ -154,6 +154,7 @@
     var capEl = div("hf-captions");
     var style = K.resolveStyle(ctx.style);
     var band = K.layout(style).captionBand;
+    if (K.isVertical()) band = { x: K.VERTICAL_CAPTION.x, y: K.VERTICAL.captionBand.top, width: K.VERTICAL_CAPTION.maxWidth, height: K.VERTICAL.captionBand.bottom - K.VERTICAL.captionBand.top };
     css(capEl, { left: band.x + "px", top: band.y + "px", width: band.width + "px", height: band.height + "px" });
     var caps = ctx.captions === false ? null : K.mountCaptions(capEl, { words: words, style: ctx.style });
 

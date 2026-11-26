@@ -194,7 +194,11 @@ def test_vertical_snapshots_are_1080_by_1920(tmp_path):
 def test_overlap_report_runs_in_the_composition_size(tmp_path):
     run = make_world_run(tmp_path, vertical_shots())
     build(run, KIT, run_check=False)
-    assert snap_mod.overlap(run) == []  # overlap.mjs checks its viewport is the canvas (else HFError)
+    # overlap.mjs checks its viewport is the canvas (else HFError). This fixture keeps the host in the
+    # legacy side slot (the vertical bottom slot is wired later), whose face sits in the caption band:
+    # that caption hit (and a tag crossing the caption pill) is expected; nothing else overlaps.
+    report = snap_mod.overlap(run)
+    assert [o for o in report if "caption" not in (o["a"]["kind"], o["b"]["kind"])] == [], report
 
 
 # ---- render (slow) ---------------------------------------------------------------------------
@@ -205,7 +209,10 @@ def test_vertical_render_is_1080_by_1920(tmp_path):
     from tests.hf.test_build import _music_library
     from tools.audio.mix import build_mix
     from tools.render import render as render_mod
-    run = make_world_run(tmp_path, vertical_shots())
+    shots = vertical_shots()
+    # the fixture's pulse tag crosses the vertical caption pill; `hyperframes check` fails a tag on text
+    shots["scenes"][0]["beats"][1]["moves"] = [m for m in shots["scenes"][0]["beats"][1]["moves"] if m["do"] != "tag_follow"]
+    run = make_world_run(tmp_path, shots)
     build_mix(run, _music_library(tmp_path))
     assert render_mod.main([str(run), "--engine", "hyperframes"]) == 0
     assert _size(run / "04-video" / "out" / "video.mp4") == (1080, 1920)

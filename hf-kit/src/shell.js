@@ -189,21 +189,25 @@
     var words = opts.words || [];
     var maxWords = opts.maxWords || 7;
     var doc = el.ownerDocument;
-    var fs = style.sizes.caption, onTop = style.captions.position === "top";
+    var vert = isVertical(), VC = VERTICAL_CAPTION, BAND = K.VERTICAL.captionBand;
+    var fs = vert ? VC.size : style.sizes.caption, onTop = !vert && style.captions.position === "top";
+    var pages = vert ? captionPages(words, { size: fs }) : null;
     el.innerHTML = "";
     var bar = doc.createElement("div");
     bar.className = "hf-caption-bar";
-    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (el.clientWidth || canvas().width - 2 * style.safe) + "px",
-      padding: Math.round(fs * 0.16) + "px " + Math.round(fs * 0.6) + "px " + Math.round(fs * 0.2) + "px", borderRadius: "999px",
+    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (vert ? VC.maxWidth : el.clientWidth || canvas().width - 2 * style.safe) + "px",
+      padding: Math.round(fs * 0.16) + "px " + captionPadX(fs) + "px " + Math.round(fs * 0.2) + "px", borderRadius: vert ? "44px" : "999px",
       background: "rgba(2,6,23,0.72)", boxShadow: "0 10px 34px rgba(2,6,23,0.38), inset 0 0 0 2px rgba(255,255,255,0.06)",
-      fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: "1.3", textAlign: "center",
+      fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: vert ? String(VC.lineHeight) : "1.3", textAlign: "center",
       color: style.colors.text, whiteSpace: "normal", boxSizing: "border-box", width: "max-content" });
-    if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
+    if (vert) { bar.style.overflowWrap = "anywhere"; bar.style.top = VC.top + "px"; }
+    else if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
     el.appendChild(bar);
-    var shown = null, spans = [];
+    var shown = null, spans = [], opacity = 0, pageNow = null;
     function update(t) {
-      if (!words.length) { bar.style.opacity = "0"; return; }
-      var pg = K.captionPage(words, t, maxWords);
+      if (!words.length) { bar.style.opacity = "0"; opacity = 0; return; }
+      var pg = vert ? captionPageAt(pages, words, t) : K.captionPage(words, t, maxWords);
+      pageNow = pg.page || null;
       var key = pg.words.length ? pg.words[0].i : -1;
       if (key !== shown) {
         bar.innerHTML = "";
@@ -221,10 +225,85 @@
         s.style.textShadow = j === pg.current ? "0 0 " + Math.round(fs * 0.3) + "px " + D.alpha(style.colors.accent, 0.45) : "none";
       });
       var first = words[0].start, last = words[words.length - 1].end;
-      bar.style.opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
+      opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
+      bar.style.opacity = opacity;
+    }
+    /* The pill's box in canvas px at t (vertical only; empty when it is hidden): the real size when the
+     * browser has laid it out, else the page's estimate. Read after update(t). */
+    function box(t) {
+      if (!vert) return { x: 0, y: 0, width: 0, height: 0 };
+      update(t);
+      if (!(opacity > 0) || !pageNow) return { x: 0, y: 0, width: 0, height: 0 };
+      var w = bar.offsetWidth > 0 ? bar.offsetWidth : pageNow.width;
+      var h = bar.offsetHeight > 0 ? bar.offsetHeight : Math.round(pageNow.lines * fs * VC.lineHeight + fs * 0.36);
+      return { x: Math.round((VC.x + (VC.maxWidth - w) / 2) * 100) / 100, y: BAND.top + VC.top, width: w, height: h };
     }
     update(0);
-    return { update: update, el: bar };
+    return { update: update, el: bar, box: box };
+  }
+
+  // ---- vertical captions ----------------------------------------------------------------
+  /* Vertical captions (Global Constraints): 64 px, at most 2 lines, max width 860, word highlight, in
+   * the band VERTICAL.captionBand. The 860 px column sits inside the text safe zone (x 72 to 932). */
+  var VERTICAL_CAPTION = Object.freeze({ size: 64, maxWidth: 860, maxLines: 2, x: 72, lineHeight: 1.15, top: 5 });
+  var CAPTION_FIT = 1.05; // the width estimate is padded: a real font may be a little wider than the table
+
+  function isVertical() { var c = canvas(); return c.height > c.width; }
+
+  /* Width of `text` at `fs` px, from a fixed per-character table (Poppins / Inter semibold; no layout reads,
+   * so pages and boxes are the same in a browser and under node --test). */
+  function captionTextWidth(text, fs) {
+    var w = 0;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      w += c === " " ? 0.3 : /[iljtfr1.,:;'!|/]/.test(c) ? 0.36 : /[mwMW]/.test(c) ? 0.92 : /[A-Z]/.test(c) ? 0.7 : /[0-9]/.test(c) ? 0.62 : 0.6;
+    }
+    return w * fs * CAPTION_FIT;
+  }
+  function captionPadX(fs) { return Math.round(fs * 0.6); }
+
+  /* Greedy wrap of word texts into lines of `inner` px: {lines, widest (px of the widest line), over (a
+   * word wider than a line)}. */
+  function wrapWords(texts, fs, inner) {
+    var space = captionTextWidth(" ", fs), lines = 1, cur = 0, widest = 0, over = false;
+    texts.forEach(function (t, i) {
+      var w = captionTextWidth(t, fs);
+      if (w > inner) over = true;
+      if (i === 0) { cur = w; return; }
+      if (cur + space + w <= inner) cur += space + w;
+      else { widest = Math.max(widest, cur); lines += 1; cur = w; }
+    });
+    return { lines: lines, widest: Math.max(widest, cur), over: over };
+  }
+
+  /* Pages of words that each wrap to at most `maxLines` lines inside `maxWidth` (padding included):
+   * [{from, words: [...], lines, width, over}] over the whole list. A word wider than a line gets a page
+   * of its own with over = true (the build warns about it). */
+  function captionPages(words, opts) {
+    opts = opts || {};
+    var fs = opts.size || VERTICAL_CAPTION.size, maxWidth = opts.maxWidth || VERTICAL_CAPTION.maxWidth, maxLines = opts.maxLines || VERTICAL_CAPTION.maxLines;
+    var inner = maxWidth - 2 * captionPadX(fs), pages = [], cur = null;
+    (words || []).forEach(function (w, i) {
+      var text = captionWord(w);
+      if (cur) {
+        var fit = wrapWords(cur.texts.concat([text]), fs, inner);
+        if (fit.lines <= maxLines && !fit.over) { cur.texts.push(text); cur.words.push(w); cur.fit = fit; return; }
+      }
+      cur = { from: i, words: [w], texts: [text], fit: wrapWords([text], fs, inner) };
+      pages.push(cur);
+    });
+    return pages.map(function (p) {
+      return { from: p.from, words: p.words, lines: p.fit.lines, width: Math.min(maxWidth, Math.ceil(p.fit.widest + 2 * captionPadX(fs))), over: p.fit.over };
+    });
+  }
+  /* The page showing at t, as HFKit.captionPage does: {words, current, page}. */
+  function captionPageAt(pages, words, t) {
+    if (!pages.length) return { words: [], current: -1, page: null };
+    var cur = -1;
+    for (var i = 0; i < words.length; i++) if (words[i].start <= t) cur = i; else break;
+    var pg = pages[0];
+    for (var k = 0; k < pages.length; k++) if (pages[k].from <= Math.max(cur, 0)) pg = pages[k];
+    return { words: pg.words, current: cur < 0 ? -1 : cur - pg.from, page: pg };
   }
 
   /* Vertical (1080 x 1920) layout zones. Owner 2026-11-25: host bigger; captions sit above his face zone. */
@@ -235,7 +314,8 @@
   });
 
   Object.assign(K, {
-    VERTICAL: VERTICAL,
+    VERTICAL: VERTICAL, VERTICAL_CAPTION: VERTICAL_CAPTION, captionPages: captionPages, captionPageAt: captionPageAt,
+    captionTextWidth: captionTextWidth, isVertical: isVertical,
     PRESENTER_WIDTH: PRESENTER_WIDTH, CAPTION_POSITIONS: CAPTION_POSITIONS, resolveStyle: resolveStyle, layout: layout,
     kitFrame: kitFrame, heroFrame: heroFrame, driftSafe: driftSafe, DRIFT_INSET: DRIFT_INSET, view: view, normaliseAnchors: normaliseAnchors, drift: drift,
     shell: shell, mountCaptions: mountCaptions, captionWord: captionWord,

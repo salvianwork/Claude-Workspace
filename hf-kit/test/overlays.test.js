@@ -6,7 +6,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../src/kit.js";
 import "../src/draw.js";
+import "../src/timing.js";
 import "../src/world/overlays.js";
+import "../src/shell.js";
 import { fakeDocument, serialize } from "./helpers/fake-dom.js";
 
 const K = globalThis.HFKit;
@@ -100,4 +102,64 @@ test("overlays.js is offline and deterministic", () => {
   const src = readFileSync(new URL("../src/world/overlays.js", import.meta.url), "utf8");
   assert.doesNotMatch(src, /https?:\/\//);
   assert.doesNotMatch(src, /Math\.random|Date\.now|setTimeout|setInterval|requestAnimationFrame/);
+});
+
+// ---- vertical captions (Task 6; Review Focus 3): 64 px, 860 px, 2 lines, in the band ----
+const SENTENCE = "The sound of a hammer on a steel rail races ahead of the train because steel carries a wave far faster than air does so a careful listener hears it coming";
+const capWords = (text) => text.split(" ").map((w, i) => ({ i, text: w, start: +(0.3 + 0.3 * i).toFixed(2), end: +(0.3 + 0.3 * i + 0.25).toFixed(2) }));
+
+test("Review Focus 3: a long vertical caption pages into pills of at most 2 lines inside 860 px", () => {
+  const words = capWords(SENTENCE);
+  const pages = K.captionPages(words);
+  assert.ok(pages.length >= 3, "a 29-word sentence needs several pages");
+  assert.equal(pages.flatMap((p) => p.words).length, words.length, "every word is shown, in order");
+  pages.forEach((p, k) => {
+    assert.ok(p.lines <= 2, `page ${k}: ${p.lines} lines`);
+    assert.ok(p.width <= 860, `page ${k}: ${p.width} px`);
+    assert.equal(p.over, false);
+  });
+  assert.ok(pages[0].words.length >= 4, "pages are not needlessly short");
+  assert.equal(K.captionPageAt(pages, words, 0).words[0].i, 0);
+  const late = K.captionPageAt(pages, words, words[20].start + 0.01);
+  assert.equal(late.words[late.current].i, 20, "the spoken word is the current one");
+});
+
+test("a word wider than a caption line is flagged (the build warns); the pill still stays in the band", () => {
+  const words = capWords("so supercalifragilisticexpialidocious it is");
+  const pages = K.captionPages(words);
+  assert.ok(pages.some((p) => p.over), JSON.stringify(pages.map((p) => [p.lines, p.over])));
+  assert.ok(pages.every((p) => p.width <= 860));
+});
+
+test("vertical mountCaptions: 64 px words, max width 860, word highlight; its box sits in the band and the safe zone", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const doc = fakeDocument(), el = doc.createElement("div");
+    const words = capWords(SENTENCE);
+    const caps = K.mountCaptions(el, { words });
+    caps.update(2.0);
+    assert.equal(caps.el.style.fontSize, "64px");
+    assert.equal(caps.el.style.maxWidth, "860px");
+    const spans = caps.el.children;
+    assert.ok(spans.length >= 4 && spans.length < words.length);
+    const accent = spans.filter((s) => s.style.color === K.tokens.colors.accent);
+    assert.equal(accent.length, 1, "one highlighted word");
+    for (let t = 0; t <= words[words.length - 1].end + 1; t += 0.25) {
+      const b = caps.box(t);
+      if (!(b.width > 0)) continue;
+      assert.ok(b.x >= 64 && b.x + b.width <= 940, `t=${t}: x ${b.x}..${b.x + b.width}`);
+      assert.ok(b.y >= K.VERTICAL.captionBand.top && b.y + b.height <= K.VERTICAL.captionBand.bottom, `t=${t}: y ${b.y}..${b.y + b.height}`);
+    }
+    assert.equal(caps.box(0).width, 0, "hidden before the first word");
+  } finally { K.setCanvas(null); }
+});
+
+test("landscape captions are unchanged (60 px, fixed pages of 7, no box)", () => {
+  const doc = fakeDocument(), el = doc.createElement("div");
+  const caps = K.mountCaptions(el, { words: capWords(SENTENCE) });
+  caps.update(2.0);
+  assert.equal(caps.el.style.fontSize, "60px");
+  assert.equal(caps.el.style.top, "28px");
+  assert.equal(caps.el.children.length, 7);
+  assert.equal(caps.box(2).width, 0);
 });

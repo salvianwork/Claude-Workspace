@@ -130,11 +130,16 @@ checked by the validator):
 | Actor | `enter`, `exit`, `walk_to`, `run_to`, `jump`, `point`, `gesture`, `react`, `hold`, `use`, `say` |
 | Effect | `burst`, `rings`, `pulse_along`, `speed_lines`, `splash`, `sparkle`, `smoke`, `glow` |
 | Overlay (text) | `tag_follow`, `label`, `title` |
-| Camera | `push_in`, `pull_out`, `follow`, `cut`, `dive` |
+| Camera | `push_in`, `pull_out`, `follow`, `cut`, `dive`, `pan_up`, `pan_down` |
 | Custom | `custom` |
 
 `dive` pushes into a thing and cuts to an inside view (`lattice`: atoms of a solid, liquid or
 gas; `cells`: animal, plant or blood cells) — use it to show what something is made of.
+
+`pan_up` / `pan_down` (vertical videos) pan the view up or down at the same zoom, to an anchor (`to`)
+or by world px (`by`): tall reveals, sky to ground. They stop at the world's top and bottom edge. In a
+vertical shot keep the anchors of one beat within 1700 world px of each other (sideways); the build
+warns when they are further apart, so pan or cut between them in separate beats instead.
 
 ## The host
 

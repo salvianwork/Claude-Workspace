@@ -72,6 +72,8 @@ names any problem as `scene <id> beat <b> move <m> (<do>): <what>`, counting fro
 | `follow` | `target` | `zoom`, `at` | follow a moving actor or `pulse` (slew-limited, never a whip pan). Walkers are followed by default while no camera move runs |
 | `cut` | `target` | `zoom`, `at` | an instant cut to a target (after a dive: back out of the inside view) |
 | `dive` | `target`, `into` | `params`, `zoom`, `at` | push in to zoom >= 3 (default 3.2, up to 3x/s) on the target, then cut to the inside view HFKit.insides[into]: `lattice` (params `state`: solid \| liquid \| gas), `cells` (params `type`: animal \| plant \| blood) |
+| `pan_up` | — | `to`, `by`, `at` | pan the view up (a tall reveal, ground to sky) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's top edge |
+| `pan_down` | — | `to`, `by`, `at` | pan the view down (sky to ground) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move, and it stops at the world's bottom edge |
 
 ## Custom
 
