@@ -15,6 +15,9 @@
  *            waterline in the underwater view)
  * Path: current (a swim line through the open water, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -34,6 +37,11 @@
       surface: { tint: "#FFF3DE", amount: 0.1, rim: "#FFF6DA", rimSide: 1 },
       underwater: { tint: "#3FA4D0", amount: 0.42, rim: "#C8F6FF", rimSide: 1 }, // blue water, light from above
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "surface: more sky (high clouds, a flock of gulls, a little plane towing a plain banner, a kite); underwater: the bright underside of the sea continued up, with the sun's window, rippling caustic light and light rays fanning down", seamAllow: [] },
+      bottom: { draws: "surface: the sand bed cut away (shells, a buried treasure chest, an old anchor), sediment and rock with fossil shells, and a water-filled sea cave with an octopus, a lobster, a moray eel and glowing lanternfish; underwater: the seabed continued toward the viewer with bigger corals and rocks, a giant clam, sea urchins, starfish, a crab and a half-buried treasure chest", seamAllow: [] },
+    },
   };
 
   var GEO = {
@@ -44,6 +52,10 @@
   function bedY(x, G) { return G.bed + Math.sin(x / 520) * 34 + Math.sin(x / 190 + 1) * 12; }
 
   function anchorsFor(opts) {
+    PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var v = PL.variantOf(meta, opts), G = GEO[v];
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var cur = [];
@@ -234,6 +246,148 @@
     return out;
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  function chest(x, y, s, tone) {
+    return tag("g", { transform: "translate(" + x + " " + y + ") scale(" + s + ")" }, tag("rect", { x: -90, y: -70, width: 180, height: 90, rx: 8, fill: tone("#8C5E3C"), stroke: tone("#4A3020"), "stroke-width": 6 }) +
+      tag("path", { d: "M-94 -70 Q0 -150 94 -70 Z", fill: tone("#A0703F"), stroke: tone("#4A3020"), "stroke-width": 6 }) + tag("path", { d: "M-60 -70 V20 M60 -70 V20 M-56 -100 Q0 -136 56 -100", stroke: tone("#E7C46A"), "stroke-width": 10, fill: "none" }) +
+      tag("rect", { x: -14, y: -60, width: 28, height: 30, rx: 4, fill: tone("#E7C46A"), stroke: tone("#8A6A20"), "stroke-width": 3 }) + tag("circle", { cx: -40, cy: -82, r: 10, fill: "#FFE066" }) + tag("circle", { cx: 30, cy: -90, r: 8, fill: "#FFE066" }) + tag("circle", { cx: 6, cy: -96, r: 6, fill: "#FFF3BF" }));
+  }
+  function crab(x, y, s, tone) {
+    var c = tone("#E8590C"), d = D.shade(c, 0.4);
+    return tag("g", { transform: "translate(" + x + " " + y + ") scale(" + s + ")", "data-xcrab": 1 }, tag("path", { d: "M-40 0 l-30 20 M-34 6 l-24 26 M40 0 l30 20 M34 6 l24 26", stroke: c, "stroke-width": 7, "stroke-linecap": "round" }) +
+      tag("ellipse", { cx: 0, cy: -6, rx: 46, ry: 28, fill: c, stroke: d, "stroke-width": 4 }) + tag("path", { d: "M-40 -20 q-30 -30 -50 -10 q20 10 30 0 M40 -20 q30 -30 50 -10 q-20 10 -30 0", stroke: c, "stroke-width": 10, fill: c, "stroke-linecap": "round" }) +
+      tag("path", { d: "M-12 -30 v-16 M12 -30 v-16", stroke: d, "stroke-width": 4 }) + tag("circle", { cx: -12, cy: -48, r: 6, fill: "#fff" }) + tag("circle", { cx: 12, cy: -48, r: 6, fill: "#fff" }) + tag("circle", { cx: -12, cy: -48, r: 3, fill: "#111" }) + tag("circle", { cx: 12, cy: -48, r: 3, fill: "#111" }));
+  }
+  function octopus(x, y, s, tone) {
+    var c = tone("#D9480F"), d = D.shade(c, 0.4), arms = "";
+    for (var a = 0; a < 6; a++) arms += tag("path", { d: "M" + (-40 + a * 16) + " 0 q" + (-30 + a * 12) + " 50 " + (-50 + a * 20) + " 60 q" + (a % 2 ? 20 : -20) + " 6 " + (a % 2 ? 26 : -26) + " -14", stroke: c, "stroke-width": 16, fill: "none", "stroke-linecap": "round" });
+    return tag("g", { transform: "translate(" + x + " " + y + ") scale(" + s + ")", "data-xocto": 1 }, arms + tag("path", { d: "M-56 6 Q-70 -110 0 -110 Q70 -110 56 6 Z", fill: c, stroke: d, "stroke-width": 5 }) +
+      tag("circle", { cx: -18, cy: -34, r: 13, fill: "#fff" }) + tag("circle", { cx: 18, cy: -34, r: 13, fill: "#fff" }) + tag("circle", { cx: -16, cy: -32, r: 6, fill: "#111" }) + tag("circle", { cx: 20, cy: -32, r: 6, fill: "#111" }) + tag("circle", { cx: -30, cy: -80, r: 8, fill: D.tint(c, 0.3) }));
+  }
+  /* The top band. Surface: more sky (mid: clouds and gulls; far: a little plane towing a plain banner
+   * and a kite). Underwater (ground): the sea's bright underside continued up, the sun's window,
+   * caustic light and rays fanning down to the original's. */
+  function drawTopBand(P, v, tone, R) {
+    var out = { sky: "", far: "", mid: "", ground: "", defs: "" };
+    if (v === "surface") {
+      var pal = { cloud: "#FFFFFF", cloudShade: "#D3E5F3", cloudLight: "#FFFDF4" }, m = "";
+      [[600, 300, 0.8], [1900, 160, 0.6], [2600, 420, 0.55], [3500, 250, 0.75], [1200, 560, 0.45]].forEach(function (c, i) { m += A.cloud(c[0], c[1], c[2], pal, "x" + i); });
+      var gl = "";
+      [[1300, 360], [1380, 320], [1460, 380], [1540, 340], [2900, 560], [2980, 600]].forEach(function (q) { gl += tag("path", { d: "M" + (q[0] - 34) + " " + (q[1] + 8) + " Q" + (q[0] - 16) + " " + (q[1] - 14) + " " + q[0] + " " + q[1] + " Q" + (q[0] + 16) + " " + (q[1] - 14) + " " + (q[0] + 34) + " " + (q[1] + 8), stroke: "#3A4651", "stroke-width": 6, fill: "none", "stroke-linecap": "round" }); });
+      out.mid = tag("g", { "data-part": "xclouds" }, m) + tag("g", { "data-part": "xgulls" }, gl);
+      out.far = tag("g", { "data-part": "xplane", transform: "translate(1500 560)" },
+        tag("path", { d: "M0 0 h120 q30 0 30 14 q0 14 -30 14 h-120 Z", fill: "#F4F1EA", stroke: "#5A6470", "stroke-width": 4 }) + tag("path", { d: "M50 4 l30 -40 h24 l-14 40 Z M8 6 l-6 -26 h16 l12 26 Z", fill: "#E03131" }) + tag("circle", { cx: 128, cy: 10, r: 6, fill: "#7FC8F0" }) +
+        tag("path", { d: "M-10 14 H-120", stroke: "#5A6470", "stroke-width": 3 }) + tag("path", { d: "M-120 -16 H-480 Q-470 14 -480 44 H-120 Z", fill: "#FFD43B", stroke: "#C99A10", "stroke-width": 4 }) +
+        tag("path", { d: "M-440 4 h280 M-440 24 h280", stroke: "#F08C00", "stroke-width": 8, opacity: 0.7 }));
+      out.far += tag("g", { transform: "translate(3200 360)" }, tag("path", { d: "M0 -70 L50 0 L0 90 L-50 0 Z", fill: "#F06595", stroke: "#A61E4D", "stroke-width": 4 }) + tag("path", { d: "M0 -70 V90 M-50 0 H50", stroke: "#A61E4D", "stroke-width": 3 }) +
+        tag("path", { d: "M0 90 q30 40 0 80 q-30 40 0 80", stroke: "#A61E4D", "stroke-width": 3, fill: "none" }) + tag("path", { d: "M-6 130 l12 6 l-12 6 Z M-6 200 l12 6 l-12 6 Z", fill: "#FFD43B" }) + tag("path", { d: "M0 0 L300 700", stroke: "#5A6470", "stroke-width": 2, opacity: 0.6 }));
+      return out;
+    }
+    // underwater: the bright underside (the original's runs from y 320), up to the top
+    out.defs = S.rad(P + "-xsun", [[0, "#FFFFFF", 0.95], [0.4, "#F2FEFF", 0.6], [1, "#F2FEFF", 0]]) + S.lin(P + "-xray", [[0, "#FFFFFF", 0.7], [1, "#F2FEFF", 0]]);
+    out.defs += '<linearGradient id="' + P + '-xunder" gradientUnits="userSpaceOnUse" x1="0" y1="330" x2="0" y2="-200"><stop offset="0" stop-color="#CFF6FF"/><stop offset="1" stop-color="#8FDDF2"/></linearGradient>';
+    var g = tag("rect", { x: -400, y: -200, width: 4640, height: 530, fill: "url(#" + P + "-xunder)" });
+    g += tag("ellipse", { cx: 2100, cy: 120, rx: 900, ry: 260, fill: "url(#" + P + "-xsun)" });
+    // caustics: a soft net of light
+    var net = "";
+    for (var cy = 20; cy < 320; cy += 70) for (var cx = -360 + (cy % 140 ? 80 : 0); cx < 4240; cx += 160) net += "M" + cx + " " + cy + " q40 " + (R() * 30 - 15) + " 80 0 q30 30 0 60 ";
+    g += tag("path", { d: net, stroke: "#FFFFFF", "stroke-width": 9, fill: "none", opacity: 0.6 });
+    // rays fanning down from the sun's window (they fade out before the original's own rays)
+    for (var r = 0; r < 9; r++) { var x0 = 1500 + r * 150, x1 = -300 + r * 560; g += tag("path", { d: "M" + x0 + " 180 L" + (x0 + 80) + " 180 L" + (x1 + 240) + " 700 L" + x1 + " 700 Z", fill: "url(#" + P + "-xray)", "data-xray": r }); }
+    // bubbles drifting up to the surface
+    for (var b = 0; b < 30; b++) g += tag("circle", { cx: r2(200 + R() * 3440), cy: r2(60 + R() * 600), r: r2(4 + R() * 10), fill: "none", stroke: "#FFFFFF", "stroke-width": 3, opacity: r2(0.3 + R() * 0.4) });
+    out.ground = g;
+    return out;
+  }
+
+  /* The bottom band. Surface: the sand bed cut away: shells, a buried chest and an old anchor in the
+   * sand, sediment and rock with fossil shells, a water-filled sea cave (an octopus, a lobster, a
+   * moray, glowing lanternfish). Underwater: the seabed continued toward the viewer: bigger corals
+   * and rocks, a giant clam, urchins, starfish, a crab and a half-buried chest. */
+  function drawBottomBand(P, v, tone, R) {
+    var G = GEO[v], s = "", defs = "", f = "";
+    if (v === "surface") {
+      defs += S.lin(P + "-xsed", [[0, tone("#C9A066")], [1, tone("#9C7A4E")]]) + S.lin(P + "-xrock", [[0, tone("#6E7A86")], [1, tone("#45505C")]]) + S.lin(P + "-xcave", [[0, "#1F6FA6"], [1, "#0B3A6B"]]) + S.rad(P + "-xlamp", [[0, "#B8FFF4", 0.9], [1, "#B8FFF4", 0]]);
+      for (var sh = 0; sh < 24; sh++) { var sx = -250 + R() * 4380, sy = 2900 + R() * 90; s += tag("path", { d: "M" + r2(sx - 12) + " " + r2(sy) + " q12 -20 24 0 Z", fill: tone(["#FFE8CC", "#F4C2C2", "#FFF3BF"][sh % 3]), stroke: tone("#B9955E"), "stroke-width": 2 }); }
+      s += chest(3050, 3010, 1, tone);
+      s += tag("g", { transform: "rotate(30 1000 2960)" }, tag("path", { d: "M1000 2880 V3020 M940 2990 Q1000 3040 1060 2990 M960 2900 h80", stroke: tone("#6E5A4A"), "stroke-width": 18, fill: "none", "stroke-linecap": "round" }));
+      var top = [];
+      for (var x = -300; x <= 4140; x += 120) top.push([x, 3040 + Math.sin(x / 260) * 18 + R() * 8]);
+      s += tag("path", { d: smooth(top, false) + " L4140 3600 L-300 3600 Z", fill: "url(#" + P + "-xsed)" });
+      s += tag("path", { d: smooth(top, false), stroke: tone("#E9CF98"), "stroke-width": 6, fill: "none" });
+      var rock = [];
+      for (var rx = -300; rx <= 4140; rx += 120) rock.push([rx, 3220 + Math.sin(rx / 330 + 1) * 24 + R() * 10]);
+      s += tag("path", { d: smooth(rock, false) + " L4140 3600 L-300 3600 Z", fill: "url(#" + P + "-xrock)", stroke: tone("#3A4654"), "stroke-width": 5 });
+      [[2700, 3300], [3500, 3420], [3150, 3520]].forEach(function (q) { // ammonite fossils
+        var sp = "M" + q[0] + " " + q[1];
+        for (var k = 0; k < 24; k++) { var a = k * 0.55, rr = 4 + k * 1.6; sp += " L" + r2(q[0] + Math.cos(a) * rr) + " " + r2(q[1] + Math.sin(a) * rr); }
+        s += tag("path", { d: sp, stroke: tone("#C9C2B0"), "stroke-width": 5, fill: "none" });
+      });
+      // the sea cave
+      s += tag("path", { d: "M380 3330 Q420 3160 900 3150 Q1500 3110 2000 3200 Q2350 3260 2300 3420 Q2250 3570 1500 3560 Q700 3570 450 3500 Q340 3450 380 3330 Z", fill: "url(#" + P + "-xcave)", stroke: tone("#3A4654"), "stroke-width": 8 });
+      s += tag("path", { d: "M700 3180 l20 60 l20 -50 M1300 3150 l16 70 l18 -64 M1800 3190 l14 50 l16 -44", fill: tone("#5E6E7E"), stroke: tone("#3A4654"), "stroke-width": 4 });
+      s += tag("path", { d: "M480 3520 Q900 3480 1400 3530 Q1900 3560 2240 3480 L2240 3560 L480 3560 Z", fill: tone("#C9A066"), opacity: 0.9 });
+      s += octopus(1700, 3500, 0.9, tone);
+      s += tag("g", { transform: "translate(900 3510)" }, tag("path", { d: "M-80 0 h160 l20 -10 M-80 0 l-30 -20 M-70 -10 l-50 -40 q-20 -20 0 -30 q20 10 20 30 M70 -10 l40 -40", stroke: tone("#C92A2A"), "stroke-width": 10, fill: "none", "stroke-linecap": "round" }) +
+        tag("ellipse", { cx: 0, cy: -20, rx: 90, ry: 26, fill: tone("#E03131"), stroke: tone("#8A1C1C"), "stroke-width": 4 }) + tag("path", { d: "M90 -20 l40 -20 v40 Z", fill: tone("#E03131") }) + tag("path", { d: "M-90 -30 q-60 -60 -120 -50 M-90 -24 q-50 -30 -110 -10", stroke: tone("#C92A2A"), "stroke-width": 3, fill: "none" })); // a lobster
+      s += tag("g", { transform: "translate(2240 3330)" }, tag("path", { d: "M80 40 Q0 30 -60 -10 Q-90 -30 -110 -10 Q-90 20 -50 26 Q0 40 80 60 Z", fill: tone("#8C9A3A"), stroke: tone("#4E5A1A"), "stroke-width": 4 }) + tag("circle", { cx: -84, cy: -14, r: 5, fill: "#FFE066" }) + tag("path", { d: "M-108 -6 l14 6", stroke: "#111", "stroke-width": 3 })); // a moray
+      [[700, 3280], [1100, 3330], [1450, 3260], [1950, 3320]].forEach(function (q, i) { s += tag("ellipse", { cx: q[0], cy: q[1], rx: 70, ry: 40, fill: "url(#" + P + "-xlamp)", "data-xglow": i }) + tag("g", { transform: "translate(" + q[0] + " " + q[1] + ") scale(" + (i % 2 ? -0.5 : 0.5) + " 0.5)" }, fishMarkup("#2B4A6E", 1)) + tag("circle", { cx: q[0] - (i % 2 ? -12 : 12), cy: q[1] - 4, r: 5, fill: "#B8FFF4" }); });
+      // front: the sand mounds the front seagrass and rock stand in
+      f += tag("path", { d: "M-300 3000 Q100 2980 460 3010 Q500 3080 420 3140 L-300 3140 Z", fill: tone("#D9BC84"), stroke: tone("#B9955E"), "stroke-width": 4 }) + tag("path", { d: "M3380 3010 Q3700 2980 4140 2990 L4140 3140 L3420 3140 Q3340 3080 3380 3010 Z", fill: tone("#D9BC84"), stroke: tone("#B9955E"), "stroke-width": 4 });
+      return { defs: defs, body: s, front: f };
+    }
+    // underwater: the seabed comes on toward the viewer (the original's haze continues over it)
+    s += tag("rect", { x: -400, y: 3120, width: 4640, height: 500, fill: "#0A3C6E", opacity: 0.35 });
+    defs += '<linearGradient id="' + P + '-xnear" gradientUnits="userSpaceOnUse" x1="0" y1="3120" x2="0" y2="3600"><stop offset="0" stop-color="' + tone("#E2CB98") + '" stop-opacity="0"/><stop offset="1" stop-color="' + tone("#E2CB98") + '" stop-opacity="0.55"/></linearGradient>';
+    s += tag("rect", { x: -400, y: 3120, width: 4640, height: 500, fill: "url(#" + P + "-xnear)" }); // the near seabed comes clear of the haze
+    for (var rp = 0; rp < 18; rp++) { var rx2 = -300 + (rp % 6) * 760 + R() * 200, ry2 = 2950 + Math.floor(rp / 6) * 180 + R() * 40; s += tag("path", { d: "M" + r2(rx2) + " " + r2(ry2) + " q120 -30 240 0 t240 0", stroke: tone("#C9A86E"), "stroke-width": 8, fill: "none", opacity: 0.7 }); }
+    for (var sr = 0; sr < 50; sr++) { var sx2 = -300 + R() * 4400; s += tag("ellipse", { cx: r2(sx2), cy: r2(2920 + R() * 660), rx: 8 + R() * 14, ry: 4 + R() * 6, fill: tone("#B9955E"), opacity: 0.7 }); }
+    // near corals and rocks (bigger: closer)
+    s += rockPile(3500, 3560, 320, tone) + rockPile(3100, 3580, 220, tone) + rockPile(300, 3580, 260, tone);
+    s += coral(3300, 3300, 2.2, "#FF6B6B", tone, R) + coral(3650, 3340, 1.8, "#FFD43B", tone, R) + fan(3000, 3420, 1.8, tone) + brain(3480, 3330, 150, tone);
+    s += coral(200, 3360, 2, "#F783AC", tone, R) + brain(520, 3420, 120, tone) + fan(80, 3420, 1.5, tone);
+    s += rockPile(1000, 3400, 160, tone) + coral(1000, 3290, 1.6, "#FFA94D", tone, R) + coral(1120, 3320, 1.2, "#FF8787", tone, R) + rockPile(2250, 3500, 200, tone) + fan(2200, 3360, 1.6, tone) + coral(2380, 3380, 1.5, "#63E6BE", tone, R);
+    // a giant clam
+    var cx2 = 1600, cy2 = 3480;
+    s += tag("path", { d: "M" + (cx2 - 170) + " " + cy2 + " Q" + cx2 + " " + (cy2 + 140) + " " + (cx2 + 170) + " " + cy2 + " Z", fill: tone("#8EA3B8"), stroke: tone("#4A5A6E"), "stroke-width": 6 }) +
+      tag("path", { d: "M" + (cx2 - 170) + " " + cy2 + " Q" + cx2 + " " + (cy2 - 150) + " " + (cx2 + 170) + " " + cy2 + " Q" + cx2 + " " + (cy2 - 40) + " " + (cx2 - 170) + " " + cy2 + " Z", fill: tone("#7F51C9"), stroke: tone("#4A2E80"), "stroke-width": 5 }) + tag("circle", { cx: cx2, cy: cy2 - 34, r: 26, fill: "#FFFFFF", stroke: tone("#C9C2B0"), "stroke-width": 3 });
+    var zig = "";
+    for (var zk = -4; zk <= 4; zk++) zig += "M" + (cx2 + zk * 38) + " " + (cy2 + 8) + " q19 50 0 " + (100 - Math.abs(zk) * 12) + " ";
+    s += tag("path", { d: zig, stroke: tone("#4A5A6E"), "stroke-width": 4, fill: "none", opacity: 0.7 });
+    // sea urchins, starfish, a crab, the chest
+    [[2100, 3220, 40], [2260, 3260, 30], [900, 3080, 34]].forEach(function (u) { var sp = ""; for (var k = 0; k < 16; k++) { var a = k / 16 * Math.PI * 2; sp += "M" + u[0] + " " + u[1] + " l" + r2(Math.cos(a) * u[2] * 1.7) + " " + r2(Math.sin(a) * u[2] * 1.2) + " "; } s += tag("path", { d: sp, stroke: tone("#3A2A5E"), "stroke-width": 4 }) + tag("circle", { cx: u[0], cy: u[1], r: u[2], fill: tone("#4A2E80") }); });
+    s += starfish(1200, 3030, 54, tone("#FF922B")) + starfish(2600, 3460, 70, tone("#F06595")) + starfish(600, 3010, 40, tone("#FFD43B"));
+    s += crab(1900, 3200, 1.2, tone) + chest(2650, 3150, 1.3, tone);
+    // a conch shell, sand dollars and a sea cucumber on the open sand
+    s += tag("path", { d: "M1300 3290 q60 -90 150 -40 q40 30 20 60 q-60 20 -170 -20 Z", fill: tone("#F4C2A0"), stroke: tone("#B0704A"), "stroke-width": 5 }) + tag("path", { d: "M1340 3270 q40 -40 90 -14 M1360 3290 q30 -24 70 -10", stroke: tone("#B0704A"), "stroke-width": 4, fill: "none" });
+    [[1700, 3060], [2000, 3380], [1150, 3150]].forEach(function (q) { s += tag("ellipse", { cx: q[0], cy: q[1], rx: 34, ry: 16, fill: tone("#E9D8B4"), stroke: tone("#B9955E"), "stroke-width": 3 }) + tag("path", { d: "M" + q[0] + " " + (q[1] - 10) + " v20 M" + (q[0] - 14) + " " + q[1] + " h28", stroke: tone("#B9955E"), "stroke-width": 3 }); });
+    s += tag("path", { d: "M1650 3330 q80 -40 160 0 q-80 30 -160 0 Z", fill: tone("#8C3B5E"), stroke: tone("#5A2240"), "stroke-width": 4 });
+    for (var dt = 0; dt < 6; dt++) s += tag("circle", { cx: 1680 + dt * 22, cy: 3322 + (dt % 2) * 6, r: 4, fill: tone("#E599F7") });
+    for (var kk = 0; kk < 7; kk++) s += seagrass(2700 + kk * 60, 3580, 900, tone, 40 + kk);
+    return { defs: defs, body: s, front: "", under: tag("rect", { x: -400, y: 3300, width: 4640, height: 400, fill: tone("#C4A672") }) }; // the sand runs on under the original's (it ends at y 3320)
+  }
+  function mountBands(X, P, v, tone, seed) {
+    var top = drawTopBand(P, v, tone, D.rng(seed + 31)), bot = drawBottomBand(P, v, tone, D.rng(seed + 32));
+    if (top.far) PL.band(X.over.far, "top", "", top.far);
+    if (top.mid) PL.band(X.over.mid, "top", "", top.mid);
+    PL.band(X.over.ground, "top", top.defs, top.ground);
+    if (bot.under) PL.band(X.under.ground, "bottom", "", bot.under);
+    var bg = PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    if (bot.front) PL.band(X.over.front, "bottom", "", bot.front);
+    var plane = X.over.far.querySelector('[data-part="xplane"]'), xcl = [].slice.call(X.over.mid.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    var rays = [].slice.call(X.over.ground.querySelectorAll("[data-xray]")), glows = [].slice.call(bg.querySelectorAll("[data-xglow]"));
+    var blades = [].slice.call(bg.querySelectorAll("[data-blade]")).map(function (e) { return { e: e, d: e.getAttribute("d") }; });
+    var crabs = [].slice.call(bg.querySelectorAll("[data-xcrab]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    return function (t) {
+      if (plane) plane.setAttribute("transform", "translate(" + r2(A.wrap(1500 + t * 90, -600, 4800)) + " 560)");
+      xcl.forEach(function (c, i) { c.e.setAttribute("transform", "translate(" + r2(D.wobble(t, i, 0.1) * 60 + t * 4) + " 0) " + c.base); });
+      rays.forEach(function (e, k) { e.setAttribute("opacity", r2(0.55 + 0.45 * Math.sin(t * 0.7 + k * 1.1))); });
+      glows.forEach(function (e, k) { e.setAttribute("opacity", r2(0.6 + 0.4 * Math.sin(t * 1.6 + k))); });
+      blades.forEach(function (k, i) { var sway = Math.sin(t * 0.9 + i * 0.7) * 14; k.e.setAttribute("d", k.d.replace(/C(-?[\d.]+)/, function (m0, a) { return "C" + r2(+a + sway); })); });
+      crabs.forEach(function (c) { c.e.setAttribute("transform", "translate(" + r2(Math.sin(t * 0.8) * 40) + " 0) " + c.base); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -244,7 +398,9 @@
     var tone = under ? function (c) { return D.mix(c, "#2F86B8", 0.22); } : function (c) { return c; };
     var parts = under ? underwaterLayers(P, D.rng(seed + 4), tone) : surfaceLayers(P, D.rng(seed + 4), tone);
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "ocean-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "ocean-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, tone, seed) : null; // the bands above and below (tall-world px)
     var surf = g.ground.querySelector('[data-part="surface"]'), foam = g.ground.querySelector('[data-part="foam"]'), boat = g.ground.querySelector('[data-part="boat"]');
     var rays = [].slice.call(g.ground.querySelectorAll("[data-ray]"));
     var grass = [].slice.call(g.ground.querySelectorAll("[data-blade]")).concat([].slice.call(g.front.querySelectorAll("[data-blade]"))).map(function (e) { return { e: e, d: e.getAttribute("d") }; });
@@ -279,6 +435,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       // the waterline
       var pts = [];
       for (var x = -400; x <= 4240; x += 40) pts.push([x, G.water + wave(x, t, G)]);
@@ -325,7 +482,7 @@
       });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 
