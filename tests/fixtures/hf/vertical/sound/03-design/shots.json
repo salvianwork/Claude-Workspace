@@ -38,7 +38,7 @@
       {
        "do": "cut",
        "target": "sky",
-       "zoom": 0.8
+       "zoom": 1.0
       },
       {
        "do": "gesture",
@@ -60,7 +60,7 @@
      "moves": [
       {
        "do": "pan_down",
-       "to": "lake"
+       "to": "bridge"
       },
       {
        "do": "point",
@@ -213,10 +213,6 @@
        "do": "cut",
        "target": "lake",
        "zoom": 1.4
-      },
-      {
-       "do": "pan_down",
-       "by": 380
       },
       {
        "do": "point",

@@ -45,13 +45,6 @@
        }
       },
       {
-       "do": "pan_down",
-       "by": 460,
-       "at": {
-        "t": 0
-       }
-      },
-      {
        "do": "gesture",
        "who": "host",
        "name": "think"
@@ -171,7 +164,7 @@
       },
       {
        "do": "pan_down",
-       "by": 820,
+       "by": 420,
        "at": {
         "word": 0
        }
@@ -264,13 +257,6 @@
        "do": "cut",
        "target": "surface",
        "zoom": 1.25,
-       "at": {
-        "t": 0
-       }
-      },
-      {
-       "do": "pan_down",
-       "by": 300,
        "at": {
         "t": 0
        }
@@ -466,13 +452,6 @@
        }
       },
       {
-       "do": "pan_down",
-       "by": 330,
-       "at": {
-        "t": 0
-       }
-      },
-      {
        "do": "point",
        "who": "host",
        "target": "reef",
@@ -560,7 +539,7 @@
       },
       {
        "do": "pan_down",
-       "by": 820,
+       "by": 300,
        "at": {
         "t": 0
        }
@@ -675,13 +654,6 @@
        "do": "cut",
        "target": "moon",
        "zoom": 1.0,
-       "at": {
-        "t": 0
-       }
-      },
-      {
-       "do": "pan_down",
-       "by": 460,
        "at": {
         "t": 0
        }

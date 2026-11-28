@@ -7,13 +7,13 @@ Total: 52.0 s, 8 scenes, host step-ins: scenes 2, 4; new place: none; custom mov
 ## Scene 1: The question
 - **Place:** `countryside`, variant `day` (library)
 - **Duration:** 5.125 s (154 frames)
-- **Framing:** vertical — opens high in the sky (zoom 0.8), `pan_down` to the trestle bridge over the lake (the reveal sky → ground); the bridge rail lands just above the caption band and its label above it
+- **Framing:** vertical — opens high in the sky (zoom 1.0), `pan_down` to the trestle bridge over the lake (the reveal sky → ground); the bridge rail lands in the middle band, above the captions and its label above it
 - **Idea:** We will compare how fast sound moves through different things.
 - **Host:** talks from the bottom-left slot
 - **Cast:** none
 - **Beats:**
-  1. "Where" (0) — the view starts high in the summer sky over the farm; the host asks from the bottom-left corner, thinking. Moves: cut target `sky` ×0.8; gesture who `host` name `think`; react who `host` expression `curious`
-  2. "travel" (3) — the view slides down from the sky to the railway bridge over the lake; the host points at the steel rail. Moves: pan_down to `lake`; point who `host` target `bridge` on "strike" (6); label target `bridge` "Steel rail" (above) on "steel" (8)
+  1. "Where" (0) — the view starts high in the summer sky over the farm; the host asks from the bottom-left corner, thinking. Moves: cut target `sky` ×1.0; gesture who `host` name `think`; react who `host` expression `curious`
+  2. "travel" (3) — the view slides down from the sky to the railway bridge over the lake; the host points at the steel rail. Moves: pan_down to `bridge`; point who `host` target `bridge` on "strike" (6); label target `bridge` "Steel rail" (above) on "steel" (8)
 - **Text on screen:** "Steel rail" (2 words in 5.125 s)
 - **Scale:** true to scale (no sizes, speeds or ratios shown)
 - **Facts:** a steel railway runs through the countryside
@@ -41,12 +41,12 @@ Total: 52.0 s, 8 scenes, host step-ins: scenes 2, 4; new place: none; custom mov
 ## Scene 3: Water
 - **Place:** `countryside`, variant `day` (library)
 - **Duration:** 7.175 s (216 frames)
-- **Framing:** vertical — close on the lake (zoom 1.4), `pan_down` by 380 at the start so the water sits in the middle band above the captions; the label above the lake's centre
+- **Framing:** vertical — close on the lake (zoom 1.4); the water sits in the middle band above the captions; the label above the lake's centre
 - **Idea:** Sound is more than four times faster in water than in air.
 - **Host:** talks from the bottom-right slot
 - **Cast:** none
 - **Beats:**
-  1. "In" (0) — the camera drops to the lake under the trestle bridge; the host points at it from the bottom-right corner. Moves: cut target `lake` ×1.4; pan_down by 380; point who `host` target `lake` on "water" (1)
+  1. "In" (0) — the camera drops to the lake under the trestle bridge; the host points at it from the bottom-right corner. Moves: cut target `lake` ×1.4; point who `host` target `lake` on "water" (1)
   2. "more" (4) — quick ripples of sound race out through the water, much faster than the rings in the air. Moves: rings target `lake` on "more" (4); gesture who `host` name `surprised` on "four" (6); label target `lake` "Water: 1,480 m/s" (above) on "1,480" (10)
 - **Text on screen:** "Water: 1,480 m/s" (3 words in 7.175 s)
 - **Scale:** true to scale: ripples at 745 px/s (see scene 2)

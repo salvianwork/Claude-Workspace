@@ -7,12 +7,12 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 ## Scene 1: White sunlight
 - **Place:** `countryside`, variant `day` (library)
 - **Duration:** 5.875 s (177 frames)
-- **Framing:** vertical — the open sky at zoom 0.85, `pan_down` by 450 as the scene opens so the prism hangs in the middle band; the rainbow fans out above the caption band; labels above the prism
+- **Framing:** vertical — the open sky at zoom 0.85 (the camera puts the sky anchor at y 640, so the prism hangs in the middle band); the rainbow fans out above the caption band; labels above the prism
 - **Idea:** White sunlight is a mix of all the colours.
 - **Host:** talks from the bottom-left slot
 - **Cast:** none
 - **Beats:**
-  1. "Why" (0) — the clear blue sky over the farm; the host asks from the bottom-left corner, thinking. Moves: cut target `sky` ×0.85 on 0 s; pan_down by 450 on 0 s; gesture who `host` name `think`; react who `host` expression `curious`
+  1. "Why" (0) — the clear blue sky over the farm; the host asks from the bottom-left corner, thinking. Moves: cut target `sky` ×0.85 on 0 s; gesture who `host` name `think`; react who `host` expression `curious`
   2. "Sunlight" (5) — a beam of white sunlight slants in and passes through a glass prism, which fans it out into all the colours of the rainbow. Moves: custom name `white-light` params {"from": {"x": 700, "y": -300}, "split": 1.68, "prismSize": 190} on "Sunlight" (5); point who `host` target `sky` on "looks" (6); label target `sky` "White light" (above) on "white" (7) until "every" (11); label target `sky` "Every colour" (above) on "colour" (12); react who `host` expression `surprised` on "colour" (12)
 - **Text on screen:** "White light", "Every colour" (4 words in 5.875 s)
 - **Scale:** the prism and beam are illustrative (a metaphor drawn in the sky)
@@ -30,7 +30,7 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 - **Host:** talks from the bottom-right slot
 - **Cast:** none
 - **Beats:**
-  1. "To" (0) — the white sunbeam crosses the sky; the host points at it. Moves: cut target `sky` ×0.85 on 0 s; pan_down by 450 on 0 s; custom name `white-light` params {"from": {"x": 700, "y": -300}, "split": 99, "showPrism": false} on 0.1 s; point who `host` target `sky` on "that" (4)
+  1. "To" (0) — the white sunbeam crosses the sky; the host points at it. Moves: cut target `sky` ×0.85 on 0 s; custom name `white-light` params {"from": {"x": 700, "y": -300}, "split": 99, "showPrism": false} on 0.1 s; point who `host` target `sky` on "that" (4)
   2. "cross" (8) — the camera dives into the air the light crosses: tiny gas molecules fly about, far apart. Moves: dive target `sky` into `lattice` params {"state": "gas"} on "cross" (8); gesture who `host` name `think` on "which" (11)
 - **Text on screen:** none
 - **Scale:** true to scale (no sizes, speeds or ratios shown)
@@ -48,7 +48,7 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 - **Host:** talks from the bottom-right slot
 - **Cast:** none
 - **Beats:**
-  1. "Blue" (0) — in the sky, drawn huge, a short choppy blue light wave travels in toward the air molecules. Moves: cut target `sky` ×0.85 on 0 s; pan_down by 450 on 0 s; custom name `wave-hit` params {"color": "#2F7BFF", "wavelength": 70, "hit": 4.5, "scatter": true, "scale": 2.0, "spread": 1.2, "packet": 700, "from": 900} on 0.2 s; label target `sky` "Blue: short waves" (above) on "short" (4); label target `sky` "not to scale" (below) on "short" (4); gesture who `host` name `talk` on "travels" (2)
+  1. "Blue" (0) — in the sky, drawn huge, a short choppy blue light wave travels in toward the air molecules. Moves: cut target `sky` ×0.85 on 0 s; custom name `wave-hit` params {"color": "#2F7BFF", "wavelength": 70, "hit": 4.5, "scatter": true, "scale": 2.0, "spread": 1.2, "packet": 700, "from": 900} on 0.2 s; label target `sky` "Blue: short waves" (above) on "short" (4); label target `sky` "not to scale" (below) on "short" (4); gesture who `host` name `talk` on "travels" (2)
   2. "When" (7) — the wave hits a molecule, which flashes and sends blue light off in every direction. Moves: point who `host` target `sky` on "hits" (9); react who `host` expression `surprised` on "bounces" (13); gesture who `host` name `surprised` on "off" (14)
 - **Text on screen:** "Blue: short waves", "not to scale" (6 words in 7.3 s)
 - **Scale:** not to scale — label "not to scale"
@@ -66,7 +66,7 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 - **Host:** talks from the bottom-left slot
 - **Cast:** none
 - **Beats:**
-  1. "Red" (0) — a long, lazy red light wave travels in toward the same molecules. Moves: cut target `sky` ×0.85 on 0 s; pan_down by 450 on 0 s; custom name `wave-hit` params {"color": "#E53935", "wavelength": 170, "hit": 3.4, "scatter": false, "scale": 2.0, "spread": 1.2, "packet": 800, "from": 900} on 0.2 s; label target `sky` "Red: long waves" (above) on "long" (4); label target `sky` "not to scale" (below) on "long" (4); gesture who `host` name `think` on "travels" (2)
+  1. "Red" (0) — a long, lazy red light wave travels in toward the same molecules. Moves: cut target `sky` ×0.85 on 0 s; custom name `wave-hit` params {"color": "#E53935", "wavelength": 170, "hit": 3.4, "scatter": false, "scale": 2.0, "spread": 1.2, "packet": 800, "from": 900} on 0.2 s; label target `sky` "Red: long waves" (above) on "long" (4); label target `sky` "not to scale" (below) on "long" (4); gesture who `host` name `think` on "travels" (2)
   2. "so" (7) — the red wave passes straight through and carries on, the molecule barely stirring. Moves: point who `host` target `sky` on "most" (8); react who `host` expression `happy` on "straight" (12)
 - **Text on screen:** "Red: long waves", "not to scale" (6 words in 5.55 s)
 - **Scale:** not to scale — label "not to scale"
@@ -79,12 +79,12 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 ## Scene 5: Blue from everywhere
 - **Place:** `countryside`, variant `day` (library)
 - **Duration:** 6.2 s (186 frames)
-- **Framing:** vertical — the host at `rail-near` at zoom 1.4, then `pan_up` by 250 at the start so he stands lower in the frame with the big sky above him (captions in the top band while he is out of his slot); the label beside his feet
+- **Framing:** vertical — the host at `rail-near` at zoom 1.4, then `pan_up` by 200 at the start so he stands lower in the frame with the big sky above him (captions in the top band while he is out of his slot); the label beside his feet
 - **Idea:** The scattered blue light comes from every part of the sky, so the sky looks blue.
 - **Host:** step-in — stands at `rail-near` and looks up
 - **Cast:** none
 - **Beats:**
-  1. "So" (0) — the host stands by the meadow rail and looks up; blue light streams down to him from every part of the sky. Moves: cut target `rail-near` ×1.4 on 0 s; pan_up by 250 on 0 s; react who `host` expression `curious`; custom name `sky-rays` params {"anchor": "rail-near", "eye": 380} on "wherever" (1); point who `host` target `sky` on "wherever" (1)
+  1. "So" (0) — the host stands by the meadow rail and looks up; blue light streams down to him from every part of the sky. Moves: cut target `rail-near` ×1.4 on 0 s; pan_up by 200 on 0 s; react who `host` expression `curious`; custom name `sky-rays` params {"anchor": "rail-near", "eye": 380} on "wherever" (1); point who `host` target `sky` on "wherever" (1)
   2. "scattered" (8) — more blue rays arrive from left and right; the host turns and smiles. Moves: gesture who `host` name `point-left` on "scattered" (8); label target `rail-near` "Blue from everywhere" (right) on "blue" (9); react who `host` expression `happy` on "all" (14)
 - **Text on screen:** "Blue from everywhere" (3 words in 6.2 s)
 - **Scale:** true to scale (no sizes, speeds or ratios shown)
@@ -97,12 +97,12 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 ## Scene 6: Sunset
 - **Place:** `countryside`, variant `sunset` (library)
 - **Duration:** 8.3 s (249 frames)
-- **Framing:** vertical — a tall reveal: opens high in the sunset sky at zoom 0.8 and `pan_down` by 850 to the horizon; the beam crosses just above the caption band, the labels below the sky anchor in the middle band
+- **Framing:** vertical — a tall reveal: opens high in the sunset sky at zoom 0.8 and `pan_down` by 330 to the horizon; the beam crosses just above the caption band, the labels below the sky anchor in the middle band
 - **Idea:** At sunset the long path through the air scatters the blue out, so the sky looks red and orange.
 - **Host:** talks from the bottom-left slot
 - **Cast:** none
 - **Beats:**
-  1. "At" (0) — the view slides down the evening sky to the horizon, where the Sun is low. Moves: cut target `sky` ×0.8 on 0 s; pan_down by 850 on 0 s; gesture who `host` name `think`
+  1. "At" (0) — the view slides down the evening sky to the horizon, where the Sun is low. Moves: cut target `sky` ×0.8 on 0 s; pan_down by 330 on 0 s; gesture who `host` name `think`
   2. "the" (2) — a long, low beam of sunlight crosses the sky; blue sparks peel off it along the way and only orange and red reach the far end. Moves: custom name `sunset-beam` params {"sun": {"x": 480, "y": 520}, "to": {"x": -700, "y": 420}} on "light" (3); label target `sky` "Long path through air" (below) on "crosses" (4) until "Most" (8); point who `host` target `sky` on "crosses" (4); label target `sky` "Blue scattered away" (below) on "blue" (11); react who `host` expression `surprised` on "bounces" (12); gesture who `host` name `celebrate` on "leaving" (18)
 - **Text on screen:** "Long path through air", "Blue scattered away" (7 words in 8.3 s)
 - **Scale:** illustrative (the beam's length stands for the long path through the air)
@@ -120,7 +120,7 @@ Total: 46.525 s, 7 scenes, host step-ins: scene 5; new place: none; custom moves
 - **Host:** talks from the bottom-right slot
 - **Cast:** none
 - **Beats:**
-  1. "So" (0) — back in the blue sky: once more a blue wave hits a molecule and bounces off in every direction. Moves: cut target `sky` ×0.85 on 0 s; pan_down by 450 on 0 s; custom name `wave-hit` params {"color": "#2F7BFF", "wavelength": 70, "hit": 2.0, "scatter": true, "scale": 2.0, "spread": 1.2, "packet": 700, "from": 900} on 0.1 s; label target `sky` "not to scale" (below) on "sunlight" (5); gesture who `host` name `talk` on "a" (1)
+  1. "So" (0) — back in the blue sky: once more a blue wave hits a molecule and bounces off in every direction. Moves: cut target `sky` ×0.85 on 0 s; custom name `wave-hit` params {"color": "#2F7BFF", "wavelength": 70, "hit": 2.0, "scatter": true, "scale": 2.0, "spread": 1.2, "packet": 700, "from": 900} on 0.1 s; label target `sky` "not to scale" (below) on "sunlight" (5); gesture who `host` name `talk` on "a" (1)
   2. "Look" (9) — the host invites the viewer to look at the next sunset and tell him the colours. Moves: gesture who `host` name `wave` on "Look" (9); react who `host` expression `happy` on "Look" (9); gesture who `host` name `celebrate` on "tell" (16)
 - **Text on screen:** "not to scale" (3 words in 7.05 s)
 - **Scale:** not to scale (the molecule and wave are drawn huge)

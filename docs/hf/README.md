@@ -244,6 +244,18 @@ adds its rebuild, `hyperframes check` and the mux.
 | whatif | 45.5 s | 7 | 19 s (+ 3 short re-records, 10–13 s each, to reach 45 s) | 82–85 s | 16 s / 2 s / 3 s | 408.8 s | 496 s | 9.0× |
 | short | 46.5 s | 7 | 21 s (+ 1 re-record, 11 s) | 127 s | 16 s / 2 s / 3 s | 336.5 s | 468 s | 7.2× |
 
+**Re-render after the 2026-11-28 fix wave** (new camera aim and text sizes; same voice and mix; one
+render at a time, `--workers 1`, no retry needed):
+
+| Video | Length | Build + check | Snapshots / overlap / safe-zone | Render (`hyperframes render`) | Full render call | Render ÷ length |
+|---|---|---|---|---|---|---|
+| sound | 52.1 s | 105 s | 15 s / 2 s / 2 s | 451.4 s | 562 s | 8.7× |
+| whatif | 45.6 s | 61 s | 13 s / 2 s / 2 s | 398.1 s | 465 s | 8.7× |
+| short | 46.6 s | 101–104 s | 14 s / 2 s / 2 s | 262.7 s (first run after the aim change: 353.4 s) | 265 s | 5.6× |
+
+The same machine gave 263–451 s for videos of almost the same length, so treat these as a range
+(about 5.5–9× the video's length with one worker), not exact figures.
+
 The audio mix took about 3 s per video. Authoring (my own wall clock, from the first script line
 to the last fix): about 10 minutes reading the plan, agent files and kit; 5 minutes for three
 scripts; 5 minutes of voice and transcript checks; then about 11 minutes for `sound` (kit only,
@@ -255,20 +267,28 @@ rendered. In all about **75 minutes for 144 s of finished vertical video**, of w
 **Honest note.** One worker renders a 45–52 s short in 5–7 minutes here (5.6–9× its length;
 the space and ocean scenes of `whatif` are the slowest). That is a safe setting, not a fast one:
 the landscape fixtures above rendered with 2 workers (3.3–10× their length, not measured
-side by side), but vertical renders with 2 workers were cancelled under load on this 4-CPU machine, so it is worth one try of 2 workers on the owner's PC before
-choosing a default. The render tool picks its workers in `tools/hf/render.py`: `--workers N`
-when given (`tools.render.render` and `tools.hf.render` both pass it through), otherwise
-`default_workers()` = half the CPUs, at least 1 (2 here). There is no automatic retry with
-fewer workers yet; a cancelled render simply fails.
+side by side), but vertical renders with 2 workers were cancelled under load on this 4-CPU machine.
+The render tool picks its workers in `tools/hf/render.py`: `--workers N` when given
+(`tools.render.render` and `tools.hf.render` both pass it through), otherwise half the CPUs (at
+least 1), **capped at 2 for a vertical video**. Since the 2026-11-28 fix wave a render that is
+cancelled with more than 1 worker (`render_cancelled…`, a worker cancelled) is **retried once
+with 1 worker**, with the message "Render was interrupted; retrying with 1 worker, this is
+slower." (`render.log` then says `note: the render was interrupted and finished on a retry with
+1 worker`). Without `ffprobe` the size check of the finished video cannot run: the render now
+prints a clear warning (install FFmpeg) instead of skipping it silently.
 
 ### What I saw and fixed (three or more look/fix rounds per video)
 
-The main lesson, for every vertical shot: a camera move onto an **anchor** puts that point at
-55 % of the frame height (y ≈ 1056), right under the caption band, while a move onto an
-**actor** puts his feet at y 700. So most anchor shots open with a short `pan_down` (by 300–850
-world px, about a second) that lifts the ground or the thing into the middle band; the world's
-bottom edge limits how far a pan can go at low zoom (the camera clamps), so the closer shots use
-a higher zoom.
+The main lesson, for every vertical shot (as first made): a camera move onto an **anchor** put
+that point at 55 % of the frame height (y ≈ 1056), right under the caption band, so most anchor
+shots opened with a short `pan_down` to lift it. **Fixed in the 2026-11-28 fix wave:** in a
+vertical frame the camera now puts an anchor at **y 640** while the host is in his slot (clear
+above the captions, 840–1020) and at **y 1040** while he is out of it (the captions are then in
+the top band, 220–400); an actor's feet go to y 780 (y 1040 while the host is out). The lift
+pans were removed from the three fixtures; the pans left are real reveals or framing choices
+(sound scene 1 sky → bridge, whatif scene 2 sky → sea and scene 6, short scenes 5 and 6, the
+forest pan up). Near the world's bottom edge at low zoom the camera still clamps, so a target
+there sits lower (the lake at zoom 1 sits at y ≈ 870): zoom in a little.
 
 - **sound:** the rail sat under the captions in every anchor shot → the opening pans to the lake
   so the bridge rail lands above the captions; the lake shot is closer (zoom 1.4) with a pan down
@@ -290,15 +310,17 @@ a higher zoom.
   check is clean; scene 2's beam showed a prism with nothing coming out → no prism there; the
   host's step-in was small with soil filling the frame → zoom 1.4 with a pan up; the
   sky-rays label covered his face when he turned → moved to his feet; two sunset labels touched
-  for one sample → the first ends a word earlier.
+  for one sample → the first ends a word earlier. Fix wave (2026-11-28): the air molecules of
+  `wave-hit` sat on the caption band's edges → they now sit around and above the hit molecule.
 
 ### Known limits (not fixed)
 
-- Labels and tags are small on a phone (about 30–35 px text in the 1080 px frame): readable at
-  full size, tight at 360 px wide. Their size is the kit's, not the fixtures'.
+- Labels and tags were small on a phone (34–38 px text). **Fixed 2026-11-28:** in vertical, tags
+  are 56 px and labels 50 px (about 1.5×; captions are 64 px), shrunk only as far as a long text
+  needs to fit the safe zone's width.
 - Many anchor shots spend their lower half on the cut-away ground under the host (soil, rock):
   it is drawn and not empty, but it is the part of the frame the viewer looks at least.
-- The opening pan of an anchor shot takes about a second, so the first frames of those scenes
-  still show the target under the captions.
+- (Fixed 2026-11-28: anchor shots no longer need an opening lift pan, so the first frames no
+  longer show the target under the captions.)
 - `rooftop-night`'s Moon cannot be centred in a vertical frame (see whatif above).
 - The transcript check flags spelling only ("metres"/"meters", "colour"/"color").

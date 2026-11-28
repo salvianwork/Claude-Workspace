@@ -44,13 +44,6 @@
        }
       },
       {
-       "do": "pan_down",
-       "by": 450,
-       "at": {
-        "t": 0
-       }
-      },
-      {
        "do": "gesture",
        "who": "host",
        "name": "think"
@@ -158,13 +151,6 @@
        }
       },
       {
-       "do": "pan_down",
-       "by": 450,
-       "at": {
-        "t": 0
-       }
-      },
-      {
        "do": "custom",
        "name": "white-light",
        "params": {
@@ -249,13 +235,6 @@
        "do": "cut",
        "target": "sky",
        "zoom": 0.85,
-       "at": {
-        "t": 0
-       }
-      },
-      {
-       "do": "pan_down",
-       "by": 450,
        "at": {
         "t": 0
        }
@@ -374,13 +353,6 @@
        }
       },
       {
-       "do": "pan_down",
-       "by": 450,
-       "at": {
-        "t": 0
-       }
-      },
-      {
        "do": "custom",
        "name": "wave-hit",
        "params": {
@@ -486,7 +458,7 @@
       },
       {
        "do": "pan_up",
-       "by": 250,
+       "by": 200,
        "at": {
         "t": 0
        }
@@ -588,7 +560,7 @@
       },
       {
        "do": "pan_down",
-       "by": 850,
+       "by": 330,
        "at": {
         "t": 0
        }
@@ -702,13 +674,6 @@
        "do": "cut",
        "target": "sky",
        "zoom": 0.85,
-       "at": {
-        "t": 0
-       }
-      },
-      {
-       "do": "pan_down",
-       "by": 450,
        "at": {
         "t": 0
        }

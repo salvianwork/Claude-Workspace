@@ -37,7 +37,8 @@
       var bl = D.el(defs, "filter", { id: id + "-glow", x: "-50%", y: "-50%", width: "200%", height: "200%" });
       D.el(bl, "feGaussianBlur", { stdDeviation: 10 });
       var R = D.rng(77), mols = [];
-      [[-380, -330], [330, -380], [-470, 250], [420, 300], [-120, 470], [160, -560]].forEach(function (o, i) {
+      // the air molecules sit around and above the hit one, so none lands on the caption band below it
+      [[-380, -330], [330, -380], [-470, -110], [420, -140], [-120, -480], [160, -600]].forEach(function (o, i) {
         mols.push(molecule(g, c.x + (o[0] + (R() - 0.5) * 60) * sp, c.y + (o[1] + (R() - 0.5) * 60) * sp, (0.8 + R() * 0.25) * k));
       });
       var flash = D.el(g, "circle", { cx: c.x, cy: c.y, r: 90 * k, fill: col, opacity: 0, filter: "url(#" + id + "-glow)" });
