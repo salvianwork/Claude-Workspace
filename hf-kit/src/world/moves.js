@@ -613,10 +613,10 @@
   var AIM = 0.05; // x the frame height
   /* Vertical (1080 x 1920, 2026-11-28 fix wave): 55 % of the height would be y 1056, on and under the
    * caption band (840-1020), so a vertical frame puts a ground point in the clear area above the band:
-   * at y 640 (a third of the height) while the host is in his slot, and at y 980 while he is out of it
+   * at y 640 (a third of the height) while the host is in his slot, and at y 1040 while he is out of it (the line his feet stand on)
    * (the caption is then in the top band, 220-400, and the slot is empty), so what stands there shows
    * below the top band. `away` = the host is out of his slot when the move starts. */
-  var AIM_V = { slot: 640, away: 980 };
+  var AIM_V = { slot: 640, away: 1040 };
   function isVert() { var c = canvas(); return c.height > c.width; }
   function aimY(away) { return isVert() ? (away ? AIM_V.away : AIM_V.slot) : canvas().height * (0.5 + AIM); }
   function aim(p, zoom, isActor, away) {

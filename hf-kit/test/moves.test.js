@@ -514,14 +514,14 @@ test("vertical aim: a framed anchor sits at y 640 (above the caption band 840-10
   });
 });
 
-test("vertical aim: while the host is out of his slot (captions in the top band) a framed anchor sits at y 980, below 400 and above the face zone", () => vertical(() => {
+test("vertical aim: while the host is out of his slot (captions in the top band) a framed anchor sits at y 1040 (where his feet go), below 400 and above the face zone", () => vertical(() => {
   const s = railway({ id: 12, actors: [{ id: "host", start: { anchor: "rail-near" } }], beats: [
     { at: { word: 0 }, moves: [{ do: "cut", target: "bridge", zoom: 1.2 }, { do: "gesture", who: "host", name: "wave" }] }] });
   const w = K.worldFor(s, { cast: CAST }), c = K.compileMoves(s, WORDS, w);
   assert.deepEqual(c.errors, []);
   assert.equal(K.hostAway(c, w, 0.5), true);
   const sp = K.worldMath.toScreen(w.anchors.bridge(0), K.worldCamera(c, 0.5));
-  assert.ok(Math.abs(sp.y - 980) < 1.5, JSON.stringify(sp));
+  assert.ok(Math.abs(sp.y - 1040) < 1.5, JSON.stringify(sp));
   assert.ok(sp.y > 400 && sp.y < 1060);
 }));
 
