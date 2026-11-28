@@ -61,6 +61,26 @@ def default_workers() -> int:
     return max(1, (os.cpu_count() or 2) // 2)
 
 
+# A vertical render with more workers was cancelled under load on a 4-CPU machine
+# ("render_cancelled_parent_exited"), so a vertical video uses at most this many workers unless
+# --workers says otherwise. Any render cancelled with more than 1 worker is retried once with 1.
+VERTICAL_MAX_WORKERS = 2
+RETRY_MESSAGE = "Render was interrupted; retrying with 1 worker, this is slower."
+_CANCELLED = re.compile(r"render_cancel|cancel+ed|worker[^\n]{0,60}(?:exit|crash|die|died|killed|lost)", re.I)
+
+
+def workers_for(composition_dir: Path) -> int:
+    """Default workers for this composition: default_workers(), capped for a vertical video."""
+    workers = default_workers()
+    w, h = composition_size(composition_dir)
+    return min(workers, VERTICAL_MAX_WORKERS) if h > w else workers
+
+
+def was_cancelled(r: subprocess.CompletedProcess) -> bool:
+    """True when a failed `hyperframes render` says it (or one of its workers) was cancelled."""
+    return bool(_CANCELLED.search((r.stderr or "") + "\n" + (r.stdout or "")))
+
+
 def video_seconds(composition_dir: Path) -> float:
     """Length of the composition from the root element's data-duration (0 if unknown)."""
     try:
@@ -81,12 +101,19 @@ def composition_size(composition_dir: Path) -> tuple[int, int]:
     return (int(m.group(1)), int(m.group(2))) if m else (1920, 1080)
 
 
-def check_output_size(composition_dir: Path, out_mp4: Path) -> None:
-    """Raise HFError when the rendered MP4 is not the composition's size (needs ffprobe; skipped
-    without it)."""
+FFPROBE_MISSING = ("ffprobe was not found, so the video's size was not checked (it should be {w} x {h}). "
+                   "Install FFmpeg, which includes ffprobe: winget install -e --id Gyan.FFmpeg")
+
+
+def check_output_size(composition_dir: Path, out_mp4: Path) -> str | None:
+    """Raise HFError when the rendered MP4 is not the composition's size. Without ffprobe the check
+    cannot run: a warning is printed and returned (the video itself is fine), else None."""
     probe = shutil.which("ffprobe")
     if probe is None:
-        return
+        w, h = composition_size(composition_dir)
+        msg = FFPROBE_MISSING.format(w=w, h=h)
+        print(f"warning: {msg}", file=sys.stderr, flush=True)
+        return msg
     r = _run([probe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
               "-of", "csv=p=0", str(out_mp4)], Path(out_mp4).parent, "ffprobe", 120)
     try:
@@ -96,6 +123,7 @@ def check_output_size(composition_dir: Path, out_mp4: Path) -> None:
     want = composition_size(composition_dir)
     if got != want:
         raise HFError(f"the render is {got[0]} x {got[1]}, but the composition is {want[0]} x {want[1]}")
+    return None
 
 
 def timeout_for(composition_dir: Path) -> float:
@@ -150,8 +178,18 @@ def check(composition_dir: Path) -> dict:
     return report
 
 
+def _render_once(composition_dir: Path, out_mp4: Path, workers: int) -> subprocess.CompletedProcess:
+    return _run([*_hyperframes(), "render", "--output", str(out_mp4), "--fps", "30",
+                 "--workers", str(workers)], composition_dir, "hyperframes render",
+                timeout_for(composition_dir))
+
+
 def render(composition_dir: Path, out_mp4: Path, *, workers: int | None = None) -> dict:
-    """Check, then render the composition to an MP4. `seconds` is the wall time of both steps."""
+    """Check, then render the composition to an MP4. `seconds` is the wall time of both steps.
+
+    A render that fails because it (or a worker) was cancelled, with more than 1 worker, is
+    retried once with 1 worker (`retried` in the result). `warnings` lists anything the owner
+    should know that did not stop the render (e.g. ffprobe missing)."""
     started = time.monotonic()
     composition_dir = Path(composition_dir).resolve()
     out_mp4 = Path(out_mp4).resolve()
@@ -159,14 +197,23 @@ def render(composition_dir: Path, out_mp4: Path, *, workers: int | None = None) 
         raise HFError(f"no index.html in {composition_dir}")
     report = check(composition_dir)
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
-    workers = workers or default_workers()
-    r = _run([*_hyperframes(), "render", "--output", str(out_mp4), "--fps", "30",
-              "--workers", str(workers)], composition_dir, "hyperframes render",
-             timeout_for(composition_dir))
+    workers = workers or workers_for(composition_dir)
+    r = _render_once(composition_dir, out_mp4, workers)
+    retried = False
+    if (r.returncode != 0 or not out_mp4.is_file()) and workers > 1 and was_cancelled(r):
+        print(RETRY_MESSAGE, file=sys.stderr, flush=True)
+        try:
+            out_mp4.unlink()
+        except OSError:
+            pass
+        retried, workers = True, 1
+        r = _render_once(composition_dir, out_mp4, workers)
     if r.returncode != 0 or not out_mp4.is_file():
-        raise HFError(f"hyperframes render failed (exit {r.returncode}):\n{_tail(r)}")
-    check_output_size(composition_dir, out_mp4)
-    return {"check": report, "seconds": time.monotonic() - started}
+        again = " (also after a retry with 1 worker)" if retried else ""
+        raise HFError(f"hyperframes render failed{again} (exit {r.returncode}):\n{_tail(r)}")
+    warnings = [w for w in [check_output_size(composition_dir, out_mp4)] if w]
+    return {"check": report, "seconds": time.monotonic() - started, "workers": workers,
+            "retried": retried, "warnings": warnings}
 
 
 def assert_offline(composition_dir: Path) -> list[str]:
@@ -221,7 +268,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("composition_dir", type=Path)
     p.add_argument("out_mp4", type=Path)
     p.add_argument("--workers", type=int, default=None,
-                   help="parallel render workers (default: half the CPUs, at least 1)")
+                   help="parallel render workers (default: half the CPUs, at least 1; at most "
+                        f"{VERTICAL_MAX_WORKERS} for a vertical video)")
     a = p.parse_args(argv)
     try:
         result = render(a.composition_dir, a.out_mp4, workers=a.workers)
