@@ -611,20 +611,45 @@
    * below the middle, at 55 % of the frame height, so what stands there shows and the caption band
    * stays clear of it; actors are framed by actorFocus below. */
   var AIM = 0.05; // x the frame height
-  function aim(p, zoom, isActor) { return isActor ? { x: p.x, y: p.y } : { x: p.x, y: p.y - AIM * canvas().height / zoom }; }
+  /* Vertical (1080 x 1920, 2026-11-28 fix wave): 55 % of the height would be y 1056, on and under the
+   * caption band (840-1020), so a vertical frame puts a ground point in the clear area above the band:
+   * at y 640 (a third of the height) while the host is in his slot, and at y 980 while he is out of it
+   * (the caption is then in the top band, 220-400, and the slot is empty), so what stands there shows
+   * below the top band. `away` = the host is out of his slot when the move starts. */
+  var AIM_V = { slot: 640, away: 980 };
+  function isVert() { var c = canvas(); return c.height > c.width; }
+  function aimY(away) { return isVert() ? (away ? AIM_V.away : AIM_V.slot) : canvas().height * (0.5 + AIM); }
+  function aim(p, zoom, isActor, away) {
+    if (isActor) return { x: p.x, y: p.y };
+    if (isVert()) return { x: p.x, y: p.y - (aimY(away) - canvas().height / 2) / zoom };
+    return { x: p.x, y: p.y - AIM * canvas().height / zoom };
+  }
+  /* The inverse of aim: the framed point for a camera centre. */
+  function unaim(c, zoom, away) {
+    if (isVert()) return { x: c.x, y: c.y + (aimY(away) - canvas().height / 2) / zoom };
+    return { x: c.x, y: c.y + AIM * canvas().height / zoom };
+  }
   /* Framing an actor: when he fits (head to feet in 660 px), his feet sit at y 700, just above the
-   * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest. */
-  var FEET_Y = 700, FIT_H = 660;
-  function actorFocus(points, name, t, zoom) {
+   * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest.
+   * Vertical: feet at y 780 and up to 560 px tall (head below y 220) while the host is in his slot
+   * (the caption band is 840-1020), or feet at y 1040 and up to 620 px tall (head below the top
+   * caption band, 220-400) while he is out of it. */
+  var FEET_Y = 700, FIT_H = 660, FEET_V = { slot: { y: 780, h: 560 }, away: { y: 1040, h: 620 } };
+  function actorFocus(points, name, t, zoom, away) {
     var f = points(name, t, "feet"), top = points(name, t, "top");
     if (!f || f.screen) return null;
-    return (f.y - top.y) * zoom <= FIT_H ? { x: f.x, y: f.y - (FEET_Y - canvas().height / 2) / zoom } : points(name, t, "body");
+    var fy = FEET_Y, fh = FIT_H;
+    if (isVert()) { var fv = away ? FEET_V.away : FEET_V.slot; fy = fv.y; fh = fv.h; }
+    return (f.y - top.y) * zoom <= fh ? { x: f.x, y: f.y - (fy - canvas().height / 2) / zoom } : points(name, t, "body");
   }
 
   /* Camera keys from the camera moves (plus automatic follows of walkers, `autos`). points(name, t,
    * "body") resolves targets. Returns {keys, anchors, dives, errors, warnings}. */
-  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos, bounds) {
+  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos, bounds, awayAt) {
     var B = bounds || WORLD;
+    // vertical: is the host out of his slot at the move being framed (the caption is then in the top band)
+    var away = false;
+    function awayNow(t) { away = !!(awayAt && isVert() && awayAt(t)); }
     function clampFocus(p, z) { return clampTo(p, z, B); }
     var anchors = {}, keys = [], dives = [], errors = [], warnings = [], n = 0, landed = [];
     function isStatic(name) {
@@ -634,9 +659,9 @@
     }
     /* A named camera anchor: a fixed normalised point, or a function (tracking) clamped to the view. */
     function anchorFor(name, zoom, at) {
-      var key = "cam-" + (n++);
-      if (name === null) anchors[key] = norm(clampFocus(aim(at, zoom), zoom));
-      else if (isStatic(name)) anchors[key] = norm(clampFocus(aim(points(name, 0, "body"), zoom), zoom));
+      var key = "cam-" + (n++), aw = away;
+      if (name === null) anchors[key] = norm(clampFocus(aim(at, zoom, false, aw), zoom));
+      else if (isStatic(name)) anchors[key] = norm(clampFocus(aim(points(name, 0, "body"), zoom, false, aw), zoom));
       else {
         anchors[key] = function (t) {
           var p = points(name, t, "body");
@@ -644,13 +669,14 @@
             var tr = tracks[name], mvs = (tr || []).filter(function (e) { return e.type === "move" && e.space === "world"; });
             var nx = mvs.find(function (e) { return e.t >= t; }) || mvs[mvs.length - 1];
             p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: B.width / 2, y: B.height / 2 };
-          } else p = tracks[name] ? actorFocus(points, name, t, zoom) : aim(p, zoom, false);
+          } else p = tracks[name] ? actorFocus(points, name, t, zoom, aw) : aim(p, zoom, false, aw);
           return norm(clampFocus(p, zoom));
         };
       }
       return key;
     }
     var open = opening;
+    awayNow(0);
     keys.push({ t: 0, frame: { focus: anchorFor(null, open.zoom, open), zoom: open.zoom } });
     var cur = { target: null, point: open, zoom: open.zoom, follow: false, name: keys[0].frame.focus };
     var prevLand = 0, inside = null;
@@ -659,6 +685,7 @@
     var stream = camMoves.concat(autos || []).sort(function (a, b) { return a.t - b.t || (a.auto ? 1 : 0) - (b.auto ? 1 : 0) || a.order - b.order; });
     stream.forEach(function (p) {
       var mv = p.mv;
+      awayNow(p.t);
       if (p.auto) { // follow a walker while no camera move of the scene is running
         if (inside || prevLand > p.t + 0.3 || p.t > p.walkEnd - 0.4) return;
         if (cur.follow && cur.target === mv.target) return;
@@ -696,7 +723,7 @@
         var ps = Math.max(prevLand, p.beatStart), pa = poseAt(ps), pz = cur.zoom, pkey = "cam-" + (n++), ptp = null, pfocus;
         if (mv.to !== undefined) {
           ptp = points(mv.to, p.t, "body");
-          pfocus = clampFocus(aim(ptp, pz, false), pz);
+          pfocus = clampFocus(aim(ptp, pz, false, away), pz);
         } else pfocus = clampFocus({ x: pa.x, y: pa.y + (mv.do === "pan_up" ? -mv.by : mv.by) }, pz);
         anchors[pkey] = norm(pfocus);
         var pd = Math.max(0.8, moveTime(pa, { x: pfocus.x, y: pfocus.y, zoom: pz }, K.WORLD_LIMITS) * 1.04);
@@ -705,7 +732,7 @@
         var plast = keys[keys.length - 1];
         if (pstart > plast.t + 1e-6) keys.push({ t: pstart, frame: Object.assign({}, plast.frame) });
         keys.push({ t: pland, frame: { focus: pkey, zoom: pz } });
-        cur = { target: ptp ? mv.to : null, point: ptp ? ptp : { x: pfocus.x, y: pfocus.y + AIM * canvas().height / pz }, zoom: pz, follow: false, name: pkey };
+        cur = { target: ptp ? mv.to : null, point: ptp ? ptp : unaim(pfocus, pz, away), zoom: pz, follow: false, name: pkey };
         prevLand = pland;
         return;
       }
@@ -720,7 +747,7 @@
       var landOn = mv.do === "follow" ? null : p.explicit ? p.t : mv.do !== "pull_out" ? null : p.beatEnd < p.duration - 1e-9 ? p.beatEnd : Math.max(p.beatStart, p.duration - 0.4);
       var a = poseAt(start0);
       var tp = target === null ? null : points(target, p.t, "body");
-      var bp = clampFocus(tp && !tp.screen ? (tracks[target] ? actorFocus(points, target, p.t, zoom) : aim(tp, zoom, false)) : aim(cur.point, zoom), zoom);
+      var bp = clampFocus(tp && !tp.screen ? (tracks[target] ? actorFocus(points, target, p.t, zoom, away) : aim(tp, zoom, false, away)) : aim(cur.point, zoom, false, away), zoom);
       var d = Math.max(0.8, moveTime(a, { x: bp.x, y: bp.y, zoom: zoom }, K.WORLD_LIMITS) * 1.04);
       var land, start;
       if (landOn !== null) { start = Math.max(start0, landOn - d); land = Math.max(landOn, start + d); }
@@ -738,7 +765,8 @@
       if (mv.do === "push_in" && target !== null && !tracks[target] && tp && !tp.screen) Object.keys(tracks).forEach(function (id) {
         var a = actorAt(tracks[id], land);
         if (!a.visible || a.mode !== "world" || Math.abs(a.x - tp.x) > 160 || Math.abs(a.y - tp.y) > 120) return;
-        var tall = (TOP + 30) * worldK() * a.scale, fit = (canvas().height * 0.55 - 40) / tall;
+        // vertical: the actor must fit between his feet (the aim point) and the top of the clear area
+        var tall = (TOP + 30) * worldK() * a.scale, fit = isVert() ? (aimY(away) - (away ? CAPTION_TOP_BAND.bottom + 20 : SAFE_Y.y0)) / tall : (canvas().height * 0.55 - 40) / tall;
         if (zoom > fit + 1e-9) { warnings.push([p, "zoom " + zoom + " on \"" + target + "\" crops \"" + id + "\" standing there (at most " + fit.toFixed(2) + " shows all of them; or push_in on \"" + id + "\")"]); p.cropped = (p.cropped || []).concat([id]); }
       });
     });
@@ -845,7 +873,8 @@
   function captionBandCrossing(o, out, camFn, world) {
     var c = canvas();
     if (!(c.height > c.width) || o.kind === "title" || o.target === undefined) return null;
-    var isTag = o.kind === "tag", fs = isTag ? 38 : 34, H = Math.round(fs * 1.28 + 2 * Math.round(fs * 0.24)), lead = isTag ? 66 : 20;
+    var isTag = o.kind === "tag", vm = K.overlays && K.overlays.verticalMetrics ? K.overlays.verticalMetrics(o.kind, o.text) : { height: isTag ? 67 : 61, lead: isTag ? 97 : 29 };
+    var H = vm.height, lead = vm.lead; // the vertical pill size (overlays.js: about 1.5x landscape)
     var side = o.side || (isTag ? "auto" : "center");
     for (var t = o.at; t <= o.until + 1e-9; t += 0.1) {
       var q = out.point(o.target, t, "top");
@@ -957,12 +986,14 @@
       if (of && !of.screen) opening = { x: of.x, y: of.y, zoom: oz };
       first.openedTight = true;
     }
-    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration), bounds);
+    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration), bounds,
+      function (t) { return hostAway({ actors: p1.tracks }, world, t); });
     var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives, bounds: bounds }, t); };
     var p2 = pass(cam1, p1.tracks);
     sync();
     var points = makePoints(world, p2.tracks, pulses);
-    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration), bounds);
+    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration), bounds,
+      function (t) { return hostAway({ actors: p2.tracks }, world, t); });
     p2.errors.concat(c2.errors).forEach(function (x) { errors.push(x[0].tag + ": " + x[1]); });
     c2.warnings.forEach(function (x) { out.warnings.push(x[0].tag + ": " + x[1]); });
     spreadWarnings(parsed, world, sid).forEach(function (x) { out.warnings.push(x); });

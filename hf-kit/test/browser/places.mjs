@@ -193,11 +193,11 @@ function extendedChecks() {
     const wf = document.createElement("div");
     root.appendChild(wf);
     const scene = { id: 9, kind: "world", place: "countryside", variant: "day", actors: [{ id: "host", start: { slot: "right" } }],
-      beats: [{ at: { t: 0 }, moves: [{ do: "cut", target: "sky", zoom: 0.6 }] }] };
+      beats: [{ at: { t: 0 }, moves: [{ do: "cut", target: "sky", zoom: 0.6 }, { do: "pan_up", by: 600 }] }] }; // the aim puts the sky at y 640: a pan up reaches the top
     const w = K.mountWorld(wf, scene, { words: [], duration: 3, cast: [{ id: "host", character: "host", outfit: "blazer" }], captions: false });
     if (!w.world.extended) fails.push("mountWorld (vertical): the world is not extended");
     for (const e of wf.querySelectorAll("svg[data-layer]")) if (e.getAttribute("height") !== "3600") fails.push("mountWorld (vertical): layer " + e.getAttribute("data-layer") + " height " + e.getAttribute("height"));
-    const cam = w.camera(1);
+    const cam = w.camera(2.9);
     if (Math.abs(cam.y - 1600) > 1e-6) fails.push("mountWorld (vertical): a 0.6x cut on the sky is not clamped to the top of the tall world: " + JSON.stringify(cam));
   } finally {
     K.setCanvas(null);

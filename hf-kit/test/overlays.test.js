@@ -212,3 +212,25 @@ test("vertical captions swap to the top band (220-400) while the host is away, w
     assert.ok(inBand(plain.box(4), B));
   } finally { K.setCanvas(null); }
 });
+
+// ---- fix wave 2026-11-28: tags and labels read on a phone ----
+test("vertical: tags (56 px) and labels (50 px) are about 1.5x the landscape size; landscape keeps 38 / 34", () => {
+  const size = (kind, text) => parseFloat(mount(kind, { text, target: "x" }).o.el.children.find((c) => c.tagName !== "svg" && c.tagName !== "SVG" && /hf-/.test(c.getAttribute("class") || "")).style.fontSize);
+  assert.equal(size("tag", "Every colour"), 38);
+  assert.equal(size("label", "not to scale"), 34);
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const tag = size("tag", "Every colour"), label = size("label", "not to scale");
+    assert.equal(tag, 56); assert.equal(label, 50);
+    assert.ok(tag / 38 >= 1.4 && tag / 38 <= 1.6 && label / 34 >= 1.4 && label / 34 <= 1.6);
+    // a long four-word text shrinks only as far as it must to fit the safe zone's 876 px width
+    const { o } = mount("label", { text: "Massive woman swims somewhere", target: "x" });
+    o.update(4, { x: 540, y: 700 });
+    const b = o.box(4);
+    assert.ok(O.verticalMetrics("label", "Massive woman swims somewhere").size < 50, "shrunk");
+    assert.ok(b.width <= 876 && b.x >= 64 - 1e-6 && b.x + b.width <= 940 + 1e-6, JSON.stringify(b));
+    const m = O.verticalMetrics("tag", "Every colour");
+    assert.equal(m.size, 56);
+    assert.equal(m.height, Math.round(56 * 1.28 + 2 * Math.round(56 * 0.24)));
+  } finally { K.setCanvas(null); }
+});

@@ -152,6 +152,12 @@ inside **x 64–940, y 200–1420**; the host is exempt. Frame every shot for it
   (about y 420–1000): the captions sit at the bottom of that band and the host in the lower
   part, so nothing important goes under them. Use the extended places: each is taller than a
   landscape one (sky above, ground below).
+- **Where the camera puts its target.** A move or cut onto an anchor puts that point at about
+  y 640 while the host is in his slot (clear above the captions), or y 980 while he is out of it
+  (the captions are then at the top). A move onto an actor puts his feet at y 780 (y 1040 when
+  the host is out of his slot). So no `pan_down` is needed just to lift a target above the
+  captions; pan only for a real reveal. Near the world's bottom edge at low zoom the camera
+  clamps and the target sits lower: zoom in a little.
 - **Tall reveals and pans, not wide shots.** Wide means *tall* here: reveal a scene from sky to
   ground with `pan_down`, or from ground to sky with `pan_up` (`at` is where the pan starts),
   or `pull_out` to see a column of things. Keep `push_in` and `follow` for what is close.
