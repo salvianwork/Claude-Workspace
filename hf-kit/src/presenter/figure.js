@@ -13,11 +13,12 @@
   var RIG = P.RIG;
   var h = P.h;
 
-  var VIEW_TOP = 34; // drawing area top (body units)
+  var VIEW_TOP = -14; // drawing area top (body units): above the (scaled) hair
   var CALM_BOTTOM = 724; // crop line for calm poses: closer, larger framing
   var FULL_BOTTOM = RIG.waist; // crop line when the arms need more room
   var FADE = 72; // soft fade at the crop line
   var POSE_BLEND = 8; // frames a pose change takes (at 30 fps: 0.267 s)
+  var HEAD_VIEW = "-165.6 -26.4 331.2 360"; // head close-up window (the old -138 30 276 300, scaled with the head)
 
   /* Horizontal extent (relative to the centre line) and top of the arms and hands of `poses`. */
   function extent(poses) {
@@ -100,10 +101,12 @@
     var headCrop = props.crop === "head";
 
     var head = h("g", { transform: "translate(0 " + lift + ") rotate(" + tilt + " 0 " + RIG.headPivotY + ")" }, [
-      P.parts.hairBack(pal, sway),
-      P.parts.head(pal),
-      P.parts.face(pal, props.face, props.mouth || 0, props.blink || 0, pose.gazeX, pose.gazeY, look.glasses),
-      P.parts.hairFront(pal, sway),
+      h("g", { "data-part": "head-group", transform: P.headScaleTransform(look) }, [
+        P.parts.hairBack(pal, sway),
+        P.parts.head(pal),
+        P.parts.face(pal, props.face, props.mouth || 0, props.blink || 0, pose.gazeX, pose.gazeY, look.glasses),
+        P.parts.hairFront(pal, sway),
+      ]),
     ]);
 
     var fade = "{uid}-fade";
@@ -140,7 +143,7 @@
       "data-presenter": "",
       width: props.width,
       height: props.height,
-      viewBox: headCrop ? "-138 30 276 300" : f.x + " " + f.y + " " + f.w + " " + f.h,
+      viewBox: headCrop ? HEAD_VIEW : f.x + " " + f.y + " " + f.w + " " + f.h,
       preserveAspectRatio: "xMidYMax meet",
       style: "overflow: visible",
     }, [defs, body]);
@@ -187,7 +190,8 @@
   /* Presenter box size for "small" / "large" (same rule as the Remotion theme.ts). */
   function presenterSize(size) {
     var share = size === "large" ? 0.34 : 0.22;
-    var width = Math.round(1920 * share);
+    var cw = root.HFKit && root.HFKit.CANVAS ? root.HFKit.CANVAS.width : 1920; // the canvas at call time
+    var width = Math.round(cw * share);
     var captionTop = root.HFKit && root.HFKit.captionTop ? root.HFKit.captionTop() : 812;
     return { width: width, height: Math.min(captionTop - 24, Math.round(width * 1.08)) };
   }

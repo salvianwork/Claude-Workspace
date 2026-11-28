@@ -67,47 +67,92 @@
       "A " + ra + " " + ra + " 0 1 0 " + pt(ax, ay, ra, t0 + al) + " Z";
   }
 
+  /* Bendy sleeve: the arm runs along one smooth curve (a quadratic from the shoulder to the
+   * wrist whose control point sits a little past the elbow), so a bent arm reads soft and rounded
+   * rather than as two stiff tubes. BEND sets how far the elbow is rounded toward the chord. */
+  var BEND = 0.3, SEG = 8; // capsules per half arm
+
+  function armCurve(p) {
+    var mx = (p.s.x + p.w.x) / 2, my = (p.s.y + p.w.y) / 2;
+    var c = { x: p.e.x + BEND * (p.e.x - mx), y: p.e.y + BEND * (p.e.y - my) };
+    var at = function (t) {
+      var a = (1 - t) * (1 - t), b = 2 * t * (1 - t), d = t * t;
+      return { x: a * p.s.x + b * c.x + d * p.w.x, y: a * p.s.y + b * c.y + d * p.w.y };
+    };
+    var tan = function (t) { // unit tangent
+      var x = 2 * (1 - t) * (c.x - p.s.x) + 2 * t * (p.w.x - c.x), y = 2 * (1 - t) * (c.y - p.s.y) + 2 * t * (p.w.y - c.y);
+      var l = Math.hypot(x, y) || 1;
+      return { x: x / l, y: y / l };
+    };
+    return { at: at, tan: tan };
+  }
+
+  /* Sleeve radius along the arm: shoulder -> elbow (t 0.5) -> wrist. */
+  function armRadius(t) {
+    return t <= 0.5 ? RIG.shoulderWidth / 2 + (RIG.elbowWidth / 2 - RIG.shoulderWidth / 2) * (t / 0.5)
+      : RIG.elbowWidth / 2 - 1 + (RIG.wristWidth / 2 - RIG.elbowWidth / 2 + 1) * ((t - 0.5) / 0.5);
+  }
+
+  /* One path of SEG capsules along the curve from t0 to t1 (same winding, so they union), each
+   * point pushed `off(t)` along the normal `side` (+1 / -1) with radius `rad(t)`. */
+  function chain(cv, t0, t1, rad, off, side) {
+    var d = [];
+    var pt = function (t) {
+      var q = cv.at(t), o = off ? off(t) * side : 0, g = cv.tan(t);
+      return { x: q.x - g.y * o, y: q.y + g.x * o, r: rad(t) };
+    };
+    var a = pt(t0);
+    for (var i = 1; i <= SEG; i++) {
+      var b = pt(t0 + ((t1 - t0) * i) / SEG);
+      d.push(capsule(a.x, a.y, a.r, b.x, b.y, b.r));
+      a = b;
+    }
+    return d.join(" ");
+  }
+
   function armShapes(pose) {
     var p = P.armPoints(pose);
+    var cv = armCurve(p);
     return {
-      s: p.s, e: p.e, w: p.w,
-      upper: capsule(p.s.x, p.s.y, RIG.shoulderWidth / 2, p.e.x, p.e.y, RIG.elbowWidth / 2),
-      fore: capsule(p.e.x, p.e.y, RIG.elbowWidth / 2 - 1, p.w.x, p.w.y, RIG.wristWidth / 2),
+      s: p.s, e: p.e, w: p.w, curve: cv, elbow: cv.at(0.5),
+      upper: chain(cv, 0, 0.5, armRadius),
+      fore: chain(cv, 0.5, 1, armRadius),
     };
   }
 
   /* One arm (jacket sleeve, shirt cuff, hand). `mirror` draws the screen-right arm. */
   function armNode(pose, mirror, pal, part) {
     var sh = armShapes(pose);
-    var s = sh.s, e = sh.e, w = sh.w;
+    var s = sh.s, w = sh.w, cv = sh.curve, e = sh.elbow;
     var len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
-    var ux = (e.x - s.x) / len, uy = (e.y - s.y) / len;
     var flen = Math.hypot(w.x - e.x, w.y - e.y) || 1;
-    var fx = (w.x - e.x) / flen, fy = (w.y - e.y) / flen;
+    var g = cv.tan(0.5), fx = g.x, fy = g.y;
     var nx = -fy, ny = fx; // normal to the shaded side
     var handAngle = pose.elbow + pose.wrist;
     var cuffW = RIG.wristWidth - 4;
+    var shadeU = function (t) { return 11 - 2 * (t - 0.12) / 0.35; };
+    var shadeF = function (t) { return 9 - 2 * (t - 0.62) / 0.3; };
     return h("g", { "data-part": part, transform: mirror ? "scale(-1 1)" : undefined }, [
-      // union outline: the two sleeve parts read as one bent arm
+      // union outline: the sleeve reads as one soft, bent arm
       h("g", { fill: pal.jacketLine, stroke: pal.jacketLine, "stroke-width": LINE * 2, "stroke-linejoin": "round" },
         [h("path", { d: sh.upper }), h("path", { d: sh.fore })]),
       h("g", { fill: pal.jacket }, [h("path", { d: sh.upper }), h("path", { d: sh.fore })]),
-      // shaded undersides of upper arm and forearm
+      // shaded undersides of upper arm and forearm, following the curve
       h("path", {
-        d: capsule(s.x + ux * 30 + uy * 24, s.y + uy * 30 - ux * 24, 11, e.x - ux * 2 + uy * 19, e.y - uy * 2 - ux * 19, 9),
+        d: chain(cv, 0.12, 0.47, shadeU, function (t) { return armRadius(t) - shadeU(t); }, -1),
         fill: pal.jacketShade, opacity: 0.85, display: show(len > 50),
       }),
       h("path", {
-        d: capsule(e.x + fx * 24 + nx * 14, e.y + fy * 24 + ny * 14, 9, w.x - fx * 10 + nx * 12, w.y - fy * 10 + ny * 12, 7),
+        d: chain(cv, 0.62, 0.92, shadeF, function (t) { return armRadius(t) - shadeF(t) - 4; }, 1),
         fill: pal.jacketShade, opacity: 0.85, display: show(flen > 40),
       }),
-      // elbow crease
+      // elbow crease, soft
       h("path", {
         d: "M " + (e.x + nx * 6 - fx * 4) + " " + (e.y + ny * 6 - fy * 4) + " q " + fx * 10 + " " + fy * 10 + " " + nx * 16 + " " + ny * 16,
-        fill: "none", stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0.55,
+        fill: "none", stroke: pal.jacketLine, "stroke-width": 2.5, "stroke-linecap": "round", opacity: 0.4,
       }),
       // hand (all shapes present, one shown), then the shirt cuff over the wrist
-      h("g", { transform: "translate(" + (w.x + fx * 8) + " " + (w.y + fy * 8) + ") rotate(" + handAngle + ") scale(" + HAND_SCALE + ")" },
+      h("g", { transform: "translate(" + (w.x + Math.sin(-pose.elbow * Math.PI / 180) * 8) + " " + (w.y + Math.cos(pose.elbow * Math.PI / 180) * 8) + ") rotate(" + handAngle + ") scale(" + HAND_SCALE + ")" },
         HAND_SHAPES.map(function (shape) {
           return h("g", { "data-hand": shape, display: show(pose.hand === shape) }, hand(shape, pal));
         })),
@@ -120,20 +165,20 @@
 
   // ---------- face ----------
 
-  var EYE_X = 35, EYE_Y = 226, EYE_RX = 13.5, EYE_RY = 13.5;
+  var EYE_X = 35, EYE_Y = 226, EYE_RX = 14.8, EYE_RY = 14.8, EYE_MAX = 17.6; // refresh: eyes a little larger (open at most to the rim)
   /* Flat square translucent lime acetate glasses (wayfarer-square), lenses centred on the eyes. */
   var LENS_Y = EYE_Y + 1, LENS_IH = 37, LENS_TOP_W = 50, LENS_BOT_W = 45, RIM_T = 8.4, RIM_TOP = 11, RIM_NOSE = 3.5;
 
   function eyeNode(pal, side, face, blink, gazeX, gazeY) {
     var cx = side * EYE_X;
     var open = face.eyeOpen * (1 - blink);
-    var top = Math.max(0.6, EYE_RY * open);
+    var top = Math.max(0.6, Math.min(EYE_MAX, EYE_RY * open));
     // lower lid rises with a smile and closes with the blink as well
     var bottom = Math.max(0.6, EYE_RY * (1 - face.squint * 0.6) * (0.25 + 0.75 * (1 - blink)));
     var d = "M " + (cx - EYE_RX) + " " + EYE_Y + " A " + EYE_RX + " " + top + " 0 0 1 " + (cx + EYE_RX) + " " + EYE_Y +
       " A " + EYE_RX + " " + bottom + " 0 0 1 " + (cx - EYE_RX) + " " + EYE_Y + " Z";
     var clip = "{uid}-eye" + side;
-    var iris = 9.5 * (face.eyeOpen > 1.15 ? 0.84 : 1);
+    var iris = 10.6 * (face.eyeOpen > 1.15 ? 0.84 : 1);
     var ix = cx + gazeX * 4.5;
     var iy = EYE_Y + gazeY * 4.5 + 1;
     var shut = blink > 0.82;
@@ -152,7 +197,7 @@
       // upper lid line with a small lash flick at the outer corner
       h("path", {
         d: "M " + (cx - EYE_RX - 1) + " " + (EYE_Y + 1) + " A " + (EYE_RX + 1) + " " + (top + 1) + " 0 0 1 " + (cx + EYE_RX + 1) + " " + (EYE_Y + 1),
-        fill: "none", stroke: pal.hairLine, "stroke-width": shut ? 4.5 : 4, "stroke-linecap": "round",
+        fill: "none", stroke: pal.hairLine, "stroke-width": shut ? 5 : 4.6, "stroke-linecap": "round",
       }),
       h("path", {
         d: "M " + (cx + side * (EYE_RX + 0.5)) + " " + (EYE_Y - (shut ? -1 : 2)) + " l " + side * 5 + " " + -4,
@@ -166,26 +211,33 @@
     ]);
   }
 
+  /* Bold brows (refresh): a thick, softly tapered bar, darker than the hair so they read on a phone. */
   function browNode(pal, side, b) {
-    var inner = { x: side * 14, y: 194 + b.raise + b.inner };
-    var outer = { x: side * 56, y: 196 + b.raise };
-    var mid = { x: side * 35, y: 188 + b.raise - b.arch };
-    // tapered: thick at the inner end, thin at the outer end
-    var d = "M " + inner.x + " " + (inner.y + 4) + " Q " + mid.x + " " + (mid.y + 4) + " " + outer.x + " " + (outer.y + 1.5) + " " +
-      "Q " + (outer.x + side * 1.5) + " " + (outer.y - 1.5) + " " + (outer.x - side * 1) + " " + (outer.y - 2.5) + " " +
-      "Q " + mid.x + " " + (mid.y - 5) + " " + inner.x + " " + (inner.y - 5) + " Q " + (inner.x - side * 4) + " " + inner.y + " " + inner.x + " " + (inner.y + 4) + " Z";
-    return h("path", { "data-part": side < 0 ? "brow-left" : "brow-right", d: d, fill: pal.hair, stroke: pal.hairLine, "stroke-width": 2, "stroke-linejoin": "round" });
+    var inner = { x: side * 13, y: 190 + b.raise + b.inner };
+    var outer = { x: side * 57, y: 193 + b.raise };
+    var mid = { x: side * 35, y: 184 + b.raise - b.arch };
+    // tapered: thick at the inner end (13), thinner at the outer end (6)
+    var d = "M " + inner.x + " " + (inner.y + 6) + " Q " + mid.x + " " + (mid.y + 6) + " " + outer.x + " " + (outer.y + 2.5) + " " +
+      "Q " + (outer.x + side * 2.5) + " " + (outer.y - 0.5) + " " + (outer.x - side * 0.5) + " " + (outer.y - 3.5) + " " +
+      "Q " + mid.x + " " + (mid.y - 7) + " " + inner.x + " " + (inner.y - 7) + " Q " + (inner.x - side * 5) + " " + (inner.y - 0.5) + " " + inner.x + " " + (inner.y + 6) + " Z";
+    return h("path", { "data-part": side < 0 ? "brow-left" : "brow-right", d: d, fill: pal.hairShade, stroke: pal.hairLine, "stroke-width": 2.2, "stroke-linejoin": "round" });
   }
 
-  /* Mouth for loudness v (0-1), shaped by the expression. Three variants, one shown. */
+  /* Mouth for loudness v (0-1), shaped by the expression. Variants, one shown: the round "oh",
+   * the closed smile line, the open grin of a big smile (cross-faded with the line by the smile),
+   * and the open talking mouth. Clear, bold shapes that read at phone size. */
   function mouthNode(pal, face, v) {
     var shape = P.mouthShape(v);
     var y0 = 283 - face.smile * 0.35;
     var closed = shape === "closed";
     var oh = closed && face.oh > 0.5;
-    // closed line
+    // closed line, and the grin it turns into for a big smile (happy)
     var cw = 21 * face.mouthWidth;
     var ly = y0 + face.smile * 0.8;
+    var grin = Math.max(0, Math.min(1, (face.smile - 8) / 3));
+    var gw = 21 * face.mouthWidth, gt = y0 - 1, gh = 10 + face.smile * 0.8;
+    var gd = "M " + (-gw + 2) + " " + gt + " Q 2 " + (gt + 4) + " " + (gw + 2) + " " + (gt - 1) + " " +
+      "C " + (gw + 1) + " " + (gt + gh * 1.25) + " " + (-gw + 3) + " " + (gt + gh * 1.25) + " " + (-gw + 2) + " " + gt + " Z";
     // open (slight / open / wide)
     var k = shape === "slight" ? 0 : shape === "open" ? 1 : 2;
     var mh = [12, 19, 27][k] * (1 + face.oh * 0.25);
@@ -194,19 +246,30 @@
     var top = y0 - lift * 0.3;
     var d = "M " + (-mw + 2) + " " + top + " Q 2 " + (top + 4 - face.oh * 6) + " " + (mw + 2) + " " + top + " " +
       "C " + (mw + 1) + " " + (top + mh * 1.1) + " " + (-mw + 3) + " " + (top + mh * 1.1) + " " + (-mw + 2) + " " + top + " Z";
-    var clip = "{uid}-mouth";
-    return h("g", { "data-part": "mouth", transform: "translate(2 286) scale(1.22) translate(-2 -286)" }, [
+    var clip = "{uid}-mouth", gclip = "{uid}-grin";
+    return h("g", { "data-part": "mouth", transform: "translate(2 286) scale(1.3) translate(-2 -286)" }, [
       h("g", { "data-part": "mouth-oh", display: show(oh) }, [
-        h("ellipse", { cx: 2, cy: 287, rx: 8, ry: 10, fill: pal.mouthIn, stroke: pal.lip, "stroke-width": 3 }),
-        h("ellipse", { cx: 2, cy: 292, rx: 4.5, ry: 3.5, fill: pal.tongue }),
+        h("ellipse", { cx: 2, cy: 288, rx: 9, ry: 11.5, fill: pal.mouthIn, stroke: pal.lip, "stroke-width": 3.2 }),
+        h("ellipse", { cx: 2, cy: 294, rx: 5, ry: 3.8, fill: pal.tongue }),
       ]),
-      h("g", { "data-part": "mouth-closed", display: show(closed && !oh) }, [
+      h("g", { "data-part": "mouth-closed", display: show(closed && !oh && grin < 1) , opacity: 1 - grin }, [
         h("path", {
           d: "M " + (-cw + 2) + " " + y0 + " Q 2 " + (y0 + face.smile * 1.6 + 2) + " " + (cw + 2) + " " + (y0 - 1),
-          fill: "none", stroke: pal.lip, "stroke-width": 5, "stroke-linecap": "round",
+          fill: "none", stroke: pal.lip, "stroke-width": 5.5, "stroke-linecap": "round",
         }),
         // lower lip hint
         h("path", { d: "M -6 " + (ly + 10) + " Q 2 " + (ly + 13) + " 10 " + (ly + 10), fill: "none", stroke: pal.skinDeep, "stroke-width": 3, "stroke-linecap": "round", opacity: 0.6 }),
+      ]),
+      h("g", { "data-part": "mouth-grin", display: show(closed && !oh && grin > 0), opacity: grin }, [
+        h("defs", {}, [h("clipPath", { id: gclip }, [h("path", { d: gd })])]),
+        h("path", { d: gd, fill: pal.mouthIn }),
+        h("g", { "clip-path": "url(#" + gclip + ")" }, [
+          h("rect", { x: -gw, y: gt - 6, width: gw * 2 + 4, height: 12, rx: 3, fill: pal.teeth }),
+          h("ellipse", { cx: 2, cy: gt + gh * 1.05, rx: gw * 0.55, ry: gh * 0.4, fill: pal.tongue }),
+        ]),
+        h("path", { d: gd, fill: "none", stroke: pal.lip, "stroke-width": 3.2, "stroke-linejoin": "round" }),
+        // smile corners
+        h("path", { d: "M " + (-gw - 3) + " " + (gt - 4) + " q 4 3 4 7 M " + (gw + 7) + " " + (gt - 5) + " q -4 3 -4 7", fill: "none", stroke: pal.skinDeep, "stroke-width": 2.4, "stroke-linecap": "round", opacity: 0.7 }),
       ]),
       h("g", { "data-part": "mouth-open", display: show(!closed) }, [
         h("defs", {}, [h("clipPath", { id: clip }, [h("path", { d: d })])]),
@@ -215,7 +278,7 @@
           h("rect", { x: -mw, y: top - 6, width: mw * 2 + 4, height: 6 + Math.min(8, mh * 0.32), rx: 3, fill: pal.teeth }),
           h("ellipse", { cx: 2, cy: top + mh * 0.95, rx: mw * 0.62, ry: mh * 0.42, fill: pal.tongue }),
         ]),
-        h("path", { d: d, fill: "none", stroke: pal.lip, "stroke-width": 3.5, "stroke-linejoin": "round" }),
+        h("path", { d: d, fill: "none", stroke: pal.lip, "stroke-width": 3.8, "stroke-linejoin": "round" }),
       ]),
     ]);
   }
@@ -387,9 +450,12 @@
 
   // ---------- torso ----------
 
+  /* Body silhouette: square shoulders easing into a slight waist taper (refresh: +-160 at the
+   * waist, was +-170), so he reads less boxy. */
+  var WAIST_X = 162; // half width at the waist and hip line (y 760-840): the actor's lower body meets it
   var TORSO_OUTLINE =
-    "M -44 344 C -84 350 -128 356 -158 370 C -182 382 -192 402 -192 430 C -190 500 -180 580 -170 650 L -172 840 " +
-    "L 172 840 L 170 650 C 180 580 190 500 192 430 C 192 402 182 382 158 370 C 128 356 84 350 44 344";
+    "M -44 344 C -84 350 -128 356 -158 370 C -182 382 -192 402 -192 430 C -190 500 -181 572 -170 632 C -162 676 -160 730 -162 840 " +
+    "L 162 840 C 160 730 162 676 170 632 C 181 572 190 500 192 430 C 192 402 182 382 158 370 C 128 356 84 350 44 344";
   var TORSO_PATH = TORSO_OUTLINE + " C 24 372 -24 372 -44 344 Z";
 
   /* Per outfit: how deep the jacket opening goes, lapel width and button rows. */
@@ -496,6 +562,8 @@
   P.armShapes = armShapes;
   P.TORSO_OUTLINE = TORSO_OUTLINE; // the body silhouette, reused by the full-body actor's outfits
   P.TORSO_PATH = TORSO_PATH;
+  P.WAIST_X = WAIST_X;
+  P.FACE_PATH = FACE_PATH;
   P.parts = {
     arm: armNode, face: faceNode, hairBack: hairBackNode, hairFront: hairFrontNode,
     head: headNode, torso: torsoNode, collarBack: collarBackNode, neck: neckNode,

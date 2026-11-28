@@ -5,6 +5,11 @@
 //                                          and a stop (turn back to front); places light the actor (meta.actorLight)
 //   sample/world-sheet/place-<name>.png    every variant of each place: the whole world with its anchors
 //                                          and paths marked, plus two in-camera shots with the host
+//   sample/world-sheet/place-<name>-vertical.png  (places with meta.extend) the vertical section: per
+//                                          variant the whole extended 3840x3600 world (seams at y 720 and
+//                                          2880 ticked) and 1080x1920 shots: wide (zoom 0.6), mid with the
+//                                          host in the bottom-right slot, close; then the top and the
+//                                          bottom of the tall world at zoom 1 and a close-up of a band
 //   sample/world-sheet/effects.png         every effect over time (frames after its start), box(t) dashed
 //   sample/world-sheet/overlays.png        the tag clamp demo: a tag / label whose point leaves the frame
 //   sample/world-sheet/world-railway.png   a world scene through HFKit.mountWorld: the plan's pinned railway
@@ -93,6 +98,99 @@ const SHOTS = {
   ],
 };
 
+/* The vertical (1080 x 1920) shots of an extended place: [label, cam, host or null]. The first three
+ * are the wide / mid / close shots; cams name anchors of the extended world (720 lower). */
+const VSHOTS = {
+  countryside: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "rail-near", dx: 330, dy: -330, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the lake", { anchor: "lake", dy: 40, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1500, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2700, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · deep ground", { x: 2950, y: 3000, zoom: 1.6 }, null],
+  ],
+  lab: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "bench", dx: -100, dy: 0, zoom: 1 }, { slot: "bottom-right", outfit: "lab-coat", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the burner", { anchor: "bench", dx: 520, dy: -120, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2300, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1300, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the ceiling", { x: 2500, y: 600, zoom: 1.6 }, null],
+  ],
+  "city-street": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "sidewalk", dx: 330, dy: -330, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the crossing", { anchor: "crosswalk", dy: -60, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1300, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1100, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the rooftops", { x: 3000, y: 600, zoom: 1.6 }, null],
+  ],
+  home: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "sofa", dx: 300, dy: 120, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the kitchen", { anchor: "kitchen", dy: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1500, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2300, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the fan and rafters", { x: 1250, y: 600, zoom: 1.6 }, null],
+  ],
+  classroom: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "board", dx: 200, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "blazer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the desk", { anchor: "desk", dx: 60, dy: -60, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1800, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1700, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the mobile and projector", { x: 1850, y: 600, zoom: 1.6 }, null],
+  ],
+  forest: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "trail", dx: 330, dy: -330, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the stream", { anchor: "stream", dy: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2900, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1500, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the burrow", { x: 1250, y: 3000, zoom: 1.6 }, null],
+  ],
+  ocean: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "boat", dx: 200, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the reef", { anchor: "reef", dy: 40, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2000, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1500, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · below the bed", { x: 1500, y: 3000, zoom: 1.6 }, null],
+  ],
+  space: [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "craft", dx: -100, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the moon", { anchor: "moon", dx: 200, dy: 100, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2300, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2200, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · below", { x: 2300, y: 3000, zoom: 1.6 }, null],
+  ],
+  "inside-body": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "heart", dx: 100, dy: 300, zoom: 1 }, { slot: "bottom-right", outfit: "lab-coat", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the stomach", { anchor: "stomach", dx: -80, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 1920, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1920, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the neck", { x: 1920, y: 600, zoom: 1.6 }, null],
+  ],
+  "sky-fantasy": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "island", dx: 330, dy: -300, zoom: 1 }, { slot: "bottom-right", outfit: "explorer", pose: "point-left", expression: "happy" }],
+    ["close, zoom 1.8 · the tower", { anchor: "tower", dy: -250, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2000, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 2300, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the sky-ship", { x: 2300, y: 3000, zoom: 1.6 }, null],
+  ],
+  "rooftop-night": [
+    ["wide, zoom 0.6", { x: 1920, y: 1800, zoom: 0.6 }, null],
+    ["mid, zoom 1 · host bottom-right", { anchor: "telescope", dx: -200, dy: -300, zoom: 1 }, { slot: "bottom-right", outfit: "casual", pose: "point-left", expression: "curious" }],
+    ["close, zoom 1.8 · the telescope", { anchor: "telescope", dx: 100, dy: -200, zoom: 1.8 }, null],
+    ["top of the world, zoom 1", { x: 2200, y: 960, zoom: 1 }, null],
+    ["bottom of the world, zoom 1", { x: 1000, y: 2640, zoom: 1 }, null],
+    ["close, zoom 1.6 · the windows below", { x: 900, y: 3000, zoom: 1.6 }, null],
+  ],
+};
+
 const PAGE = `<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="${pathToFileURL(join(KIT, "vendor", "fonts", "fonts.css"))}">
 <style>html,body{margin:0;background:#2B2622}body{font-family:Poppins,Inter,sans-serif;color:#3A2F28}
@@ -102,6 +200,7 @@ h1{margin:0 0 6px;font-size:44px;font-weight:700}h2{margin:26px 0 12px;font-size
 .row{display:flex;gap:20px;align-items:flex-start}.col{display:flex;flex-direction:column;gap:20px}
 .frame{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 6px 22px rgba(58,47,40,.25);background:#000}
 .frame>.inner{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0}
+.tick{position:absolute;width:26px;height:6px;background:#E8590C;border:2px solid #fff;border-radius:3px}
 .cap{position:absolute;left:14px;top:12px;font:700 22px Poppins,sans-serif;color:#fff;background:rgba(20,16,30,.62);padding:4px 14px;border-radius:999px}
 .cell{position:relative;width:280px;height:460px;border-radius:18px;background:#FCF5EA;box-shadow:inset 0 0 0 2px #E6D3B5;overflow:hidden}
 .cell .lab{position:absolute;left:0;right:0;bottom:10px;text-align:center;font:600 20px Inter,sans-serif;color:#7A6656}
@@ -117,16 +216,26 @@ function pageBuild(spec) {
 
   function frame(parent, o) {
     n += 1;
+    const FW = o.w || 1920, FH = o.h || 1080;
+    if (o.w) K.setCanvas({ width: FW, height: FH }); // a frame of another size (vertical shots): its canvas while it is built
     const wrap = el(parent, "div", "frame");
-    wrap.style.width = 1920 * o.scale + "px"; wrap.style.height = 1080 * o.scale + "px";
+    wrap.style.width = FW * o.scale + "px"; wrap.style.height = FH * o.scale + "px";
     const inner = el(wrap, "div", "inner");
+    inner.style.width = FW + "px"; inner.style.height = FH + "px";
     inner.style.transform = "scale(" + o.scale + ")";
     const prefix = "sheet-place-" + n;
-    const layers = K.placeLayers(inner, prefix);
-    const place = K.places[o.place].mount(layers, { variant: o.variant, idPrefix: prefix, seed: o.seed });
+    const WW = K.placeWorld(K.places[o.place], !!o.extended);
+    const layers = o.extended ? K.placeLayers(inner, prefix, WW) : K.placeLayers(inner, prefix);
+    const place = K.places[o.place].mount(layers, Object.assign({ variant: o.variant, idPrefix: prefix, seed: o.seed }, o.extended ? { extended: true } : {}));
     const anchor = (name, t) => place.anchors[name](t);
     const cam = o.cam.anchor ? { x: anchor(o.cam.anchor, o.t).x + (o.cam.dx || 0), y: anchor(o.cam.anchor, o.t).y + (o.cam.dy || 0), zoom: o.cam.zoom } : o.cam;
-    if (o.actor) {
+    if (o.actor && o.actor.slot) { // the vertical host: screen-anchored in the bottom slot, in front of the place
+      const holder = el(inner, "div");
+      holder.style.cssText = "position:absolute;left:0;top:0;width:" + FW + "px;height:" + FH + "px";
+      const light = (K.places[o.place].meta.actorLight || {})[o.variant] || null;
+      const a = K.mountActor(holder, { id: "host", character: "host", outfit: o.actor.outfit, start: { slot: o.actor.slot }, light }, { sceneId: n });
+      a.update(o.t, { pose: o.actor.pose, expression: o.actor.expression });
+    } else if (o.actor) {
       const box = document.createElement("div");
       box.style.cssText = "position:absolute;left:0;top:0;width:3840px;height:2160px;transform-origin:0 0";
       inner.insertBefore(box, layers.front);
@@ -154,7 +263,7 @@ function pageBuild(spec) {
     if (o.marks) {
       const NS = "http://www.w3.org/2000/svg";
       const svg = document.createElementNS(NS, "svg");
-      svg.setAttribute("width", 1920); svg.setAttribute("height", 1080);
+      svg.setAttribute("width", FW); svg.setAttribute("height", FH);
       svg.style.cssText = "position:absolute;left:0;top:0;overflow:visible";
       let s = "";
       for (const [name, pts] of Object.entries(place.paths)) {
@@ -174,7 +283,13 @@ function pageBuild(spec) {
       svg.innerHTML = s;
       inner.appendChild(svg);
     }
+    if (o.ticks) for (const y of o.ticks) for (const side of ["left", "right"]) { // seam markers at the frame edges
+      const tk = el(wrap, "div", "tick");
+      tk.style.top = (K.place.toScreen({ x: 0, y }, cam, 1).y * o.scale - 5) + "px";
+      tk.style[side] = "-4px";
+    }
     if (o.caption) el(wrap, "div", "cap", o.caption);
+    if (o.w) K.setCanvas(null);
     return wrap;
   }
 
@@ -226,6 +341,22 @@ function pageBuild(spec) {
       frame(row, { place: spec.place, variant, t: 2, cam: { x: 1920, y: 1080, zoom: 0.5 }, scale: 0.72, marks: true, caption: "whole world · " + variant });
       const col = el(row, "div", "col");
       for (const [cap, cam, actor] of spec.shots) frame(col, { place: spec.place, variant, t: 2, cam, actor, scale: 0.36, caption: cap });
+    }
+    return;
+  }
+
+  if (spec.kind === "vertical") {
+    const P = K.places[spec.place];
+    el(sheet, "h1", "", "Place: " + spec.place + " · vertical (extended)");
+    el(sheet, "div", "sub", "Mounted with extended: true for vertical videos: the 3840×3600 world (720 px drawn above and below, the original untouched in the middle, anchors 720 lower). Above: " + P.meta.extend.top.draws + ". Below: " + P.meta.extend.bottom.draws + ". Orange ticks: the seams at y 720 and 2880. Shots are 1080×1920.");
+    for (const variant of P.meta.variants) {
+      el(sheet, "h2", "", variant);
+      const row = el(sheet, "div", "row");
+      frame(row, { place: spec.place, variant, t: 2, w: 1920, h: 1800, extended: true, cam: { x: 1920, y: 1800, zoom: 0.5 }, scale: 0.36, marks: true, ticks: [720, 2880], caption: "whole tall world · " + variant });
+      for (const [cap, cam, actor] of spec.shots.slice(0, 3)) frame(row, { place: spec.place, variant, t: 2, w: 1080, h: 1920, extended: true, cam, actor, scale: 0.338, caption: cap });
+      const row2 = el(sheet, "div", "row");
+      row2.style.marginTop = "16px";
+      for (const [cap, cam, actor] of spec.shots.slice(3)) frame(row2, { place: spec.place, variant, t: 2, w: 1080, h: 1920, extended: true, cam, actor, scale: 0.338, caption: cap });
     }
     return;
   }
@@ -351,7 +482,7 @@ async function render(spec, out, viewport) {
     await page.locator("#sheet").screenshot({ path: out, animations: "disabled" });
     await page.close();
     let size = statSync(out).size, note = "";
-    if (sheet && size > MAX_BYTES) { size = quantize(out); note = ", 256 colours"; }
+    if (size > MAX_BYTES) { size = quantize(out); note = ", 256 colours"; }
     if (sheet && size > MAX_BYTES && attempt < scales.length - 1) continue;
     if (size > MAX_BYTES) problems.push(`${out}: ${(size / 1048576).toFixed(2)} MB is over 1.5 MB`);
     console.log(`Done: ${out} (${(size / 1048576).toFixed(2)} MB${sheet ? ", scale " + dsf + note : ""})`);
@@ -395,6 +526,21 @@ try {
   ] }, join(outDir, "overlays.png"));
   for (const name of PLACES) {
     await render({ kind: "place", place: name, shots: SHOTS[name] || [] }, join(outDir, `place-${name}.png`));
+    if (VSHOTS[name]) {
+      await render({ kind: "vertical", place: name, shots: VSHOTS[name] }, join(outDir, `place-${name}-vertical.png`));
+      if (framesDir) { // every vertical shot full size (1080 x 1920), and the tall world at zoom 0.5 (1920 x 1800)
+        const page = await browser.newPage();
+        await page.goto(pathToFileURL(pagePath).href);
+        for (const s of SCRIPTS) await page.addScriptTag({ path: s });
+        const list = await page.evaluate((n) => window.HFKit.places[n].meta.variants, name);
+        await page.close();
+        for (const variant of list) {
+          await render({ kind: "frame", place: name, variant, t: 2, w: 1920, h: 1800, extended: true, cam: { x: 1920, y: 1800, zoom: 0.5 } }, join(framesDir, `${name}-vertical-${variant}-world.png`), { width: 1920, height: 1800 });
+          for (const [i, [, cam, actor]] of VSHOTS[name].entries())
+            await render({ kind: "frame", place: name, variant, t: 2, w: 1080, h: 1920, extended: true, cam, actor }, join(framesDir, `${name}-vertical-${variant}-${i}.png`), { width: 1080, height: 1920 });
+        }
+      }
+    }
     if (framesDir || arg("preview")) {
       const shots = [["world", { x: 1920, y: 1080, zoom: 0.6 }, null], ...(SHOTS[name] || [])];
       const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });

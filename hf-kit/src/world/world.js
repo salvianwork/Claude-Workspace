@@ -18,9 +18,12 @@
  * them, except a camera overrun, which still renders), so the composition reports it instead of
  * rendering nothing.
  *
- * Layers (back to front), in el (1920 x 1080, clipped): the place's sky / far / mid / ground,
+ * Layers (back to front), in el (the canvas, HFKit.CANVAS, clipped): the place's sky / far / mid / ground,
  * effects (world px, on the ground plane), actors (screen px, sorted by depth), the place's front
  * layer, the inside views of dives, tags / labels / the title, a cut flash, captions.
+ *
+ * Extended places: on a portrait (vertical) canvas a place with meta.extend mounts 3840 x 3600
+ * (HFKit.placeWorld; its anchors 720 lower) and the camera is clamped to that taller world.
  *
  * Camera: HFKit.worldCamera(compiled, t) -> {x, y, zoom} world px (see moves.js for the units:
  * the camera maths runs in world px / 3840 on both axes, so WORLD_LIMITS' pan limit of 0.6 is
@@ -39,7 +42,6 @@
   "use strict";
   var K = root.HFKit;
   if (!K || !K.compileMoves || !K.placeLayers) throw new Error("world/world.js: load the kit scripts first (place, moves)");
-  var FRAME = { width: 1920, height: 1080 };
   var mounts = {};
   var FLASH = 0.22;
 
@@ -56,6 +58,7 @@
   function mountWorld(el, scene, ctx) {
     ctx = ctx || {};
     scene = scene || {};
+    var FRAME = K.CANVAS; // the composition canvas at mount time (HFKit.setCanvas)
     var doc = el.ownerDocument, sid = scene.id;
     var words = ctx.words || [];
     var opts = { cast: ctx.cast, duration: ctx.duration };
@@ -88,9 +91,14 @@
     }
     var worldEl = div("hf-world-place");
     worldEl.style.zIndex = "0"; // its own stacking context: actors sort by depth inside it, under the tags and captions
-    var layers = K.placeLayers(worldEl, base + "-place-0");
-    var place = P.mount(layers, { variant: variant, seed: sid, idPrefix: base + "-place-0" });
-    var fxLayer = K.draw.el(worldEl, "svg", { width: 3840, height: 2160, viewBox: "0 0 3840 2160", overflow: "visible", "data-layer": "effects" });
+    // a vertical canvas mounts an extended place (3840 x 3600, the original 720 lower; world.extended
+    // and world.bounds come from HFKit.worldFor); a landscape canvas mounts it exactly as before
+    var WB = world.bounds;
+    var layers = world.extended ? K.placeLayers(worldEl, base + "-place-0", WB) : K.placeLayers(worldEl, base + "-place-0");
+    var popts = { variant: variant, seed: sid, idPrefix: base + "-place-0" };
+    if (world.extended) popts.extended = true;
+    var place = P.mount(layers, popts);
+    var fxLayer = K.draw.el(worldEl, "svg", { width: WB.width, height: WB.height, viewBox: "0 0 " + WB.width + " " + WB.height, overflow: "visible", "data-layer": "effects" });
     css(fxLayer, { position: "absolute", left: "0", top: "0", overflow: "visible", transformOrigin: "0 0", pointerEvents: "none" });
     worldEl.insertBefore(fxLayer, layers.front);
     var actorsEl = div("hf-world-actors", worldEl, layers.front);
@@ -128,14 +136,17 @@
     var overlays = c.overlays.map(function (o, i) {
       if (o.kind === "title") {
         var t = doc.createElement("div");
+        // vertical: the title sits inside the text safe zone (x 64-940, y 200-1420), centred on the frame and
+        // shrunk to fit; landscape: 88 px at y 120, as always
+        var vert = FRAME.height > FRAME.width, tfs = vert ? Math.max(36, Math.min(88, Math.floor((2 * (K.VERTICAL.safe.x1 - FRAME.width / 2) - 112) / (o.text.length * 0.6)))) : 88, ttop = vert ? K.VERTICAL.safe.y0 + 20 : 120;
         t.className = "hf-title";
         t.textContent = o.text;
-        css(t, { position: "absolute", left: "50%", top: "120px", transform: "translateX(-50%)", padding: "18px 56px 22px", borderRadius: "999px",
-          background: "rgba(14,18,34,0.74)", color: "#FFF8EC", fontFamily: '"Poppins", "Inter", sans-serif', fontWeight: "700", fontSize: "88px",
+        css(t, { position: "absolute", left: "50%", top: ttop + "px", transform: "translateX(-50%)", padding: "18px 56px 22px", borderRadius: "999px",
+          background: "rgba(14,18,34,0.74)", color: "#FFF8EC", fontFamily: '"Poppins", "Inter", sans-serif', fontWeight: "700", fontSize: tfs + "px",
           lineHeight: "1.15", whiteSpace: "nowrap", boxShadow: "0 14px 40px rgba(10,14,30,0.35), inset 0 0 0 3px rgba(255,248,236,0.18)", opacity: "0" });
         ovEl.appendChild(t);
-        var w = Math.ceil(o.text.length * 88 * 0.6 + 112), h = Math.round(88 * 1.15 + 40);
-        return { o: o, title: t, box: function (tt) { var op = titleOp(o, tt); return op > 0 ? { x: FRAME.width / 2 - w / 2, y: 120, width: w, height: h } : { x: 0, y: 0, width: 0, height: 0 }; } };
+        var w = Math.ceil(o.text.length * tfs * 0.6 + 112), h = Math.round(tfs * 1.15 + 40);
+        return { o: o, title: t, box: function (tt) { var op = titleOp(o, tt); return op > 0 ? { x: FRAME.width / 2 - w / 2, y: ttop, width: w, height: h } : { x: 0, y: 0, width: 0, height: 0 }; } };
       }
       var api = K.overlays[o.kind](ovEl, { text: o.text, target: o.target, at: o.at, until: o.until, side: o.side }, base + "-" + o.kind + "-" + i);
       return { o: o, api: api };
@@ -146,8 +157,9 @@
     var capEl = div("hf-captions");
     var style = K.resolveStyle(ctx.style);
     var band = K.layout(style).captionBand;
+    if (K.isVertical()) band = { x: K.VERTICAL_CAPTION.x, y: K.VERTICAL.captionTopBand.top, width: K.VERTICAL_CAPTION.maxWidth, height: K.VERTICAL.captionBand.bottom - K.VERTICAL.captionTopBand.top };
     css(capEl, { left: band.x + "px", top: band.y + "px", width: band.width + "px", height: band.height + "px" });
-    var caps = ctx.captions === false ? null : K.mountCaptions(capEl, { words: words, style: ctx.style });
+    var caps = ctx.captions === false ? null : K.mountCaptions(capEl, { words: words, style: ctx.style, duration: ctx.duration, hostAway: function (t) { return K.hostAway(c, world, t); } });
 
     function screenOf(a, cam) { // an actor's feet in screen px and its mountActor scale
       var slotMult = SLOT.k / WK;

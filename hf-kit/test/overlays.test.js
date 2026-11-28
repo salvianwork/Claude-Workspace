@@ -6,7 +6,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../src/kit.js";
 import "../src/draw.js";
+import "../src/timing.js";
 import "../src/world/overlays.js";
+import "../src/shell.js";
 import { fakeDocument, serialize } from "./helpers/fake-dom.js";
 
 const K = globalThis.HFKit;
@@ -100,4 +102,135 @@ test("overlays.js is offline and deterministic", () => {
   const src = readFileSync(new URL("../src/world/overlays.js", import.meta.url), "utf8");
   assert.doesNotMatch(src, /https?:\/\//);
   assert.doesNotMatch(src, /Math\.random|Date\.now|setTimeout|setInterval|requestAnimationFrame/);
+});
+
+// ---- vertical captions (Task 6; Review Focus 3): 64 px, 860 px, 2 lines, in the band ----
+const SENTENCE = "The sound of a hammer on a steel rail races ahead of the train because steel carries a wave far faster than air does so a careful listener hears it coming";
+const capWords = (text) => text.split(" ").map((w, i) => ({ i, text: w, start: +(0.3 + 0.3 * i).toFixed(2), end: +(0.3 + 0.3 * i + 0.25).toFixed(2) }));
+
+test("Review Focus 3: a long vertical caption pages into pills of at most 2 lines inside 860 px", () => {
+  const words = capWords(SENTENCE);
+  const pages = K.captionPages(words);
+  assert.ok(pages.length >= 3, "a 29-word sentence needs several pages");
+  assert.equal(pages.flatMap((p) => p.words).length, words.length, "every word is shown, in order");
+  pages.forEach((p, k) => {
+    assert.ok(p.lines <= 2, `page ${k}: ${p.lines} lines`);
+    assert.ok(p.width <= 860, `page ${k}: ${p.width} px`);
+    assert.equal(p.over, false);
+  });
+  assert.ok(pages[0].words.length >= 4, "pages are not needlessly short");
+  assert.equal(K.captionPageAt(pages, words, 0).words[0].i, 0);
+  const late = K.captionPageAt(pages, words, words[20].start + 0.01);
+  assert.equal(late.words[late.current].i, 20, "the spoken word is the current one");
+});
+
+test("a word wider than a caption line is flagged (the build warns); the pill still stays in the band", () => {
+  const words = capWords("so supercalifragilisticexpialidocious it is");
+  const pages = K.captionPages(words);
+  assert.ok(pages.some((p) => p.over), JSON.stringify(pages.map((p) => [p.lines, p.over])));
+  assert.ok(pages.every((p) => p.width <= 860));
+});
+
+test("vertical mountCaptions: 64 px words, max width 860, word highlight; its box sits in the band and the safe zone", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const doc = fakeDocument(), el = doc.createElement("div");
+    const words = capWords(SENTENCE);
+    const caps = K.mountCaptions(el, { words });
+    caps.update(2.0);
+    assert.equal(caps.el.style.fontSize, "64px");
+    assert.equal(caps.el.style.maxWidth, "860px");
+    const spans = caps.el.children;
+    assert.ok(spans.length >= 4 && spans.length < words.length);
+    const accent = spans.filter((s) => s.style.color === K.tokens.colors.accent);
+    assert.equal(accent.length, 1, "one highlighted word");
+    for (let t = 0; t <= words[words.length - 1].end + 1; t += 0.25) {
+      const b = caps.box(t);
+      if (!(b.width > 0)) continue;
+      assert.ok(b.x >= 64 && b.x + b.width <= 940, `t=${t}: x ${b.x}..${b.x + b.width}`);
+      assert.ok(b.y >= K.VERTICAL.captionBand.top && b.y + b.height <= K.VERTICAL.captionBand.bottom, `t=${t}: y ${b.y}..${b.y + b.height}`);
+    }
+    assert.equal(caps.box(0).width, 0, "hidden before the first word");
+  } finally { K.setCanvas(null); }
+});
+
+test("landscape captions are unchanged (60 px, fixed pages of 7, no box)", () => {
+  const doc = fakeDocument(), el = doc.createElement("div");
+  const caps = K.mountCaptions(el, { words: capWords(SENTENCE) });
+  caps.update(2.0);
+  assert.equal(caps.el.style.fontSize, "60px");
+  assert.equal(caps.el.style.top, "28px");
+  assert.equal(caps.el.children.length, 7);
+  assert.equal(caps.box(2).width, 0);
+});
+
+test("vertical: tags and labels clamp to the text safe zone (x 64-940, y 200-1420); landscape keeps 96 px", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    for (const kind of ["tag", "label"]) {
+      const { o } = mount(kind, { text: "Far rail", target: "rail-far" });
+      for (const q of [{ x: 1000, y: 700 }, { x: 1060, y: 1300 }, { x: 20, y: 120 }, { x: 540, y: 1900 - 480 }]) {
+        const s = o.update(4, q);
+        if (!(s.opacity > 0)) continue;
+        const b = o.box(4);
+        assert.ok(b.x >= 64 - 1e-6 && b.x + b.width <= 940 + 1e-6 && b.y >= 200 - 1e-6 && b.y + b.height <= 1420 + 1e-6, `${kind} at ${q.x},${q.y}: ${JSON.stringify(b)}`);
+      }
+      assert.ok(o.update(4, { x: 1000, y: 700 }).clamped);
+    }
+  } finally { K.setCanvas(null); }
+  const { o } = mount("tag", { text: "Far rail", target: "rail-far" });
+  o.update(4, { x: 1850, y: 500 });
+  assert.ok(Math.abs(o.box(4).x + o.box(4).width - 1824) < 1e-6, "landscape: 96 px margin");
+});
+
+test("vertical captions swap to the top band (220-400) while the host is away, with a 0.2 s fade and never in both", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const doc = fakeDocument(), el = doc.createElement("div");
+    const words = capWords(SENTENCE);
+    const T = K.VERTICAL.captionTopBand, B = K.VERTICAL.captionBand;
+    assert.deepEqual({ ...T }, { top: 220, bottom: 400 });
+    const away = (t) => t >= 3 && t < 5;   // out of the slot from 3.0 s to 5.0 s
+    const caps = K.mountCaptions(el, { words, duration: 9, hostAway: away });
+    const inBand = (b, band) => b.y >= band.top && b.y + b.height <= band.bottom;
+    const at = (t) => { const b = caps.box(t); return { b, op: Number(caps.el.style.opacity) }; };
+    assert.ok(inBand(at(2.5).b, B) && at(2.5).op === 1, "down while he is in the slot");
+    assert.ok(inBand(at(4).b, T) && at(4).op === 1, "up while he is away");
+    assert.ok(inBand(at(6).b, B) && at(6).op === 1, "back down when he returns");
+    // the swap at 3.0 s: old band fades out over 0.1 s, then the new band fades in over 0.1 s
+    assert.ok(inBand(at(3.04).b, B) && at(3.04).op > 0 && at(3.04).op < 1, "old band fading out");
+    assert.ok(at(3.1 + 1 / 60).op < 0.2, "dark between");
+    assert.ok(inBand(at(3.15).b, T) && at(3.15).op > 0 && at(3.15).op < 1, "new band fading in");
+    assert.equal(at(3.2 + 1 / 30).op, 1);
+    // never both: sample densely, the box is always in exactly one band (or hidden)
+    for (let t = 2.8; t < 5.4; t += 1 / 60) {
+      const { b, op } = at(t);
+      if (op > 0) assert.ok(inBand(b, B) !== inBand(b, T), `t=${t.toFixed(3)} ${JSON.stringify(b)}`);
+    }
+    // no host function: always the bottom band (as before)
+    const plain = K.mountCaptions(doc.createElement("div"), { words });
+    assert.ok(inBand(plain.box(4), B));
+  } finally { K.setCanvas(null); }
+});
+
+// ---- fix wave 2026-11-28: tags and labels read on a phone ----
+test("vertical: tags (56 px) and labels (50 px) are about 1.5x the landscape size; landscape keeps 38 / 34", () => {
+  const size = (kind, text) => parseFloat(mount(kind, { text, target: "x" }).o.el.children.find((c) => c.tagName !== "svg" && c.tagName !== "SVG" && /hf-/.test(c.getAttribute("class") || "")).style.fontSize);
+  assert.equal(size("tag", "Every colour"), 38);
+  assert.equal(size("label", "not to scale"), 34);
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const tag = size("tag", "Every colour"), label = size("label", "not to scale");
+    assert.equal(tag, 56); assert.equal(label, 50);
+    assert.ok(tag / 38 >= 1.4 && tag / 38 <= 1.6 && label / 34 >= 1.4 && label / 34 <= 1.6);
+    // a long four-word text shrinks only as far as it must to fit the safe zone's 876 px width
+    const { o } = mount("label", { text: "Massive woman swims somewhere", target: "x" });
+    o.update(4, { x: 540, y: 700 });
+    const b = o.box(4);
+    assert.ok(O.verticalMetrics("label", "Massive woman swims somewhere").size < 50, "shrunk");
+    assert.ok(b.width <= 876 && b.x >= 64 - 1e-6 && b.x + b.width <= 940 + 1e-6, JSON.stringify(b));
+    const m = O.verticalMetrics("tag", "Every colour");
+    assert.equal(m.size, 56);
+    assert.equal(m.height, Math.round(56 * 1.28 + 2 * Math.round(56 * 0.24)));
+  } finally { K.setCanvas(null); }
 });

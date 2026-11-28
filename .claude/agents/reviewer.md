@@ -77,10 +77,10 @@ Run every command from the workspace root and quote paths (they may contain spac
 Read `01-script/script.md` and `brief.md`. Run:
 
 ```bash
-python -m tools.pipeline.checks story "<run_dir>/01-script/script.md"
+python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>
 ```
 
-It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
+(`<format>` is `format:` in `brief.md`, `vertical` when missing.) It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
 
 **Must-fix if:**
 - [ ] **A lesson is broken.** Run the two `tools.lessons list` commands from "Lessons notebook" (everyone and the quill section) and check that the work follows `lessons.md` (Everyone plus the Quill section). A lesson the work breaks is a must-fix, unless this video's brief, the owner's notes or `feedback_file` say otherwise.
@@ -91,9 +91,21 @@ It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
   ("remove or soften the claim"). Partly right → must-fix with the precise wording.
 - [ ] A factual statement in the narration is **not listed** under `## Key claims` (so it was
   never checked) → must-fix: add it as a claim (and check it yourself now).
-- [ ] **The length is outside 150–450 words**, or `checks story` reports any problem.
-- [ ] **The header is missing or wrong**: no `**Type:**`, `**Audience:**` or `**Host outfit:**`
-  line under the title; a type other than `explainer` / `what-if`; a type or audience that
+- [ ] **The length is outside the limits**, or `checks story` reports any problem. Read the
+  format from `brief.md` (`format:`, `vertical` when missing) and run `checks story` with it:
+  `python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>`
+  (landscape 150–450 words; vertical 75–450 words, i.e. 30–180 s).
+- [ ] **A vertical short breaks the short recipe** (`**Format:**` `vertical`):
+  - the total is far from the target of **45–75 s** (`est_seconds`; outside 30–180 s is always a
+    must-fix, outside 45–75 s a must-fix when it is also long-winded or thin);
+  - **the hook is not the first sentence**, or runs over about 2 s of speech (more than about 6
+    short words), or is a greeting, "In this video…" or a dull opening instead of a question or a
+    surprising fact that makes the viewer stay;
+  - a scene carries more than one idea, or ideas come slower than **one per 5–8 s**;
+  - **the last line does not invite a rewatch or a comment.**
+- [ ] **The header is missing or wrong**: no `**Type:**`, `**Audience:**`, `**Format:**` or
+  `**Host outfit:**` line under the title; a `**Format:**` other than `vertical` / `landscape` or
+  one that differs from `format:` in `brief.md`; a type other than `explainer` / `what-if`; a type or audience that
   differs from the one `brief.md` sets (`type: propose` lets Quill choose); an audience other
   than `all-ages` / `teens` / `adults`; an outfit other than `blazer` / `lab-coat` / `casual` /
   `explorer`, or one clearly mismatched to the topic (`lab-coat` is for science, health and
@@ -118,7 +130,7 @@ It prints `{"words": …, "est_seconds": …, "problems": [...]}`.
   twisters, symbols or abbreviations a voice will misread ("3–5", "e.g.", "km/h", URLs),
   brackets, or text formatting inside narration.
 
-**Suggestions only:** fewer than 4 or more than 9 scenes, a scene far outside 15–60 words,
+**Suggestions only:** (landscape) fewer than 4 or more than 9 scenes, a scene far outside 15–60 words,
 style, word choice, a better hook.
 
 **Sources:** one line per claim, `- [S1] <url>` (you may add ` — supported` / ` — wrong: …`).
@@ -166,7 +178,7 @@ You **cannot judge intonation** — that is the owner's job at the checkpoint. A
 ## Gate 3 — Design (shot list)
 
 Read `03-design/storyboard.md`, `03-design/shots.json`, `03-design/style.json`,
-`03-design/sound.json`, `01-script/script.md` (its header: type, audience, host outfit),
+`03-design/sound.json`, `01-script/script.md` (its header: type, audience, format, host outfit),
 `02-voice/manifest.json`, `02-voice/words.json`, and the libraries the plan draws on:
 `hf-kit/places/README.md` (places, variants, anchors, paths), `hf-kit/MOVES.md` (the moves,
 the camera rules and the kit warnings) and `hf-kit/props/README.md` (drawings a `custom` move
@@ -210,8 +222,9 @@ python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); [p
   on screen, Scale, Facts, Kit warnings, Transition or SFX line (a new place also its Place
   brief; a `custom` move its Custom brief).
 - [ ] A scene's duration is not the manifest's `duration_s` (frames ≠ `ceil(duration_s × 30)`).
-- [ ] **The settings disagree with the script**: `type`, `audience` or the host's `outfit` in
-  `cast` differ from the script header (`**Type:**`, `**Audience:**`, `**Host outfit:**`), or
+- [ ] **The settings disagree with the script**: `type`, `audience`, `format` (`vertical` when
+  `shots.json` has none) or the host's `outfit` in
+  `cast` differ from the script header (`**Type:**`, `**Audience:**`, `**Format:**`, `**Host outfit:**`), or
   the outfit is clearly mismatched to the topic (a lab coat on a history video).
 - [ ] **The type's recipe is not followed on screen**: an `explainer` whose hook scene is a
   title card, whose idea scenes do not each show their idea, or whose recap is a list; a
@@ -239,8 +252,22 @@ python -c "import json,sys; d=json.load(open(sys.argv[1], encoding='utf-8')); [p
   true to scale needs a `"not to scale"` tag or label in that scene; a number floating alone
   instead of on the thing it measures is a must-fix.
 - [ ] **A `what-if` is not plausible**: the consequences shown break known science.
+- [ ] **A vertical plan is not framed for the tall screen** (`"format":"vertical"`, the
+  default when `shots.json` has no `format`). Each of these is a must-fix:
+  - a shot whose action sits outside the **middle band** (top or bottom of the frame, where the
+    captions and the host are), or a wide side-by-side shot where **tall reveals** (`pan_up`,
+    `pan_down`, `pull_out` up a column) would show it;
+  - the host in a landscape side slot (`left` / `right`) instead of `bottom-left` /
+    `bottom-right`, or text (a tag or label) planned in the **active caption band** (y 840–1020
+    while the host is in his slot, y 220–400 while he is out of it), on his face, or outside
+    x 64–940, y 200–1420;
+  - **the spread warning** (anchors, targets or camera targets of one shot more than **1700**
+    world px apart sideways) unexplained: the plan must pan or cut between the far anchors in
+    separate beats, or pick closer ones. It is the same `warning:` rule as above: explain it in
+    `Kit warnings` or fix it. Explain to Iris what the warning means (the frame is only about
+    1800 world px wide at the widest zoom, so the far anchor would be half empty or off screen).
 - [ ] **The host**: no step-in or more than 2 (a step-in = the host placed in the world or
-  walking out of the side slot); step-ins spent where his action shows nothing; or a scene
+  walking out of his slot); step-ins spent where his action shows nothing; or a scene
   where he is on screen but never does anything (no `say`, `gesture`, `react` or `point`) —
   the host must be lively; or he points away from what the narration names.
 - [ ] **Not suitable for the audience**: anything on screen unsuitable for the `audience`
@@ -311,6 +338,24 @@ tag or label — with its scene and time (`t`, seconds into the scene), one entr
 overlap (exit 1). Every entry is a must-fix: name the scene, the time, the two boxes and the
 fix (another `side`, another target, a later `at`, the camera). Grab a frame at that moment
 (below) to describe it.
+
+**3b. The safe-zone report (vertical videos only; `"format":"vertical"` in `03-design/shots.json`).**
+Run it yourself (it re-samples the built composition and rewrites only the generated
+`04-video/hf/safe-zone.json`):
+
+```bash
+python -m tools.hf.snapshot "<run_dir>" --safe-zone
+```
+
+It prints that the report is clean (exit 0) or each caption, label or tag box outside the text
+safe zone (x 64–940, y 200–1420) as `{scene, t, kind, id, box}` (exit 1). **Any entry is a
+must-fix**: name the scene, the time, the kind and the fix (a shorter tag, another `side` or
+target, a lower zoom, the camera). Also open the vertical snapshots and a few keyframes at
+**phone size** (about 360 px wide) and check that the captions, tags and labels are still
+readable, the host's face is clear of text, and nothing important sits under the captions or in
+the bottom band the apps cover. Check the **hook timing**: the first sentence is spoken and its
+picture is on screen in the first 2 s (no slow fade-in before something happens). A landscape
+video skips this item.
 
 **4. Know what should be on screen when, where each beat and move must land, and where the
 mouth must be closed/open** (from the built composition; times are seconds in the video):
@@ -387,7 +432,8 @@ lively, never a statue; the 1–2 step-ins of the plan are there (the timeline a
 he is never cut off at the head by the frame unless the storyboard explains it.
 
 **Captions:** readable on a phone (big enough, strong contrast, never cut off), in sync with
-the voice, and not covering the action or a tag.
+the voice, and not covering the action or a tag. In a vertical video they sit at y 840–1020
+while the host is in his slot and at y 220–400 while he is out of it, never in both.
 
 **Motion:** during each camera move (the storyboard's beats), grab frames 0.5 s apart and
 check the motion is calm (no dizzying moves).

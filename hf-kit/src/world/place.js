@@ -11,13 +11,14 @@
  *     mount(layers, {variant, seed, idPrefix}) -> {update(t, cam), anchors, paths},
  *   }
  *
- * World: every coordinate is world px in a 3840 x 2160 world (twice the frame), so a 0.6x
+ * World: every coordinate is world px in a 3840 x 2160 world (twice the frame; 3840 x 3600 when
+ * extended, below), so a 0.6x
  * pull-out still fills the 1920 x 1080 frame. Anchors and paths are in GROUND-layer world px
  * (parallax factor 1): that is where actors stand, effects play and tags point.
  *
  * Layers (back to front): sky, far, mid, ground, front, with parallax factors
  * 0.2 / 0.45 / 0.75 / 1 / 1.15. HFKit.placeLayers(el, idPrefix) builds them as five world-sized
- * <svg>s stacked in `el` (el is the 1920 x 1080 frame; the caller clips it). Actors go between
+ * <svg>s stacked in `el` (el is the canvas-sized frame; the caller clips it). Actors go between
  * `ground` and `front` (insert them before layers.front).
  *
  * Camera and parallax: update(t, cam) takes cam = {x, y, zoom}, the world-space point at the
@@ -27,7 +28,7 @@
  *
  *   layer camera   cx = REF.x + (cam.x - REF.x) * f,  cy = REF.y + (cam.y - REF.y) * f
  *   layer zoom     z  = cam.zoom ^ f
- *   screen point   (p.x - cx) * z + 960,  (p.y - cy) * z + 540
+ *   screen point   (p.x - cx) * z + W / 2,  (p.y - cy) * z + H / 2   (W x H = HFKit.CANVAS)
  *
  * So the ground (f = 1) is the plain camera, the sky barely moves or grows, and the front layer
  * slides and grows a little more than the ground. Content on a layer with f != 1 only lines up
@@ -36,7 +37,31 @@
  * as CSS transforms. A place's update must be a pure function of (t, cam): seekable.
  *
  * Ids: every SVG id a place makes starts with idPrefix + "-" (world.js passes
- * "s<scene>-place-<n>"), so two places, or one place in two scenes, never share a gradient. */
+ * "s<scene>-place-<n>"), so two places, or one place in two scenes, never share a gradient.
+ *
+ * Extended places (vertical videos): a place may declare
+ *
+ *   meta.extend = {top: {draws, seamAllow}, bottom: {draws, seamAllow}}
+ *
+ * (draws: what the band shows, in words; seamAllow: [[x0, x1], ...] world-x ranges where a real
+ * scene edge crosses the seam row, for the seam check in test/browser/places.mjs). Mounted with
+ * opts.extended = true, its world is 3840 x 3600 (HFKit.placeWorld(place, true)): EXTEND = 720 px
+ * drawn above and 720 below, the original drawing untouched in the middle (y 720 .. 2880), and
+ * every anchor and path moved down by 720 (anchorsFor({..., extended: true}) as well). The layers
+ * must then be world-sized: HFKit.placeLayers(el, idPrefix, HFKit.placeWorld(place, true)); the
+ * reference camera is the tall world's centre (HFKit.place.refOf(world)), so parallax lines up
+ * exactly as drawn there too. A place does this with HFKit.place.extendLayers (below). Without
+ * `extended` (landscape, and places without meta.extend) a place mounts exactly as before. Which
+ * canvases extend: HFKit.place.extendedFor(place, canvas) (a portrait canvas and meta.extend).
+ *
+ * What a camera can reach of each layer's bands: parallax moves the far layers less, so at the
+ * camera limits (zoom 0.6 at the very top / bottom of the tall world, 1080 x 1920 frame) the top
+ * edge of the frame shows the sky layer from its y ~ 700, far ~ 500, mid ~ 240, ground 0 and front
+ * ~ -160; the bottom edge shows the sky down to y ~ 2900, far ~ 3100, mid ~ 3360, ground 3600 and
+ * front ~ 3760. So the SKY layer's top band is almost never seen in a shot (only in the whole-world
+ * view at REF): continue its gradient seamlessly and stop there, don't over-invest in it. The nearer
+ * layers (mid, ground) carry the visible top detail; the ground (and front) the bottom detail.
+ * test/browser/places.mjs checks the seams at REF and, layer by layer, at those extreme cameras. */
 (function (root) {
   "use strict";
   var K = root.HFKit;
@@ -44,46 +69,70 @@
   var D = K.draw;
 
   var WORLD = { width: 3840, height: 2160 };
-  var FRAME = { width: 1920, height: 1080 };
   var LAYERS = ["sky", "far", "mid", "ground", "front"];
   var PARALLAX = { sky: 0.2, far: 0.45, mid: 0.75, ground: 1, front: 1.15 };
   var REF = { x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 };
+  var EXTEND = 720; // px drawn above and below the original world when a place is extended
+  var TALL = { width: WORLD.width, height: WORLD.height + 2 * EXTEND };
+
+  /* The world a place mounts in: 3840 x 3600 when extended (and the place declares meta.extend). */
+  function placeWorld(place, extended) {
+    var ext = !!extended && !!(place && place.meta && place.meta.extend);
+    return { width: WORLD.width, height: ext ? TALL.height : WORLD.height };
+  }
+  /* Whether a place is extended on a canvas: a portrait canvas (vertical) and meta.extend. */
+  function extendedFor(place, canvas) {
+    var c = canvas || K.CANVAS;
+    return !!(place && place.meta && place.meta.extend) && c.height > c.width;
+  }
+  /* The reference camera of a world: its centre at zoom 1 (every layer lines up as drawn). */
+  function refOf(world) {
+    if (!world || world.height === WORLD.height) return REF;
+    return { x: world.width / 2, y: world.height / 2, zoom: 1 };
+  }
 
   function r3(v) { return Math.round(v * 1000) / 1000; }
 
-  /* The camera one layer sees: {x, y, zoom}. */
-  function layerCam(cam, f) {
-    cam = cam || REF;
+  /* The camera one layer sees: {x, y, zoom}. world (optional, default 3840 x 2160) sets the
+   * reference camera the parallax is relative to (its centre). */
+  function layerCam(cam, f, world) {
+    var ref = refOf(world);
+    cam = cam || ref;
     var z = cam.zoom === undefined ? 1 : cam.zoom;
-    return { x: REF.x + (cam.x - REF.x) * f, y: REF.y + (cam.y - REF.y) * f, zoom: Math.pow(z, f) };
+    return { x: ref.x + (cam.x - ref.x) * f, y: ref.y + (cam.y - ref.y) * f, zoom: Math.pow(z, f) };
   }
 
   /* Screen px of world point p on a layer with parallax factor f (default 1 = ground). */
-  function toScreen(p, cam, f) {
-    var c = layerCam(cam, f === undefined ? 1 : f);
-    return { x: r3((p.x - c.x) * c.zoom + FRAME.width / 2), y: r3((p.y - c.y) * c.zoom + FRAME.height / 2) };
+  function toScreen(p, cam, f, world) {
+    var c = layerCam(cam, f === undefined ? 1 : f, world);
+    return { x: r3((p.x - c.x) * c.zoom + K.CANVAS.width / 2), y: r3((p.y - c.y) * c.zoom + K.CANVAS.height / 2) };
   }
 
   /* CSS transform of a layer (origin top-left) for the camera. */
-  function layerTransform(cam, f) {
-    var c = layerCam(cam, f);
-    return "translate(" + r3(FRAME.width / 2) + "px," + r3(FRAME.height / 2) + "px) scale(" + r3(c.zoom * 10000) / 10000 + ") translate(" + r3(-c.x) + "px," + r3(-c.y) + "px)";
+  function layerTransform(cam, f, world) {
+    var c = layerCam(cam, f, world);
+    return "translate(" + r3(K.CANVAS.width / 2) + "px," + r3(K.CANVAS.height / 2) + "px) scale(" + r3(c.zoom * 10000) / 10000 + ") translate(" + r3(-c.x) + "px," + r3(-c.y) + "px)";
   }
 
+  /* Writes the camera into the layers (relative to their world's reference camera, layers.world). */
   function applyCamera(layers, cam) {
     LAYERS.forEach(function (name) {
       var e = layers[name];
-      if (e && e.style) e.style.transform = layerTransform(cam, PARALLAX[name]);
+      if (e && e.style) e.style.transform = layerTransform(cam, PARALLAX[name], layers.world);
     });
   }
 
   /* Five world-sized <svg> layers stacked in el: {sky, far, mid, ground, front}. Each has a
-   * <defs> first child and data-layer / data-place attributes (no ids: the place makes those). */
-  function placeLayers(el, idPrefix) {
+   * <defs> first child and data-layer / data-place attributes (no ids: the place makes those).
+   * world: {width, height} (default 3840 x 2160; HFKit.placeWorld(place, true) for an extended
+   * mount); kept as the layers' non-enumerable `world`. */
+  function placeLayers(el, idPrefix, world) {
     if (!el || !el.ownerDocument) throw new Error("placeLayers: needs a DOM element");
+    var W = world || WORLD;
     var out = {};
+    Object.defineProperty(out, "world", { value: { width: W.width, height: W.height }, enumerable: false });
     LAYERS.forEach(function (name) {
-      var s = D.el(el, "svg", { width: WORLD.width, height: WORLD.height, viewBox: "0 0 " + WORLD.width + " " + WORLD.height,
+      var s = D.el(el, "svg", { width: W.width, height: W.height, viewBox: "0 0 " + W.width + " " + W.height,
         overflow: "visible", "data-layer": name, "data-place": idPrefix || "" });
       s.style.position = "absolute";
       s.style.left = "0";
@@ -94,9 +143,51 @@
       D.el(s, "defs");
       out[name] = s;
     });
-    applyCamera(out, REF);
+    applyCamera(out, refOf(W));
     return out;
   }
+
+  /* For a place's mount: where to draw. Not extended (opts.extended falsy, or no meta.extend):
+   * {on: false, dy: 0, layers} (the given layers: the mount draws exactly as before). Extended:
+   * the layers must be the tall world's; each layer gets three groups in order, the top-band
+   * group under (data-extend="under": drawn behind the original, world px of the tall world), the
+   * original's group (data-extend="middle", moved down by EXTEND: draw the original in its own
+   * 3840 x 2160 coordinates) and an over group (data-extend="over", in front of the original).
+   * Returns {on, dy, layers (the middle groups), under, over, world, ref}. Band art goes into
+   * <g data-extend="top"> / <g data-extend="bottom"> parts (see band()). */
+  function extendLayers(layers, opts, meta) {
+    var on = !!(opts && opts.extended) && !!(meta && meta.extend);
+    if (!on) return { on: false, dy: 0, layers: layers, world: layers.world || WORLD, ref: REF };
+    if (!layers.world || layers.world.height !== TALL.height)
+      throw new Error("place " + meta.name + ": an extended mount needs the layers of the extended world (HFKit.placeLayers(el, idPrefix, HFKit.placeWorld(place, true)))");
+    var under = {}, mid = {}, over = {};
+    LAYERS.forEach(function (name) {
+      under[name] = D.el(layers[name], "g", { "data-extend": "under" });
+      mid[name] = D.el(layers[name], "g", { "data-extend": "middle", transform: "translate(0 " + EXTEND + ")" });
+      over[name] = D.el(layers[name], "g", { "data-extend": "over" });
+    });
+    return { on: true, dy: EXTEND, layers: mid, under: under, over: over, world: layers.world, ref: refOf(layers.world) };
+  }
+  /* A band's art in a group of an extendLayers result: band(g, "top" | "bottom", defs, body). */
+  function band(g, which, defsMarkup, body) {
+    if (defsMarkup) defs(g.ownerSVGElement || g).insertAdjacentHTML("beforeend", defsMarkup);
+    var e = D.el(g, "g", { "data-extend": which });
+    e.innerHTML = body;
+    return e;
+  }
+  /* anchorsFor's result moved down by dy (an extended mount: dy = EXTEND). */
+  function offsetAnchors(a, dy) {
+    if (!dy) return a;
+    var anchors = {}, paths = {};
+    Object.keys(a.anchors).forEach(function (k) {
+      var fn = a.anchors[k];
+      anchors[k] = function (t) { var q = fn(t), o = {}; for (var j in q) o[j] = q[j]; o.y = q.y + dy; return o; }; // keeps scale etc.
+    });
+    Object.keys(a.paths).forEach(function (k) { paths[k] = a.paths[k].map(function (q) { return { x: q.x, y: q.y + dy }; }); });
+    return { anchors: anchors, paths: paths };
+  }
+  /* The offset an anchorsFor call applies: EXTEND when opts.extended and the place has meta.extend. */
+  function extendOffset(meta, opts) { return opts && opts.extended && meta && meta.extend ? EXTEND : 0; }
 
   /* The <defs> of a layer. */
   function defs(layer) { return layer.querySelector("defs") || D.el(layer, "defs"); }
@@ -198,12 +289,17 @@
   }
 
   K.place = {
-    WORLD: WORLD, FRAME: FRAME, LAYERS: LAYERS, PARALLAX: PARALLAX, REF: REF,
+    WORLD: WORLD, LAYERS: LAYERS, PARALLAX: PARALLAX, REF: REF, EXTEND: EXTEND,
+    placeWorld: placeWorld, extendedFor: extendedFor, refOf: refOf, extendLayers: extendLayers, band: band,
+    offsetAnchors: offsetAnchors, extendOffset: extendOffset,
     layerCam: layerCam, toScreen: toScreen, layerTransform: layerTransform, applyCamera: applyCamera,
     defs: defs, variantOf: variantOf, paint: paint,
     svg: { attrs: attrs, tag: tag, lin: lin, rad: rad, blur: blur, pts: pts, smooth: smooth },
     art: { wrap: wrap, wrapFade: wrapFade, toner: toner, cloud: cloud, tree: tree, stars: stars, glint: glint },
   };
+  /* The frame is the composition canvas (HFKit.CANVAS, read when asked). */
+  Object.defineProperty(K.place, "FRAME", { enumerable: true, get: function () { return K.CANVAS; } });
   K.placeLayers = placeLayers;
+  K.placeWorld = placeWorld;
   K.places = K.places || {};
 })(typeof globalThis !== "undefined" ? globalThis : window);

@@ -17,6 +17,9 @@ export const LOOK = {
   glassesColor: "#9CD62B",
   glassesEdge: "#5E9A14",
   glassesLight: "#D4F57A",
+  /** Phone-ready refresh: the whole head (hair, ears, face, glasses) is drawn this much bigger
+   * relative to the body, scaled about the chin (RIG.headScaleY), so the neck and collar still fit. */
+  headScale: 1.2,
   outfits: {
     /** Navy blazer over a light-blue collared shirt, no tie: the default "documentary host". */
     blazer: {

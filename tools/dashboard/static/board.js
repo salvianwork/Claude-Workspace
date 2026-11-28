@@ -197,6 +197,12 @@ function gate2Extras(st) {
   return { html: h, links: [] };
 }
 
+/** A stuck gate 4 after a failed render: there is no video, so "Accept anyway" would be refused. */
+function noVideoToAccept(st, req) {
+  return str(req && req.checkpoint) === "stuck-gate-4" && !(st && st.video && st.video.path);
+}
+const NO_VIDEO_NOTE = "“Accept anyway” is not offered: the render failed, so there is no video to accept. Give directions or cancel.";
+
 function stuckExtras(st, req) {
   const n = /^stuck-gate-(\d)$/.exec(str(req.checkpoint))[1];
   const path = `review/gate-${n}-round-${str(st.round, MAX_ROUNDS)}.md`;
@@ -210,6 +216,7 @@ function stuckExtras(st, req) {
     h += items.length ? `<ul class="mustfix">${items.map((i) => `<li>${inlineCode(i)}</li>`).join("")}</ul>` : `<p>No must-fix items listed.</p>`;
   }
   h += `</div>`;
+  if (noVideoToAccept(st, req)) h += `<p class="body no-video">${esc(NO_VIDEO_NOTE)}</p>`;
   return { html: h, links: md ? [{ label: `${reviewer}'s review`, path }] : [] };
 }
 
@@ -299,7 +306,8 @@ function renderControls(st) {
     S.msg = S.key ? null : { html: KEY_MSG, err: true };
     disarm();
   }
-  const opts = (Array.isArray(req.options) ? req.options : []).map(str).filter((o) => LABELS[o]);
+  const opts = (Array.isArray(req.options) ? req.options : []).map(str).filter((o) => LABELS[o])
+    .filter((o) => !(o === "accept" && noVideoToAccept(st, req)));
   setHTML(P.decisions, opts.map((o) =>
     `<button class="btn decision ${o}${S.armed === o ? " armed" : ""}" data-act="decide" data-decision="${o}"${S.sending ? " disabled" : ""}><span aria-hidden="true">${ICONS[o]}</span>${LABELS[o]}</button>`
   ).join(""));
@@ -346,6 +354,7 @@ async function decide(decision) {
   const st = S.state;
   const req = st && st.request;
   if (!req || S.sending) return;
+  if (decision === "accept" && noVideoToAccept(st, req)) return setMsg(esc(NO_VIDEO_NOTE), true);
   const text = S.parts.reply.value.trim();
   if (NEEDS_TEXT[decision] && !text) {
     if (decision === "choose") { S.chosen = req.id; render(); }

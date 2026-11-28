@@ -47,6 +47,8 @@ class FakeRun:
         self.check = check
 
     def __call__(self, cmd, **kw):
+        if "-show_entries" in cmd:  # render's output size check (ffprobe): the fake mp4 is 1920 x 1080
+            return subprocess.CompletedProcess(cmd, 0, "1920,1080\n", "")
         self.calls.append((cmd, kw))
         if "check" in cmd:
             return subprocess.CompletedProcess(cmd, 0, json.dumps(self.check), "")
@@ -258,3 +260,124 @@ def test_cli_workers_option(tmp_path, monkeypatch):
     assert seen == {"w": 6}
     assert hf.main([str(tmp_path), str(tmp_path / "o.mp4")]) == 0
     assert seen == {"w": None}
+
+
+# ---- fix wave 2026-11-28: retry a cancelled render with 1 worker; vertical workers cap; ffprobe ----
+
+class CancellingRun(FakeRun):
+    """The first `hyperframes render` is cancelled (as seen with 2 workers under load); later ones work."""
+
+    def __init__(self, fail_text="Error: render_cancelled_parent_exited", times=1, code=1):
+        super().__init__()
+        self.fail_text, self.left, self.code = fail_text, times, code
+
+    def __call__(self, cmd, **kw):
+        if "render" in cmd and "-show_entries" not in cmd and self.left > 0:
+            self.left -= 1
+            self.calls.append((cmd, kw))
+            out = Path(cmd[cmd.index("--output") + 1])
+            out.write_bytes(b"partial")  # a half-written file must not count as a video
+            return subprocess.CompletedProcess(cmd, self.code, "", self.fail_text)
+        return super().__call__(cmd, **kw)
+
+
+def _vertical_comp(tmp_path: Path) -> Path:
+    comp = _fake_comp(tmp_path)
+    (comp / "index.html").write_text(
+        '<div id="root" data-composition-id="main" data-start="0" data-duration="3" '
+        'data-width="1080" data-height="1920"></div>', encoding="utf-8")
+    return comp
+
+
+def _render_workers(calls):
+    return [c[c.index("--workers") + 1] for c, _ in calls if "render" in c and "--workers" in c]
+
+
+@pytest.mark.parametrize("text", ["Error: render_cancelled_parent_exited", "[plan] render_cancelled",
+                                  "Parallel worker cancelled", "Render canceled by signal"])
+def test_a_cancelled_render_is_retried_once_with_1_worker(tmp_path, monkeypatch, capsys, text):
+    fake = CancellingRun(fail_text=text)
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    out = tmp_path / "v.mp4"
+    result = render(_fake_comp(tmp_path), out, workers=2)
+    assert _render_workers(fake.calls) == ["2", "1"]
+    assert result["retried"] is True and result["workers"] == 1
+    assert out.read_bytes() == b"mp4"
+    assert "Render was interrupted; retrying with 1 worker, this is slower" in capsys.readouterr().err
+
+
+def test_a_render_cancelled_twice_fails_with_a_clear_message(tmp_path, monkeypatch):
+    fake = CancellingRun(times=2)
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    with pytest.raises(HFError, match=r"also after a retry with 1 worker"):
+        render(_fake_comp(tmp_path), tmp_path / "v.mp4", workers=3)
+    assert _render_workers(fake.calls) == ["3", "1"]
+
+
+def test_other_render_failures_and_1_worker_renders_are_not_retried(tmp_path, monkeypatch):
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    fake = CancellingRun(fail_text="Error: page crashed: missing font")
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    with pytest.raises(HFError, match=r"hyperframes render failed \(exit 1\)"):
+        render(_fake_comp(tmp_path), tmp_path / "a.mp4", workers=2)
+    assert _render_workers(fake.calls) == ["2"]
+    fake = CancellingRun()
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    with pytest.raises(HFError):
+        render(tmp_path / "my comp", tmp_path / "b.mp4", workers=1)
+    assert _render_workers(fake.calls) == ["1"]
+
+
+def test_a_cancel_message_with_exit_0_but_no_video_is_retried(tmp_path, monkeypatch):
+    class NoFile(CancellingRun):
+        def __call__(self, cmd, **kw):
+            r = super().__call__(cmd, **kw)
+            if r.returncode == 0 and "render" in cmd and len(_render_workers(self.calls)) == 1:
+                Path(cmd[cmd.index("--output") + 1]).unlink()
+            return r
+    fake = NoFile(code=0)
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    out = tmp_path / "v.mp4"
+    fake_first = fake
+    # exit 0 with the cancel text: the partial file is removed and the retry renders it
+    result = render(_fake_comp(tmp_path), out, workers=2)
+    assert result["retried"] is True and out.is_file()
+    assert _render_workers(fake_first.calls) == ["2", "1"]
+
+
+class VerticalRun(FakeRun):
+    def __call__(self, cmd, **kw):
+        if "-show_entries" in cmd:  # the fake mp4 is 1080 x 1920
+            return subprocess.CompletedProcess(cmd, 0, "1080,1920\n", "")
+        return super().__call__(cmd, **kw)
+
+
+def test_vertical_default_workers_are_capped_at_2(tmp_path, monkeypatch):
+    fake = VerticalRun()
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: "/fake/bin/npx")
+    monkeypatch.setattr(hf.os, "cpu_count", lambda: 16)
+    fake.calls.clear()
+    comp = _vertical_comp(tmp_path)
+    render(comp, tmp_path / "v.mp4")
+    assert _render_workers(fake.calls) == ["2"]
+    land = tmp_path / "land"
+    land.mkdir()
+    (land / "index.html").write_text('<div data-composition-id="main" data-width="1920" data-height="1080"></div>', encoding="utf-8")
+    assert hf.workers_for(land) == 8  # landscape keeps half the CPUs
+    fake.calls.clear()
+    render(comp, tmp_path / "w.mp4", workers=4)  # --workers wins
+    assert _render_workers(fake.calls) == ["4"]
+
+
+def test_missing_ffprobe_warns_clearly_instead_of_skipping(tmp_path, monkeypatch, capsys):
+    fake = VerticalRun()
+    monkeypatch.setattr(hf.subprocess, "run", fake)
+    monkeypatch.setattr(hf.shutil, "which", lambda name: None if name == "ffprobe" else "/fake/bin/npx")
+    result = render(_vertical_comp(tmp_path), tmp_path / "v.mp4")
+    assert len(result["warnings"]) == 1
+    assert "ffprobe was not found" in result["warnings"][0] and "1080 x 1920" in result["warnings"][0]
+    assert "winget install -e --id Gyan.FFmpeg" in capsys.readouterr().err

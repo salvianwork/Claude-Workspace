@@ -13,7 +13,14 @@
     shoulderX: 150, shoulderY: 412, upperArm: 148, forearm: 134,
     shoulderWidth: 70, elbowWidth: 56, wristWidth: 46, // sleeve taper
     waist: 760, headPivotY: 300,
+    headScaleY: 312, // the chin: the head is scaled about this point (LOOK.headScale)
   };
+
+  /* Transform that draws the head LOOK.headScale times bigger about the chin. */
+  function headScaleTransform(look) {
+    var k = (look && look.headScale) || 1;
+    return "translate(0 " + RIG.headScaleY + ") scale(" + k + ") translate(0 " + -RIG.headScaleY + ")";
+  }
 
   function arm(shoulder, elbow, hand, wrist, upper, fore) {
     return { shoulder: shoulder, elbow: elbow, hand: hand, wrist: wrist || 0,
@@ -182,6 +189,7 @@
   }
 
   P.RIG = RIG;
+  P.headScaleTransform = headScaleTransform;
   P.POSES = POSES;
   P.TALK_MIRROR = TALK_MIRROR;
   P.EXPRESSIONS = EXPRESSIONS;

@@ -55,10 +55,13 @@ In Claude Code, type:
 /make-video "How volcanoes work"
 ```
 
+Without `--format` this makes a **vertical short** (1080 x 1920, for phones; the default).
 It works in four steps. At each checkpoint, check these things:
 
 **Step 1 - Script (you approve).** You get a notification, then the script.
-- [ ] 150-450 words in total, split into short scenes (about 6 to 10).
+- [ ] About 110-190 words (45-75 seconds), split into short scenes (about 6 to 10), one idea each.
+- [ ] The first sentence is a hook of about 2 seconds (a question or a surprising fact, not "In this video…").
+- [ ] The last line invites you to watch again or to comment.
 - [ ] Simple language, true statements, a clear start and ending.
 - [ ] The reviewer's note says PASS. Reply with changes, or approve.
 
@@ -70,19 +73,34 @@ It works in four steps. At each checkpoint, check these things:
 - [ ] Nothing for you to do; wait for the next message.
 
 **Step 4 - Video (automatic, reviewed).** The final film is `videos\<run>\04-video\out\video.mp4`.
-- [ ] The render takes a while (on the test computer about 12-15 times the video's length,
-      so 25-30 minutes for a 2-minute video). The first render may also download a browser once.
+- [ ] The render takes a while (on the 4-CPU test computer about 5.5-6 times the video's length with
+      one render worker, so 5-6 minutes for a 60-second short; see `docs\hf\README.md`, "Vertical").
+      The first render may also download a browser once.
 - [ ] Write down: finish time ________, total time ________, render time (from
       `videos\<run>\04-video\render.log`, the line `hyperframes render took … s`) ________.
 - [ ] Every scene happens in a drawn place (a countryside, a lab, the sea, space…), with the host
       and things moving in it; a place the library lacks (e.g. a volcano) is drawn for the video.
       Labels and tags appear on the word that names the part. (Examples: `docs\hf\world-*-sheet.png`.)
-- [ ] Length is 60-180 seconds, picture is sharp (1920 x 1080), captions are readable.
+- [ ] Length is about 45-75 seconds, the picture is tall and sharp (1080 x 1920), captions are readable.
+- [ ] **On your phone** (copy `video.mp4` to it): captions sit in the middle of the screen (at the top
+      while the host is inside the scene), labels and tags are never cut off at the edges or hidden
+      under the captions, and the host's face in the bottom corner is never covered by text.
 - [ ] The presenter appears, never covers text or captions, and his mouth moves while he talks.
 - [ ] Music is quiet under the voice; you can always hear the voice clearly.
 - [ ] No more than about one sound effect per scene, and none that drowns a word.
 - [ ] `videos\<run>\04-video\credits.md` lists the music and sound effects used (the video
       itself is `videos\<run>\04-video\out\video.mp4`).
+
+## 4a. A landscape video (the old wide format)
+
+```
+/make-video "How volcanoes work" --format landscape
+```
+
+- [ ] The script is 150-450 words (1-3 minutes) and the picture is wide (1920 x 1080), with the
+      host talking from the side of the frame, as before.
+- [ ] `/make-video "How volcanoes work" --format square` is refused at once ("Unknown format"),
+      before any agent starts.
 
 ## 4b. A what-if video in the world look
 
@@ -95,13 +113,13 @@ Run one what-if video (a short topic is fine), the same way as section 4:
 - [ ] The script starts with the question, then goes step by step, and says clearly which part is
       imagined ("Imagine…", "would") before coming back to the real world at the end.
 - [ ] **The host steps into the scene** once or twice: he stands, walks or acts inside a place,
-      not only talking from the side of the frame.
+      not only talking from his corner of the frame.
 - [ ] **Captions are readable on a phone:** copy `04-video\out\video.mp4` to your phone (or shrink
       the player window to phone size); every caption line can be read without squinting, and no
       caption hides a label, a tag or a face.
 - [ ] **No scene is a slide:** every scene shows something happening in a place. No bullet lists,
-      no sentences on screen (only the captions), no title cards except the one short title in
-      scene 1; labels and tags are at most 4 words.
+      no sentences on screen (only the captions), no title cards (a landscape video may have one
+      short title in scene 1); labels and tags are at most 4 words.
 
 ## 5. Approve (or not) the HyperFrames look
 

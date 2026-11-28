@@ -11,13 +11,16 @@ from tools.pipeline.script import (
 )
 
 MIN_WORDS, MAX_WORDS = 150, 450
+# A vertical short is 30-180 s: 75-450 words at the 150 wpm estimate (the target is 45-75 s).
+WORD_LIMITS = {"landscape": (150, 450), "vertical": (75, 450)}
 
 
-def check_story(script: Script) -> list[str]:
+def check_story(script: Script, format: str = "landscape") -> list[str]:
     problems: list[str] = []
     words = word_count(script)
-    if not MIN_WORDS <= words <= MAX_WORDS:
-        problems.append(f"Narration has {words} words; it must be 150–450 words.")
+    lo, hi = WORD_LIMITS[format]
+    if not lo <= words <= hi:
+        problems.append(f"Narration has {words} words; it must be {lo}–{hi} words.")
     ids = [s.id for s in script.scenes]
     if ids != list(range(1, len(ids) + 1)):
         problems.append(f"Scene ids must be 1..n in order; found {ids}.")
@@ -34,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     st = sub.add_parser("story")
     st.add_argument("script", type=Path)
+    st.add_argument("--format", choices=sorted(WORD_LIMITS), default="landscape")
     args = ap.parse_args(argv)
     try:
         script = parse_script(args.script)
@@ -42,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(json.dumps({"words": word_count(script),
                       "est_seconds": estimate_seconds(script),
-                      "problems": check_story(script)}, ensure_ascii=False))
+                      "problems": check_story(script, args.format)}, ensure_ascii=False))
     return 0
 
 

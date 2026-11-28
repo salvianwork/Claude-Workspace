@@ -1,1 +1,1 @@
-Bright classroom: tall windows, a green chalkboard, bunting, a pin board and map, the teacher's desk, pupils' desks; variants day, afternoon; anchors board, desk, front, window, seats; path aisle.
+Bright classroom: tall windows, a green chalkboard, bunting, a pin board and map, the teacher's desk, pupils' desks; variants day, afternoon; anchors board, desk, front, window, seats; path aisle. Extended for vertical (ceiling tiles and panels, a projector, a planet mobile and lanterns above; the floor and a nearer row of desks below).

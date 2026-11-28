@@ -7,7 +7,8 @@
   var K = root.HFKit;
   if (!K || !K.draw) throw new Error("shell.js: load kit.js, timing.js and draw.js first");
   var D = K.draw;
-  var W = K.CANVAS.width, H = K.CANVAS.height;
+  /* The canvas is read per call (HFKit.setCanvas may change it before a composition mounts). */
+  function canvas() { return K.CANVAS; }
 
   var PRESENTER_WIDTH = { large: 0.34, small: 0.22 };
   var PRESENTER_EDGE = 24; // presenter box distance from the frame edge (he is a drawing, not text)
@@ -49,6 +50,7 @@
     var pos = pr.position || "none", size = pr.size || "small";
     if (["left", "right", "none"].indexOf(pos) < 0) throw new Error("layout: unknown presenter position " + pos);
     if (!PRESENTER_WIDTH[size]) throw new Error("layout: unknown presenter size " + size);
+    var W = canvas().width, H = canvas().height;
     var safe = s.safe, onTop = s.captions.position === "top";
     var top = onTop ? H - safe : K.captionTop(s);
     var band = onTop ? { x: safe, y: 0, width: W - 2 * safe, height: safe + K.captionReserve(s) } : { x: safe, y: top, width: W - 2 * safe, height: H - top };
@@ -76,6 +78,7 @@
   /* A frame says how normalised camera poses ({x, y} 0..1 over `origin`, zoom) map to screen:
    * the posed point lands on `center` at `scale` x zoom. */
   function kitFrame() {
+    var W = canvas().width, H = canvas().height;
     return { origin: { x: 0, y: 0, width: W, height: H }, center: { x: W / 2, y: H / 2 }, scale: 1 };
   }
   /* Hero props: the prop's focus region fits the content box at zoom 1 (wide). */
@@ -127,7 +130,7 @@
   function css(e, rules) { for (var k in rules) e.style[k] = rules[k]; return e; }
   function abs(e, b) { return css(e, { position: "absolute", left: b.x + "px", top: b.y + "px", width: b.width + "px", height: b.height + "px" }); }
 
-  /* Build the scene layers inside `el` (a 1920 x 1080 box): background (soft lit gradient,
+  /* Build the scene layers inside `el` (a canvas-sized box, HFKit.CANVAS): background (soft lit gradient,
    * slowly drifting colour glows, faint dot grid), stage (world layer the camera moves),
    * presenter slot and caption slot. Returns {content, presenterBox, captionTop, layout, style,
    * layers: {bg, stage, overlay, presenter, captions}, update(t)}. */
@@ -135,7 +138,7 @@
     opts = opts || {};
     var style = resolveStyle(opts.style);
     var L = layout(style, opts.presenter);
-    var c = style.colors, doc = el.ownerDocument;
+    var c = style.colors, doc = el.ownerDocument, W = canvas().width, H = canvas().height;
     el.innerHTML = "";
     css(el, { position: el.style.position || "absolute", overflow: "hidden", width: W + "px", height: H + "px" });
     if (!el.style.left && !el.style.inset) css(el, { left: "0px", top: "0px" });
@@ -186,21 +189,43 @@
     var words = opts.words || [];
     var maxWords = opts.maxWords || 7;
     var doc = el.ownerDocument;
-    var fs = style.sizes.caption, onTop = style.captions.position === "top";
+    var vert = isVertical(), VC = VERTICAL_CAPTION, BAND = K.VERTICAL.captionBand, TOP = K.VERTICAL.captionTopBand;
+    // vertical: while the host is out of his slot the caption sits in the top band (opts.hostAway(t), a pure
+    // function of t, sampled per frame over opts.duration); it swaps with a 0.2 s fade (old band out over
+    // the first 0.1 s, new band in over the next 0.1 s), never in both bands at once. The caption element
+    // spans y TOP.top to BAND.bottom, the bar's top is placed inside it.
+    var away = null, awayChange = null;
+    if (vert && typeof opts.hostAway === "function") {
+      var nf = Math.ceil((opts.duration || (words.length ? words[words.length - 1].end + 2 : 0)) * 30) + 2;
+      away = []; awayChange = [];
+      for (var fi = 0; fi < nf; fi++) { away.push(!!opts.hostAway(fi / 30)); awayChange.push(fi > 0 && away[fi] !== away[fi - 1] ? fi : (fi > 0 ? awayChange[fi - 1] : -1)); }
+    }
+    function bandAt(t) { // {top, f}: the active band's top edge and its fade factor (0..1)
+      if (!away) return { top: BAND.top, f: 1 };
+      var fr = Math.min(Math.max(Math.floor(t * 30 + 1e-6), 0), away.length - 1), c = awayChange[fr];
+      if (c < 0) return { top: away[fr] ? TOP.top : BAND.top, f: 1 };
+      var dt = t - c / 30, was = away[c - 1], now = away[c];
+      if (dt < 0.1) return { top: was ? TOP.top : BAND.top, f: 1 - dt / 0.1 };
+      return { top: now ? TOP.top : BAND.top, f: Math.min(1, (dt - 0.1) / 0.1) };
+    }
+    var fs = vert ? VC.size : style.sizes.caption, onTop = !vert && style.captions.position === "top";
+    var pages = vert ? captionPages(words, { size: fs }) : null;
     el.innerHTML = "";
     var bar = doc.createElement("div");
     bar.className = "hf-caption-bar";
-    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (el.clientWidth || W - 2 * style.safe) + "px",
-      padding: Math.round(fs * 0.16) + "px " + Math.round(fs * 0.6) + "px " + Math.round(fs * 0.2) + "px", borderRadius: "999px",
+    css(bar, { position: "absolute", left: "50%", transform: "translateX(-50%)", maxWidth: (vert ? VC.maxWidth : el.clientWidth || canvas().width - 2 * style.safe) + "px",
+      padding: Math.round(fs * 0.16) + "px " + captionPadX(fs) + "px " + Math.round(fs * 0.2) + "px", borderRadius: vert ? "44px" : "999px",
       background: "rgba(2,6,23,0.72)", boxShadow: "0 10px 34px rgba(2,6,23,0.38), inset 0 0 0 2px rgba(255,255,255,0.06)",
-      fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: "1.3", textAlign: "center",
+      fontFamily: style.fonts.body, fontWeight: "600", fontSize: fs + "px", lineHeight: vert ? String(VC.lineHeight) : "1.3", textAlign: "center",
       color: style.colors.text, whiteSpace: "normal", boxSizing: "border-box", width: "max-content" });
-    if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
+    if (vert) { bar.style.overflowWrap = "anywhere"; bar.style.top = (BAND.top - TOP.top + VC.top) + "px"; }
+    else if (onTop) bar.style.bottom = "28px"; else bar.style.top = "28px";
     el.appendChild(bar);
-    var shown = null, spans = [];
+    var shown = null, spans = [], opacity = 0, pageNow = null, bandTop = BAND.top;
     function update(t) {
-      if (!words.length) { bar.style.opacity = "0"; return; }
-      var pg = K.captionPage(words, t, maxWords);
+      if (!words.length) { bar.style.opacity = "0"; opacity = 0; return; }
+      var pg = vert ? captionPageAt(pages, words, t) : K.captionPage(words, t, maxWords);
+      pageNow = pg.page || null;
       var key = pg.words.length ? pg.words[0].i : -1;
       if (key !== shown) {
         bar.innerHTML = "";
@@ -218,13 +243,104 @@
         s.style.textShadow = j === pg.current ? "0 0 " + Math.round(fs * 0.3) + "px " + D.alpha(style.colors.accent, 0.45) : "none";
       });
       var first = words[0].start, last = words[words.length - 1].end;
-      bar.style.opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
+      opacity = D.r2(Math.min(D.prog(t, first - 0.25, first), 1 - D.prog(t, last + 0.6, last + 0.9)));
+      if (vert) {
+        var bd = bandAt(t);
+        bandTop = bd.top; opacity = D.r2(opacity * bd.f);
+        bar.style.top = (bandTop - TOP.top + VC.top) + "px";
+      }
+      bar.style.opacity = opacity;
+    }
+    /* The pill's box in canvas px at t (vertical only; empty when it is hidden): the real size when the
+     * browser has laid it out, else the page's estimate. Read after update(t). */
+    function box(t) {
+      if (!vert) return { x: 0, y: 0, width: 0, height: 0 };
+      update(t);
+      if (!(opacity > 0) || !pageNow) return { x: 0, y: 0, width: 0, height: 0 };
+      var w = bar.offsetWidth > 0 ? bar.offsetWidth : pageNow.width;
+      var h = bar.offsetHeight > 0 ? bar.offsetHeight : Math.round(pageNow.lines * fs * VC.lineHeight + fs * 0.36);
+      return { x: Math.round((VC.x + (VC.maxWidth - w) / 2) * 100) / 100, y: bandTop + VC.top, width: w, height: h };
     }
     update(0);
-    return { update: update, el: bar };
+    return { update: update, el: bar, box: box };
   }
 
+  // ---- vertical captions ----------------------------------------------------------------
+  /* Vertical captions (Global Constraints): 64 px, at most 2 lines, max width 860, word highlight, in
+   * the band VERTICAL.captionBand. The 860 px column sits inside the text safe zone (x 72 to 932). */
+  var VERTICAL_CAPTION = Object.freeze({ size: 64, maxWidth: 860, maxLines: 2, x: 72, lineHeight: 1.15, top: 5 });
+  var CAPTION_FIT = 1.05; // the width estimate is padded: a real font may be a little wider than the table
+
+  function isVertical() { var c = canvas(); return c.height > c.width; }
+
+  /* Width of `text` at `fs` px, from a fixed per-character table (Poppins / Inter semibold; no layout reads,
+   * so pages and boxes are the same in a browser and under node --test). */
+  function captionTextWidth(text, fs) {
+    var w = 0;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      w += c === " " ? 0.3 : /[iljtfr1.,:;'!|/]/.test(c) ? 0.36 : /[mwMW]/.test(c) ? 0.92 : /[A-Z]/.test(c) ? 0.7 : /[0-9]/.test(c) ? 0.62 : 0.6;
+    }
+    return w * fs * CAPTION_FIT;
+  }
+  function captionPadX(fs) { return Math.round(fs * 0.6); }
+
+  /* Greedy wrap of word texts into lines of `inner` px: {lines, widest (px of the widest line), over (a
+   * word wider than a line)}. */
+  function wrapWords(texts, fs, inner) {
+    var space = captionTextWidth(" ", fs), lines = 1, cur = 0, widest = 0, over = false;
+    texts.forEach(function (t, i) {
+      var w = captionTextWidth(t, fs);
+      if (w > inner) over = true;
+      if (i === 0) { cur = w; return; }
+      if (cur + space + w <= inner) cur += space + w;
+      else { widest = Math.max(widest, cur); lines += 1; cur = w; }
+    });
+    return { lines: lines, widest: Math.max(widest, cur), over: over };
+  }
+
+  /* Pages of words that each wrap to at most `maxLines` lines inside `maxWidth` (padding included):
+   * [{from, words: [...], lines, width, over}] over the whole list. A word wider than a line gets a page
+   * of its own with over = true (the build warns about it). */
+  function captionPages(words, opts) {
+    opts = opts || {};
+    var fs = opts.size || VERTICAL_CAPTION.size, maxWidth = opts.maxWidth || VERTICAL_CAPTION.maxWidth, maxLines = opts.maxLines || VERTICAL_CAPTION.maxLines;
+    var inner = maxWidth - 2 * captionPadX(fs), pages = [], cur = null;
+    (words || []).forEach(function (w, i) {
+      var text = captionWord(w);
+      if (cur) {
+        var fit = wrapWords(cur.texts.concat([text]), fs, inner);
+        if (fit.lines <= maxLines && !fit.over) { cur.texts.push(text); cur.words.push(w); cur.fit = fit; return; }
+      }
+      cur = { from: i, words: [w], texts: [text], fit: wrapWords([text], fs, inner) };
+      pages.push(cur);
+    });
+    return pages.map(function (p) {
+      return { from: p.from, words: p.words, lines: p.fit.lines, width: Math.min(maxWidth, Math.ceil(p.fit.widest + 2 * captionPadX(fs))), over: p.fit.over };
+    });
+  }
+  /* The page showing at t, as HFKit.captionPage does: {words, current, page}. */
+  function captionPageAt(pages, words, t) {
+    if (!pages.length) return { words: [], current: -1, page: null };
+    var cur = -1;
+    for (var i = 0; i < words.length; i++) if (words[i].start <= t) cur = i; else break;
+    var pg = pages[0];
+    for (var k = 0; k < pages.length; k++) if (pages[k].from <= Math.max(cur, 0)) pg = pages[k];
+    return { words: pg.words, current: cur < 0 ? -1 : cur - pg.from, page: pg };
+  }
+
+  /* Vertical (1080 x 1920) layout zones. Captions: band 840-1020 while the host is in his slot, captionTopBand
+   * 220-400 while he is out of it (mountCaptions opts.hostAway; 2026-11-26). Owner 2026-11-25: host bigger; captions sit above his face zone. */
+  var VERTICAL = Object.freeze({
+    captionBand: Object.freeze({ top: 840, bottom: 1020 }),
+    captionTopBand: Object.freeze({ top: 220, bottom: 400 }), // the caption while the host is out of his slot
+    faceZone: Object.freeze({ top: 1060, bottom: 1400 }),
+    safe: Object.freeze({ x0: 64, x1: 940, y0: 200, y1: 1420 }),
+  });
+
   Object.assign(K, {
+    VERTICAL: VERTICAL, VERTICAL_CAPTION: VERTICAL_CAPTION, captionPages: captionPages, captionPageAt: captionPageAt,
+    captionTextWidth: captionTextWidth, isVertical: isVertical,
     PRESENTER_WIDTH: PRESENTER_WIDTH, CAPTION_POSITIONS: CAPTION_POSITIONS, resolveStyle: resolveStyle, layout: layout,
     kitFrame: kitFrame, heroFrame: heroFrame, driftSafe: driftSafe, DRIFT_INSET: DRIFT_INSET, view: view, normaliseAnchors: normaliseAnchors, drift: drift,
     shell: shell, mountCaptions: mountCaptions, captionWord: captionWord,

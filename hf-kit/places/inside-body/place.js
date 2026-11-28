@@ -14,6 +14,9 @@
  *   stomach  the stomach      liver   the liver       trachea  the windpipe
  * Path: bloodstream (from the heart up the aorta, over its arch and down to where it divides).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -36,6 +39,11 @@
       organs: { tint: "#FF9A8A", amount: 0.26, rim: "#FFD6C8", rimSide: 1 },
       scan: { tint: "#4FC8EE", amount: 0.48, rim: "#C8F6FF", rimSide: 1 },
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the neck continued up to the jaw: the trachea with the larynx and the thyroid gland, the carotid arteries and jugular veins on both sides, the neck vertebrae and the hyoid bone under the jaw; more cells and capillaries floating behind", seamAllow: [] },
+      bottom: { draws: "the pelvis continued: the large intestine with the appendix and the rectum, the bladder, the pelvic bones and sacrum, the hip joints and the thighs with their femurs, femoral arteries and veins; more cells and capillaries floating behind", seamAllow: [[1640, 1790]] }, // the original's small-intestine loop runs nearly flat along the row there
+    },
   };
 
   var HEART = { x: 2030, y: 910 };
@@ -44,6 +52,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     return {
       anchors: {
@@ -146,6 +157,106 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  /* The background over the whole tall world: the original's radial glow (the same gradient, in
+   * user space, so it matches exactly where they overlap) and, for the scan, its grid. */
+  function bandBackground(P, v, C) {
+    var defs = '<radialGradient id="' + P + '-xbg" gradientUnits="userSpaceOnUse" cx="1920" cy="1652" r="3528" gradientTransform="translate(1920 1652) scale(1 0.5873) translate(-1920 -1652)"><stop offset="0" stop-color="' + C.bg[0] + '"/><stop offset="1" stop-color="' + C.bg[1] + '"/></radialGradient>';
+    var s = tag("rect", { x: -2600, y: -900, width: 9040, height: 5400, fill: "url(#" + P + "-xbg)" });
+    if (v === "scan") { var gr = ""; for (var x = -600; x < 4440; x += 120) gr += "M" + x + " -880 V4480 "; for (var y = -880; y < 4480; y += 120) gr += "M-600 " + y + " H4440 "; s += tag("path", { d: gr, stroke: "#1E4A70", "stroke-width": 2, opacity: 0.6 }); }
+    return { defs: defs, body: s };
+  }
+  /* Floating cells (far) and capillaries (mid) above and below the original's. */
+  function bandDrift(v, R, y0, y1) {
+    var far = "", mid = "", cf = v === "scan" ? "#2A5E8A" : "#8E2A36", cm = v === "scan" ? "#2E6E9E" : "#B0404E";
+    for (var i = 0; i < 16; i++) far += cell(-300 + R() * 4400, y0 + R() * (y1 - y0), 30 + R() * 50, cf, 0.35);
+    for (var k = 0; k < 7; k++) { var x = -200 + R() * 4200, y = y0 + R() * (y1 - y0), d = "M" + r2(x) + " " + r2(y); for (var j = 0; j < 4; j++) { x += (R() - 0.5) * 400; y += (R() - 0.5) * 200; d += " Q" + r2(x + 60) + " " + r2(y - 80) + " " + r2(x) + " " + r2(y); } mid += tag("path", { d: d, stroke: cm, "stroke-width": 6 + R() * 6, fill: "none", opacity: 0.35, "stroke-linecap": "round" }); }
+    return { far: far, mid: mid };
+  }
+  /* The top band (ground layer): the neck runs on up to the jaw (the original's neck top is at
+   * y 420): the trachea with the larynx and the thyroid, the oesophagus behind, the carotid arteries
+   * and jugular veins either side, the neck vertebrae and the hyoid bone, the lower jaw. */
+  function drawTopBand(P, v, C, R) {
+    var scan = v === "scan", sw = scan ? 6 : 5, op = scan ? 0.85 : 1, L = C.line, s = "";
+    var defs = '<linearGradient id="' + P + '-xbody" gradientUnits="userSpaceOnUse" x1="915" y1="0" x2="2925" y2="0"><stop offset="0" stop-color="' + C.body + '"/><stop offset="1" stop-color="' + C.bodyD + '"/></linearGradient>';
+    // the neck and the jaw: the original's neck ends in a little dome at y ~370 (its sides bulge to
+    // x ~1690 / 2150), so the new neck is filled from y 850 along its outline (no line across it) and widens into
+    // the jaw; only its sides are outlined, from where the original's outline stops
+    var neck = "M1722 850 Q1700 600 1690 420 L1690 300 Q1690 200 1600 150 Q1520 110 1520 40 Q1540 -20 1920 -40 Q2300 -20 2320 40 Q2320 110 2240 150 Q2150 200 2150 300 L2150 420 Q2140 600 2118 850 Z";
+    s += tag("path", { d: neck, fill: "url(#" + P + "-xbody)", opacity: scan ? 0.9 : 1 });
+    s += tag("path", { d: "M1722 850 Q1700 600 1690 420 L1690 300 Q1690 200 1600 150 Q1520 110 1520 40 Q1540 -20 1920 -40 Q2300 -20 2320 40 Q2320 110 2240 150 Q2150 200 2150 300 L2150 420 Q2140 600 2118 850", stroke: scan ? C.line : C.bodyD, "stroke-width": scan ? 6 : 8, fill: "none", opacity: scan ? 0.9 : 1 });
+    s += tag("path", { d: "M1600 150 Q1920 260 2240 150", stroke: scan ? C.line : C.bodyD, "stroke-width": 5, fill: "none", opacity: 0.6 }); // under the chin
+    // the lower jaw (mandible) and the hyoid
+    s += tag("path", { d: "M1560 60 Q1600 170 1920 190 Q2240 170 2280 60", stroke: C.bone, "stroke-width": 26, fill: "none", "stroke-linecap": "round", opacity: scan ? 0.6 : 0.45 });
+    s += tag("path", { d: "M1840 236 Q1920 260 2000 236", stroke: C.bone, "stroke-width": 14, fill: "none", "stroke-linecap": "round", opacity: scan ? 0.6 : 0.5 });
+    // the neck vertebrae behind (the original's spine starts at y 840)
+    for (var vt = 1; vt <= 5; vt++) s += tag("rect", { x: MID - 46, y: 840 - vt * 92, width: 92, height: 70, rx: 18, fill: C.bone, opacity: scan ? 0.5 : 0.35 });
+    // the jugular veins and the carotid arteries run down to the original's vena cava and arch
+    // branches (they cross the seam unbroken)
+    s += tag("path", { d: "M1770 230 Q1760 600 1860 1030 M2070 230 Q2090 700 2040 960 Q1980 1020 1870 1040", stroke: C.vein, "stroke-width": 30, fill: "none", "stroke-linecap": "round", opacity: op });
+    s += tag("path", { d: "M1830 220 Q1820 700 1780 1190 M2010 220 Q2020 700 2030 1110", stroke: C.artery, "stroke-width": 22, fill: "none", "stroke-linecap": "round", opacity: op });
+    s += tag("path", { d: "M1830 220 l-30 -60 M1830 220 l20 -70 M2010 220 l30 -60 M2010 220 l-20 -70", stroke: C.artery, "stroke-width": 12, fill: "none", "stroke-linecap": "round", opacity: op }); // the carotids divide under the jaw
+    // the trachea: rings continued up to the larynx (Adam's apple), the thyroid gland across it
+    s += tag("path", { d: "M" + MID + " 850 V250", stroke: C.trachea, "stroke-width": 70, fill: "none", "stroke-linecap": "round", opacity: op });
+    for (var rg = -2; rg <= 5; rg++) s += tag("path", { d: "M" + (MID - 32) + " " + (700 - rg * 68) + " h64", stroke: scan ? C.line : "#E0B4A6", "stroke-width": 10, "stroke-linecap": "round" });
+    s += tag("path", { d: "M" + (MID - 60) + " 250 L" + MID + " 330 L" + (MID + 60) + " 250 L" + (MID + 50) + " 200 H" + (MID - 50) + " Z", fill: scan ? C.trachea : "#F2C8B8", stroke: L, "stroke-width": sw, opacity: op }); // the larynx
+    s += tag("path", { d: "M" + MID + " 520 C" + (MID - 40) + " 440 " + (MID - 150) + " 420 " + (MID - 140) + " 520 C" + (MID - 130) + " 600 " + (MID - 40) + " 600 " + MID + " 550 C" + (MID + 40) + " 600 " + (MID + 130) + " 600 " + (MID + 140) + " 520 C" + (MID + 150) + " 420 " + (MID + 40) + " 440 " + MID + " 520 Z",
+      fill: scan ? C.liver : "#C2505A", stroke: scan ? C.liverD : "#7A2E2E", "stroke-width": sw, opacity: op }); // the thyroid
+    return { defs: defs, body: s };
+  }
+  /* The bottom band (ground layer): the pelvis and the thighs: the body's outline widens over the
+   * hips and divides into the legs; the pelvic bones and sacrum, the bladder, the large intestine's
+   * ends (the caecum and appendix on the body's right, the sigmoid and rectum), the iliac arteries
+   * and veins running on into the femoral ones, the femurs. */
+  function drawBottomBand(P, v, C, R) {
+    var scan = v === "scan", sw = scan ? 6 : 5, op = scan ? 0.85 : 1, L = C.line, s = "";
+    // hips and thighs (the original's outline ends at y 3220 at x 1000 .. 2840)
+    // (filled from y 2930 with the same gradient and tissue tint as the original, so it joins it;
+    // only the sides are outlined, so no line runs across)
+    var hips = "M1032 2930 Q1000 3100 1000 3220 Q980 3380 1060 3600 L1860 3600 Q1900 3460 1920 3420 Q1940 3460 1980 3600 L2780 3600 Q2860 3380 2840 3220 Q2840 3100 2808 2930 Z";
+    s += tag("path", { d: hips, fill: "url(#" + P + "-xbody)", opacity: scan ? 0.9 : 1 });
+    s += tag("path", { d: "M1032 2930 Q1000 3100 1000 3220 Q980 3380 1060 3600 M2780 3600 Q2860 3380 2840 3220 Q2840 3100 2808 2930 M1860 3600 Q1900 3460 1920 3420 Q1940 3460 1980 3600", stroke: scan ? C.line : C.bodyD, "stroke-width": scan ? 6 : 8, fill: "none", opacity: scan ? 0.9 : 1 });
+    s += tag("path", { d: "M1182 2930 Q1170 3100 1260 3300 Q1600 3360 1920 3340 Q2240 3360 2580 3300 Q2670 3100 2658 2930 Z", fill: C.tissue, opacity: scan ? 0.5 : 0.55 });
+    // the pelvic bones: two iliac wings, the sacrum, the pubic arch, the hip joints and femurs
+    var bone = { fill: C.bone, opacity: scan ? 0.55 : 0.4 };
+    s += tag("path", { d: "M1840 2980 Q1500 2880 1300 3000 Q1240 3120 1380 3200 Q1560 3260 1700 3240 Q1800 3180 1840 3100 Z", fill: bone.fill, opacity: bone.opacity });
+    s += tag("path", { d: "M2000 2980 Q2340 2880 2540 3000 Q2600 3120 2460 3200 Q2280 3260 2140 3240 Q2040 3180 2000 3100 Z", fill: bone.fill, opacity: bone.opacity });
+    s += tag("path", { d: "M1860 2960 H1980 L1960 3180 Q1920 3220 1880 3180 Z", fill: bone.fill, opacity: bone.opacity + 0.1 }); // the sacrum
+    s += tag("path", { d: "M1560 3260 Q1920 3420 2280 3260", stroke: C.bone, "stroke-width": 40, fill: "none", opacity: bone.opacity });
+    [[1430, 3300, -1], [2410, 3300, 1]].forEach(function (h) {
+      s += tag("circle", { cx: h[0], cy: h[1], r: 52, fill: C.bone, opacity: bone.opacity + 0.15 });
+      s += tag("path", { d: "M" + h[0] + " " + h[1] + " L" + (h[0] - h[2] * 40) + " 3360 L" + (h[0] - h[2] * 10) + " 3620", stroke: C.bone, "stroke-width": 56, fill: "none", "stroke-linecap": "round", opacity: bone.opacity + 0.05 });
+    });
+    // the bladder
+    s += tag("path", { d: "M1790 3170 Q1780 3080 1920 3070 Q2060 3080 2050 3170 Q2040 3250 1920 3256 Q1800 3250 1790 3170 Z", fill: scan ? C.stomach : "#E9C46A", stroke: scan ? C.stomachD : "#B08A3A", "stroke-width": sw, opacity: op });
+    // the large intestine's ends: the caecum and appendix (viewer's left), the sigmoid and rectum
+    s += tag("path", { d: "M1300 2870 Q1300 2960 1380 2980", stroke: C.colon, "stroke-width": 90, fill: "none", "stroke-linecap": "round", opacity: op }) +
+      tag("path", { d: "M1350 3010 q-20 60 10 100", stroke: C.colon, "stroke-width": 26, fill: "none", "stroke-linecap": "round", opacity: op }); // appendix
+    s += tag("path", { d: "M2540 2870 Q2540 2990 2360 3000 Q2160 3010 2080 3060 Q1990 3120 1990 3300", stroke: C.colon, "stroke-width": 80, fill: "none", "stroke-linecap": "round", opacity: op });
+    s += tag("path", { d: "M2540 2870 Q2540 2990 2360 3000 Q2160 3010 2080 3060 Q1990 3120 1990 3300", stroke: C.gutD, "stroke-width": 80, fill: "none", "stroke-dasharray": "6 60", opacity: 0.6 });
+    // the iliac vessels running into the femoral ones (the original's aorta divides at y ~2610)
+    s += tag("path", { d: "M1840 2920 Q1640 3120 1520 3350 L1480 3620 M2140 2920 Q2240 3120 2320 3350 L2360 3620", stroke: C.artery, "stroke-width": 30, fill: "none", "stroke-linecap": "round", opacity: op });
+    s += tag("path", { d: "M1870 2900 Q1700 3120 1580 3350 L1550 3620 M2110 2900 Q2200 3120 2270 3350 L2300 3620", stroke: C.vein, "stroke-width": 26, fill: "none", "stroke-linecap": "round", opacity: op * 0.9 });
+    // small intestine loops run on a little below the original's (they end at y ~2880)
+    s += tag("path", { d: "M1460 2970 Q1900 3020 2380 2980", stroke: C.gut, "stroke-width": 64, fill: "none", "stroke-linecap": "round", opacity: op });
+    return { defs: "", body: s };
+  }
+  function mountBands(X, P, v, C, seed) {
+    var bg = bandBackground(P, v, C), top = drawTopBand(P, v, C, D.rng(seed + 31)), bot = drawBottomBand(P, v, C, D.rng(seed + 32));
+    var up = bandDrift(v, D.rng(seed + 33), -100, 520), dn = bandDrift(v, D.rng(seed + 34), 3080, 3700);
+    PL.band(X.over.sky, "top", bg.defs, bg.body);
+    PL.band(X.over.far, "top", "", up.far); PL.band(X.over.far, "bottom", "", dn.far);
+    PL.band(X.over.mid, "top", "", up.mid); PL.band(X.over.mid, "bottom", "", dn.mid);
+    PL.band(X.over.ground, "top", top.defs, top.body);
+    PL.band(X.over.ground, "bottom", "", bot.body);
+    var c = v === "scan" ? "#3E8EC0" : "#D63A46";
+    var fr = "";
+    [[300, 300, 90], [3500, 500, 70], [400, 3300, 110], [3450, 3200, 90]].forEach(function (q, i) { fr += tag("g", { "data-xcell": i, transform: "translate(" + q[0] + " " + q[1] + ")" }, cell(0, 0, q[2], c, 0.85)); });
+    PL.band(X.over.front, "top", "", fr);
+    var cells = [].slice.call(X.over.front.querySelectorAll("[data-xcell]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
+    return function (t) { cells.forEach(function (c2, k) { c2.e.setAttribute("transform", c2.base + " translate(" + r2(D.wobble(t, k + 20, 0.3) * 40) + " " + r2(D.wobble(t, k + 29, 0.25) * 40) + ") rotate(" + r2(t * (5 + k * 3)) + ")"); }); };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -155,7 +266,9 @@
     var C = PAL[v];
     var parts = { sky: drawSky(P, v, C, D.rng(seed + 1)), far: drawFar(P, v, C, D.rng(seed + 2)), mid: drawMid(P, v, C, D.rng(seed + 3)), ground: drawGround(P, v, C, D.rng(seed + 4)), front: drawFront(P, v, C, D.rng(seed + 5)) };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "inside-body-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "inside-body-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, C, seed) : null; // the bands above and below (tall-world px)
     var q = function (sel) { return g.ground.querySelector('[data-part="' + sel + '"]'); };
     var heart = q("heart"), glow = q("heart-glow"), lungs = q("lungs"), stomach = q("stomach"), scanline = q("scanline");
     var cells = [].slice.call(g.front.querySelectorAll("[data-cell]")).map(function (e) { return { e: e, base: e.getAttribute("transform") }; });
@@ -163,6 +276,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       // heartbeat: about 72 a minute, a quick double thump
       var ph = (t * 1.2) % 1, beat = Math.exp(-Math.pow((ph - 0.08) / 0.05, 2)) * 0.07 + Math.exp(-Math.pow((ph - 0.28) / 0.06, 2)) * 0.045;
       heart.setAttribute("transform", about(HEART.x, HEART.y, 1 + beat, 1 + beat));
@@ -174,7 +288,7 @@
       cells.forEach(function (c, k) { c.e.setAttribute("transform", c.base + " translate(" + r2(D.wobble(t, k, 0.3) * 40) + " " + r2(D.wobble(t, k + 9, 0.25) * 40) + ") rotate(" + r2(t * (6 + k * 3)) + ")"); });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

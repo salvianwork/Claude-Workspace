@@ -1,6 +1,6 @@
 ---
 description: Make an explainer or what-if video with the agent team (story → voice → design → animator, each checked by the reviewer), or resume a run with --resume <run_dir>.
-argument-hint: "<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [notes] | --resume <run_dir>
+argument-hint: "<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [--format vertical|landscape] [notes] | --resume <run_dir>
 ---
 
 # /make-video — the orchestrator
@@ -50,9 +50,9 @@ design **Iris**, animator **Flip**, reviewer **Sage**.
 
 **`$ARGUMENTS` starts with `--resume`** → the rest is `<run_dir>`. Go to section 8.
 
-**Otherwise** `$ARGUMENTS` is `"<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [notes]`:
+**Otherwise** `$ARGUMENTS` is `"<topic>" [--type explainer|what-if] [--audience all-ages|teens|adults] [--format vertical|landscape] [notes]`:
 the quoted part (or, with no quotes, the text before the first `--`) is the topic; `--type <type>`
-and `--audience <audience>` (anywhere after the topic) are the video settings; everything else
+`--audience <audience>` and `--format <format>` (anywhere after the topic) are the video settings; everything else
 after the topic is the owner's notes. If there is no topic, ask for one in the chat and stop
 (there is no run folder yet, so no board request).
 
@@ -70,6 +70,10 @@ after the topic is the owner's notes. If there is no topic, ask for one in the c
 - `--audience` is `all-ages` (the default when it is left out: family-friendly), `teens` or
   `adults`. Any other value → print `Unknown audience "<audience>": use --audience all-ages, teens or adults.`
   and stop the same way.
+- `--format` is the video's shape: `vertical` (a 1080×1920 short for phones; the **default** when
+  `--format` is left out) or `landscape` (1920×1080, as before). Any other value → print
+  `Unknown format "<format>": use --format vertical or landscape.` and stop the same way: start no
+  agent, create no run folder, write no file. This check comes before `tools.pipeline.status init`.
 
 1. Create the run (it prints the run folder, e.g. `videos/2026-11-19-how-solar-panels-work`;
    this is `<run_dir>` from now on; it also records step `story`, state `working`, round 1):
@@ -77,15 +81,15 @@ after the topic is the owner's notes. If there is no topic, ask for one in the c
    python -m tools.pipeline.status init "<topic>"
    ```
 2. Write the owner's notes into `<run_dir>/brief.md`, on the lines after `Owner notes:`
-   (verbatim; write `none` if there are none), and add two lines at the end of the file, after
+   (verbatim; write `none` if there are none), and add three lines at the end of the file, after
    `language: en`: `type: <type>` (`explainer` or `what-if`; `type: propose` when there was no
-   `--type`) and `audience: <audience>`.
-   Change nothing else in `brief.md`. The agents read the type and audience there.
+   `--type`), `audience: <audience>` and `format: <format>` (`vertical` or `landscape`).
+   Change nothing else in `brief.md`. The agents read the type, audience and format there.
 3. Record the settings in the run state:
    ```bash
-   python -m tools.pipeline.status update "<run_dir>" --agent story --event "video settings" --detail "type <type>, audience <audience>"
+   python -m tools.pipeline.status update "<run_dir>" --agent story --event "video settings" --detail "type <type>, audience <audience>, format <format>"
    ```
-4. Print `Run folder: <run_dir>` and `Type: <type> (or: Quill proposes one), audience: <audience>`,
+4. Print `Run folder: <run_dir>` and `Type: <type> (or: Quill proposes one), audience: <audience>, format: <format>`,
    then go to section 3 with step `story`, round 1, no feedback file.
 
 ## 2. Steps, gates and agents
@@ -295,17 +299,17 @@ waiter and end your turn.
 ### 4.1 After gate 1 — the script
 
 1. Record: `python -m tools.pipeline.status update "<run_dir>" --agent story --step story --state waiting_owner --event "waiting for owner" --detail "gate 1: script"`
-2. Read the video settings from the script header (the lines `**Type:**`, `**Audience:**` and
+2. Read the video settings from the script header (the lines `**Type:**`, `**Audience:**`, `**Format:**` and
    `**Host outfit:**` under its title) and open the request (4.0), `<r>` = the round that passed:
    ```bash
-   python -m tools.dashboard.answers request "<run_dir>" --checkpoint gate-1 --title "Script ready" --body "Gate 1 passed in round <r>. A <type> video for <audience>, the host in the <outfit>. <scenes> scenes, <words> words, about <seconds> s. Read the script, then approve it or say what to change." --options approve,changes --link "Full script=01-script/script.md" --link "Review=review/gate-1-round-<r>.md"
+   python -m tools.dashboard.answers request "<run_dir>" --checkpoint gate-1 --title "Script ready" --body "Gate 1 passed in round <r>. A <format> <type> video for <audience>, the host in the <outfit>. <scenes> scenes, <words> words, about <seconds> s. Read the script, then approve it or say what to change." --options approve,changes --link "Full script=01-script/script.md" --link "Review=review/gate-1-round-<r>.md"
    ```
    Print `⏸ Waiting for you: please read the script and reply "approve" or tell me what to change.`
-   Then print `Type: <type> · Audience: <audience> · Host outfit: <outfit>` (add
+   Then print `Type: <type> · Audience: <audience> · Format: <format> · Host outfit: <outfit>` (add
    `(proposed by Quill)` after the type when `brief.md` says `type: propose`), the full
    `<run_dir>/01-script/script.md`, the path to the last review file and
    `…or answer on the studio board.` Start the waiter and end your turn (4.0).
-   The owner may change the type, the audience or the outfit here: that is a **change** (4); the
+   The owner may change the type, the audience, the format or the outfit here: that is a **change** (4); the
    script header then carries the new values. A `story`, `action` or `other` type is coming in a
    later phase: say so and ask which of `explainer` or `what-if` they want (a `question`, 4.0).
 3. **approve** → `python -m tools.pipeline.status update "<run_dir>" --agent story --event "owner approved script"`, then step `voice`, round 1, no feedback file.
@@ -367,15 +371,34 @@ waiter and end your turn.
    ```
    Print `⏸ Waiting for you: gate <n> (<step>) did not pass after 3 rounds.`, then the open
    must-fix items: the `## Must-fix` section of the last review file, word for word (or what
-   was wrong with the last attempt, if there is no review file). Ask: **accept** anyway, give
+   was wrong with the last attempt, if there is no review file). **A failed vertical render**
+   (gate 4, `format: vertical`, no `<run_dir>/04-video/out/video.mp4`): add the error from
+   `04-video/notes.md` (the Animator's error line, or the last `error:` line of
+   `04-video/render.log`) to the request `--body`, in plain words, and print it too. Ask:
+   **accept** anyway, give
    **directions**, or **cancel**, then `…or answer on the studio board.` Start the waiter and
    end your turn (4.0). The `Notification` hook tells the owner.
-3. **accept** → `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
+3. **accept** → for gate 4, first check that the video exists:
+   ```bash
+   python -c "import sys, pathlib; print('OK' if pathlib.Path(sys.argv[1]).is_file() else 'MISSING')" "<run_dir>/04-video/out/video.mp4"
+   ```
+   `MISSING` → there is nothing to accept (section 6 needs the video): do **not** record the
+   acceptance. Print that the render failed so no video exists, and that only **directions** or
+   **cancel** are possible; open the same stuck-gate request again (2) with the body starting
+   `There is no video to accept: the render failed. Give directions or cancel.` and wait again.
+   Otherwise (and for gates 1 to 3): `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "owner accepted gate <n>"`; carry on as if the gate passed (gates 1
    and 2: accepting also counts as the owner's approval at that checkpoint).
    **directions** → save `review/owner-gate-<n>-<k>.md`, start a new cycle for gate `n`,
    section 3 for step `s` with round 1 and that file as `feedback_file`.
    **cancel** → `python -m tools.pipeline.status update "<run_dir>" --agent <s> --event "cancelled by owner"` (state stays `failed`), print where the run
    folder is and that `/make-video --resume <run_dir>` can pick it up later, and stop.
+
+**A vertical render that fails stops the run, it never changes format.** The Remotion engine
+is landscape-only, so a failed HyperFrames build or render of a `vertical` video has no
+fallback: it ends in this stuck-gate flow, with the error in the request body and the last
+review. Never switch the format to `landscape` (or the engine to Remotion) on your own, and
+never edit `format:` in `brief.md`. Only the owner decides to re-run as landscape, as a new
+run with `--format landscape`.
 
 ## 6. The final video (gate 4 passed)
 
@@ -523,6 +546,11 @@ Keep other chatter short. `/video-status` shows the run's status at any time.
 
 ## 8. Resume (`--resume <run_dir>`)
 
+0. **Format.** Read `format:` in `<run_dir>/brief.md`. If the line is missing (a run made before
+   `--format` existed): the format is `landscape` when `<run_dir>/03-design/shots.json` exists
+   and has no `"schema":2` (schema 1), and `vertical` otherwise (no shots yet, or schema 2).
+   Append the resolved `format: <format>` line to the end of `brief.md` (nothing else changes),
+   so the agents read it there, and use it as `<format>` from now on.
 1. Show and read the recorded state (if it fails, print the error and stop):
    ```bash
    python -m tools.pipeline.status show "<run_dir>"

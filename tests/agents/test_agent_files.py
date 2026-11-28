@@ -195,14 +195,33 @@ def test_design_plans_world_shot_list():
     assert "--allow-step-ins" not in body
 
 
-def test_design_example_is_a_valid_world_shot_list():
-    """The worked shots.json in design.md passes the real validator (Python and kit checks)."""
+def _design_examples():
+    _, body = parse("design")
+    hits = re.findall(r"```json\n(\{\"schema\":2.*?)\n```", body, re.S)
+    assert len(hits) == 2, "design.md has the landscape and the vertical worked example"
+    return [json.loads(h) for h in hits]
+
+
+def test_design_vertical_example_shows_the_vertical_recipe():
+    land, vert = _design_examples()
+    assert land["format"] == "landscape" and vert["format"] == "vertical"
+    scenes = vert["scenes"]
+    slots = [a["start"].get("slot") for sc in scenes for a in sc["actors"] if a["id"] == "host"]
+    assert "bottom-left" in slots or "bottom-right" in slots
+    moves = [m["do"] for sc in scenes for b in sc["beats"] for m in b["moves"]]
+    assert "pan_down" in moves or "pan_up" in moves
+    _, body = parse("design")
+    assert "Framing:** vertical" in body  # the storyboard sample shows a vertical scene
+
+
+@pytest.mark.parametrize("which", [0, 1], ids=["landscape", "vertical"])
+def test_design_example_is_a_valid_world_shot_list(which):
+    """Each worked shots.json in design.md passes the real validator (Python and kit checks)."""
     import shutil
     if shutil.which("node") is None:
         pytest.skip("needs node")
     from tools.hf.shots import PROPS_DIR, review_shots
-    _, body = parse("design")
-    shots = json_example(body, '"schema":2')
+    shots = _design_examples()[which]
     assert shots["schema"] == 2 and shots["type"] in VIDEO_TYPES and shots["audience"] in AUDIENCES
     host = [c for c in shots["cast"] if c["character"] == "host"]
     assert host and host[0]["outfit"] in HOST_OUTFITS
@@ -222,6 +241,9 @@ def test_design_example_is_a_valid_world_shot_list():
                    for i in range(n_words)]} for s in shots["scenes"]]}
     manifest = {"scenes": [{"id": s["id"], "file": f"scene-{s['id']:02d}.wav", "duration_s": n_words * 0.4 + 2}
                            for s in shots["scenes"]]}
+    # schema 2 is vertical by default; the example has no `format` yet and is framed for landscape
+    # (the vertical recipe comes with the agents' --format work): check it as the format it was made for
+    shots.setdefault("format", "landscape")
     errs, warns = review_shots(shots, words, manifest, PROPS_DIR, scenes_dir=None, style=None)
     assert errs == [] and warns == [], (errs, warns)
 
@@ -472,3 +494,64 @@ def test_reviewer_proposes_lessons_after_final_approval():
               "replaces sage#2", "40", "merge", "general rule", "one-off"]:
         assert s in part, s
     assert "gate: lessons" in section(body, "## Inputs", "## Output")
+
+
+# ---- vertical short form (Task 7) ----
+
+def test_story_has_a_short_recipe_for_vertical():
+    _, body = parse("story")
+    for s in ["`format:`", "`vertical`", "`landscape`", "45–75 s", "30–180 s", "about 2 s",
+              "5–8 s", "rewatch", "comment", "**Format:**", "--format"]:
+        assert s in body, f"story.md must mention {s!r}"
+    # the vertical short is written to the same word limits the check enforces
+    assert 'python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>' in body
+
+
+def test_design_sets_format_and_frames_for_the_tall_screen():
+    _, body = parse("design")
+    for s in ["\"format\":\"vertical\"", "`format`", "**Format:**", "middle band", "tall reveals",
+              "`pan_up`", "`pan_down`", "1700", "bottom-left", "bottom-right", "840", "220",
+              "x 64–940", "y 200–1420", "active caption band", "landscape", "Kit warnings"]:
+        assert s in body, f"design.md must mention {s!r}"
+    # the extended spread note is extended, not duplicated
+    assert body.count("within 1700 world px") <= 1
+
+
+def test_animator_runs_overlap_and_safe_zone_and_never_switches_format():
+    _, body = parse("animator")
+    step4 = section(body, "## Step 4", "## Step 5")
+    for s in ['python -m tools.hf.snapshot "<run_dir>" --overlap',
+              'python -m tools.hf.snapshot "<run_dir>" --safe-zone',
+              "04-video/hf/safe-zone.json", "run_in_background: true", "timeout: 3600000",
+              "vertical", "both"]:
+        assert s in step4, f"animator.md step 4 must mention {s!r}"
+    assert step4.index("--overlap") < step4.index("--safe-zone")
+    order = ['python -m tools.hf.snapshot "<run_dir>" --safe-zone', "python -m tools.audio.mix"]
+    assert body.index(order[0]) < body.index(order[1])
+    fallback = body[body.index("## Remotion fallback"):]
+    for s in ["landscape-only", "never switch", "stuck"]:
+        assert s in body.lower(), s
+    assert "vertical" in fallback
+    assert "04-video/hf/safe-zone.json" in section(body, "## Outputs", "## Step 1")
+
+
+def test_reviewer_checks_the_vertical_rules_at_gates_1_3_4():
+    _, body = parse("reviewer")
+    gate1 = section(body, "## Gate 1", "## Gate 2")
+    for s in ["**Format:**", "`vertical`", "45–75 s", "30–180 s", "about 2 s", "5–8 s", "rewatch", "--format"]:
+        assert s in gate1, f"reviewer.md gate 1 must mention {s!r}"
+    gate3 = section(body, "## Gate 3", "## Gate 4")
+    for s in ["`format`", "middle band", "tall reveals", "1700", "spread", "bottom-left", "bottom-right",
+              "active caption band"]:
+        assert s in gate3, f"reviewer.md gate 3 must mention {s!r}"
+    gate4 = section(body, "## Gate 4")
+    for s in ['python -m tools.hf.snapshot "<run_dir>" --safe-zone', "04-video/hf/safe-zone.json",
+              "must-fix", "phone", "hook", "vertical"]:
+        assert s in gate4, f"reviewer.md gate 4 must mention {s!r}"
+
+
+def test_reviewer_gate1_check_command_takes_the_format():
+    _, body = parse("reviewer")
+    gate1 = section(body, "## Gate 1", "## Gate 2")
+    assert 'python -m tools.pipeline.checks story "<run_dir>/01-script/script.md" --format <format>' in gate1
+    assert 'checks story "<run_dir>/01-script/script.md"\n' not in gate1

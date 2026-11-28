@@ -23,7 +23,6 @@
   var K = root.HFKit;
   if (!K || !K.draw) throw new Error("world/overlays.js: load kit.js and draw.js first");
   var D = K.draw, r2 = D.r2;
-  var FRAME = { width: 1920, height: 1080 };
   var SAFE = 96, MAX_WORDS = 4, OUT_CLAMP = 200, OUT_GONE = 280, LEAD = 66;
 
   var NUM = /^[-+~≈]?\d[\d.,]*(%|°[CF]?|x|×)?$/;
@@ -55,29 +54,53 @@
     return w * fs;
   }
 
+  /* Vertical (1080 x 1920, fix wave 2026-11-28): tags and labels are about 1.5x the landscape size so
+   * they read on a phone (tag 56 px, label 50 px; captions are 64 px), shrunk only as far as needed
+   * for a long text to fit the safe zone's width (never below the landscape size). */
+  var VERTICAL_SIZE = { tag: 56, label: 50 };
+  function pillFont(kind, text, maxW) {
+    var isTag = kind === "tag", fs = VERTICAL_SIZE[kind], min = isTag ? 38 : 34;
+    function width(f) { return Math.ceil(textWidth(String(text || ""), f) + 2 * Math.round(f * 0.62) + (isTag ? f * 0.5 : 0)); }
+    while (fs > min && width(fs) > maxW) fs -= 1;
+    return fs;
+  }
+  /* A vertical pill's height and gap from its point (moves.js uses them for the caption-band check). */
+  function verticalMetrics(kind, text) {
+    var VS = K.VERTICAL && K.VERTICAL.safe || { x0: 64, x1: 940 }, isTag = kind === "tag";
+    var fs = pillFont(kind, text, VS.x1 - VS.x0), k = fs / (isTag ? 38 : 34);
+    return { size: fs, height: Math.round(fs * 1.28 + 2 * Math.round(fs * 0.24)), lead: isTag ? Math.round(LEAD * k) : Math.round(20 * k) };
+  }
+
   function css(e, rules) { for (var k in rules) e.style[k] = rules[k]; return e; }
   function px(v) { return r2(v) + "px"; }
 
   function make(kind, el, spec, idPrefix) {
     spec = spec || {};
     checkText(kind, spec.text);
+    var FRAME = K.CANVAS; // the composition canvas at mount time (HFKit.setCanvas)
     if (!el || !el.ownerDocument) throw new Error(kind + ": needs an overlay element");
-    var isTag = kind === "tag";
-    var fs = spec.size || (isTag ? 38 : 34);
-    var B = spec.bounds || { x: SAFE, y: SAFE, width: FRAME.width - 2 * SAFE, height: FRAME.height - 2 * SAFE };
+    var isTag = kind === "tag", vert = FRAME.height > FRAME.width;
+    // text stays inside the safe frame: 96 px from every edge, or on a vertical canvas the text safe zone
+    // (HFKit.VERTICAL.safe: x 64-940, y 200-1420)
+    var VS = K.VERTICAL && K.VERTICAL.safe || { x0: 64, x1: 940, y0: 200, y1: 1420 };
+    var B = spec.bounds || (vert ? { x: VS.x0, y: VS.y0, width: VS.x1 - VS.x0, height: VS.y1 - VS.y0 }
+      : { x: SAFE, y: SAFE, width: FRAME.width - 2 * SAFE, height: FRAME.height - 2 * SAFE });
+    var fs = spec.size || (vert ? pillFont(kind, spec.text, B.width) : isTag ? 38 : 34);
+    var k = vert ? fs / (isTag ? 38 : 34) : 1; // vertical: leader, dot and gap grow with the text
     var padX = Math.round(fs * 0.62), padY = Math.round(fs * 0.24);
     var W = Math.ceil(textWidth(spec.text, fs) + 2 * padX + (isTag ? fs * 0.5 : 0)), H = Math.round(fs * 1.28 + 2 * padY);
+    var LEADK = vert ? Math.round(LEAD * k) : LEAD, GAP = vert ? Math.round(20 * k) : 20;
     var accent = spec.accent || "#F59E0B", at = spec.at || 0, until = spec.until;
     var side = spec.side || (isTag ? "auto" : "center");
     var wrap = D.el(el, "html:div", { "data-overlay": kind, "data-id": idPrefix || "" });
     css(wrap, { position: "absolute", left: "0px", top: "0px", width: "0px", height: "0px", pointerEvents: "none", opacity: "0" });
     var svg = D.el(wrap, "svg", { width: FRAME.width, height: FRAME.height, viewBox: "0 0 " + FRAME.width + " " + FRAME.height, overflow: "visible" });
     css(svg, { position: "absolute", left: "0px", top: "0px", overflow: "visible" });
-    var lead = isTag ? D.el(svg, "path", { fill: "none", stroke: "#FFFDF7", "stroke-width": 5, "stroke-linecap": "round" }) : null;
-    var leadShade = isTag ? D.el(svg, "path", { fill: "none", stroke: "#0B1020", "stroke-width": 9, "stroke-linecap": "round", opacity: 0.25 }) : null;
+    var lead = isTag ? D.el(svg, "path", { fill: "none", stroke: "#FFFDF7", "stroke-width": vert ? r2(5 * k) : 5, "stroke-linecap": "round" }) : null;
+    var leadShade = isTag ? D.el(svg, "path", { fill: "none", stroke: "#0B1020", "stroke-width": vert ? r2(9 * k) : 9, "stroke-linecap": "round", opacity: 0.25 }) : null;
     if (leadShade) svg.insertBefore(leadShade, lead);
-    var dotRing = isTag ? D.el(svg, "circle", { r: 15, fill: "none", stroke: accent, "stroke-width": 4 }) : null;
-    var dot = isTag ? D.el(svg, "circle", { r: 9, fill: accent, stroke: "#FFFDF7", "stroke-width": 4 }) : null;
+    var dotRing = isTag ? D.el(svg, "circle", { r: vert ? r2(15 * k) : 15, fill: "none", stroke: accent, "stroke-width": vert ? r2(4 * k) : 4 }) : null;
+    var dot = isTag ? D.el(svg, "circle", { r: vert ? r2(9 * k) : 9, fill: accent, stroke: "#FFFDF7", "stroke-width": vert ? r2(4 * k) : 4 }) : null;
     var chevron = D.el(svg, "path", { fill: isTag ? accent : "#FFFDF7", stroke: isTag ? "#FFFDF7" : "#0B1020", "stroke-width": 3, "stroke-linejoin": "round", visibility: "hidden" });
     var pill = D.el(wrap, "html:div", { class: "hf-" + kind }, spec.text);
     css(pill, { position: "absolute", left: "0px", top: "0px", width: px(W), height: px(H), boxSizing: "border-box", padding: padY + "px " + padX + "px",
@@ -105,11 +128,11 @@
       var opacity = r2(env.op * distOp);
       // where the pill wants to be
       var cx = q.x, cy, s = side;
-      if (s === "auto") s = q.y - LEAD - H < B.y ? "below" : "above";
-      if (s === "above") cy = q.y - (isTag ? LEAD : 20) - H / 2;
-      else if (s === "below") cy = q.y + (isTag ? LEAD : 20) + H / 2;
-      else if (s === "left") { cx = q.x - 20 - W / 2; cy = q.y; }
-      else if (s === "right") { cx = q.x + 20 + W / 2; cy = q.y; }
+      if (s === "auto") s = q.y - LEADK - H < B.y ? "below" : "above";
+      if (s === "above") cy = q.y - (isTag ? LEADK : GAP) - H / 2;
+      else if (s === "below") cy = q.y + (isTag ? LEADK : GAP) + H / 2;
+      else if (s === "left") { cx = q.x - GAP - W / 2; cy = q.y; }
+      else if (s === "right") { cx = q.x + GAP + W / 2; cy = q.y; }
       else cy = q.y;
       var x0 = cx - W / 2, y0 = cy - H / 2;
       var x = Math.min(Math.max(x0, B.x), B.x + B.width - W), y = Math.min(Math.max(y0, B.y), B.y + B.height - H);
@@ -134,7 +157,7 @@
         var showLead = !L.outside && Math.hypot(tx - fx, ty - fy) > 6;
         [lead, leadShade].forEach(function (e) { e.setAttribute("d", d); e.setAttribute("visibility", showLead ? "visible" : "hidden"); });
         [dot, dotRing].forEach(function (e) { e.setAttribute("cx", r2(q.x)); e.setAttribute("cy", r2(q.y)); e.setAttribute("visibility", L.outside ? "hidden" : "visible"); });
-        dotRing.setAttribute("r", r2(15 + 5 * Math.sin(t * 4)));
+        dotRing.setAttribute("r", vert ? r2((15 + 5 * Math.sin(t * 4)) * k) : r2(15 + 5 * Math.sin(t * 4)));
       }
       if (L.outside) { // a chevron on the pill edge, pointing at the point off the frame
         var ang = Math.atan2(q.y - pc.y, q.x - pc.x), ex = pc.x + Math.cos(ang) * (W / 2 + 10), ey = pc.y + Math.sin(ang) * (H / 2 + 10);
@@ -155,7 +178,7 @@
   K.overlays = {
     tag: function (el, spec, idPrefix) { return make("tag", el, spec, idPrefix); },
     label: function (el, spec, idPrefix) { return make("label", el, spec, idPrefix); },
-    countWords: countWords, UNITS: UNITS,
+    countWords: countWords, UNITS: UNITS, VERTICAL_SIZE: VERTICAL_SIZE, verticalMetrics: verticalMetrics,
     MAX_WORDS: MAX_WORDS, SAFE: SAFE, OUT_CLAMP: OUT_CLAMP, OUT_GONE: OUT_GONE,
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);

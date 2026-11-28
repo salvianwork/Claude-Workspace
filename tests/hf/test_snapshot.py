@@ -67,3 +67,119 @@ def test_boxes_overlap_pairs():
     assert pairs == [(("tag", "tag-0"), ("face", "host")), (("tag", "tag-0"), ("label", "label-1")),
                      (("tag", "tag-0"), ("face", "friend")), (("label", "label-1"), ("face", "friend")),
                      (("label", "label-2"), ("face", "friend"))]
+
+
+# ---- --safe-zone (vertical text safe zone x 64-940, y 200-1420; Task 6) --------------------------
+
+def _vertical_run(tmp_path, scene1_moves=None):
+    shots = world_shots()
+    shots.pop("format")  # the default: vertical
+    shots["scenes"][0]["actors"][0]["start"] = {"slot": "bottom-right"}
+    shots["scenes"][1]["actors"][0]["start"] = {"slot": "bottom-left"}
+    if scene1_moves is not None:
+        shots["scenes"][0]["beats"] = [{"at": {"word": 0}, "action": "tag far out on the right", "moves": scene1_moves}]
+    return make_world_run(tmp_path, shots)
+
+
+def _safe_zone_report(run):
+    return json.loads((run / "04-video" / "hf" / "safe-zone.json").read_text(encoding="utf-8"))
+
+
+@needs_browser
+def test_safe_zone_reports_a_tag_wider_than_the_zone(tmp_path, capsys):
+    """Tags and labels clamp to the zone (x 64-940), so only a pill wider than the 876 px zone can leave it:
+    four long words at 38 px."""
+    run = _vertical_run(tmp_path, [
+        {"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
+        {"do": "tag_follow", "target": "sky", "text": "Electromagnetic spectroscopy instrumentation calibration",
+         "at": {"t": 2.0}, "until": {"t": 5.0}}])
+    build(run, KIT, run_check=False)
+    assert snap_mod.main([str(run), "--safe-zone"]) == 1
+    hits = [h for h in _safe_zone_report(run) if h["kind"] == "tag"]
+    assert len(hits) == 1, hits
+    h = hits[0]
+    assert h["scene"] == 1 and 2.0 <= h["t"] <= 3.0 and h["id"].startswith("tag-")
+    assert h["box"]["w"] > 876 and h["box"]["x"] < 64, h
+    assert set(h["box"]) == {"x", "y", "w", "h"}
+    err = capsys.readouterr().err
+    assert "scene 1" in err and "outside the safe zone" in err
+
+
+@needs_browser
+def test_a_tag_at_x_1000_is_clamped_into_the_safe_zone(tmp_path):
+    """Review: a tag whose point is at x about 1000 is pulled inside x 64-940, so the check passes."""
+    run = _vertical_run(tmp_path, [
+        {"do": "cut", "target": "bridge", "zoom": 0.6}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
+        {"do": "tag_follow", "target": "rail-far", "text": "Far rail", "at": {"t": 2.0}, "until": {"t": 5.0}}])
+    build(run, KIT, run_check=False)
+    _, _, out = snap_mod._sample(run, KIT, 0.5, "test")
+    tags = [b for s in out["samples"] for b in s["boxes"] if b["kind"] == "tag"]
+    assert tags and all(b["x"] >= 64 and b["x"] + b["w"] <= 940 for b in tags), tags
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
+
+
+@needs_browser
+def test_a_vertical_title_stays_inside_the_safe_zone(tmp_path):
+    run = _vertical_run(tmp_path, [
+        {"do": "cut", "target": "bridge", "zoom": 1}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}},
+        {"do": "title", "text": "How fast does sound travel", "at": {"t": 1.0}, "until": {"t": 4.0}}])
+    build(run, KIT, run_check=False)
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
+
+
+@needs_browser
+def test_safe_zone_passes_for_long_captions_inside_the_band(tmp_path, capsys):
+    """Review Focus 3: the captions of the vertical fixture wrap to at most 2 lines inside 860 px,
+    in the caption band, so the safe-zone check passes."""
+    run = _vertical_run(tmp_path, [{"do": "cut", "target": "bridge", "zoom": 1}, {"do": "walk_to", "who": "host", "to": "bridge", "at": {"word": 14}}])
+    build(run, KIT, run_check=False)
+    comp, _, out = snap_mod._sample(run, KIT, 0.5, "test")
+    caps = [b for s in out["samples"] for b in s["boxes"] if b["kind"] == "caption"]
+    assert caps, "the caption pill is reported as a box in a vertical video"
+    for b in caps:
+        assert b["w"] <= 860 and b["h"] <= 180, b
+        assert (840 <= b["y"] and b["y"] + b["h"] <= 1020) or (220 <= b["y"] and b["y"] + b["h"] <= 400), b
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
+    assert _safe_zone_report(run) == []
+    assert "inside the safe zone" in capsys.readouterr().out
+
+
+@needs_browser
+def test_safe_zone_is_empty_for_a_landscape_video(tmp_path):
+    run = make_world_run(tmp_path)
+    build(run, KIT, run_check=False)
+    assert snap_mod.main([str(run), "--safe-zone"]) == 0
+    assert _safe_zone_report(run) == []
+    comp, _, out = snap_mod._sample(run, KIT, 0.5, "test")
+    assert not any(b["kind"] == "caption" for s in out["samples"] for b in s["boxes"]), "landscape boxes are unchanged"
+
+
+def test_outside_safe_box_maths():
+    safe = {"x0": 64, "x1": 940, "y0": 200, "y1": 1420}
+    inside = {"x": 64, "y": 200, "w": 876, "h": 1220}
+    assert not snap_mod.outside_safe(inside, safe)
+    for moved in ({"x": 63}, {"x": 65}, {"y": 199}, {"y": 201}):
+        assert snap_mod.outside_safe({**inside, **moved}, safe), moved
+
+
+def test_safe_zone_needs_a_built_composition(tmp_path):
+    run = make_world_run(tmp_path)
+    with pytest.raises(HFError, match="run python -m tools.hf.build first"):
+        snap_mod.safe_zone(run)
+
+
+@needs_browser
+def test_caption_sits_in_the_top_band_while_the_host_is_out_of_his_slot(tmp_path):
+    """Scene 1 of the vertical fixture: the host walks out of the bottom slot at word 1 (about 0.7 s), so the caption
+    is in the band at y 840-1020 before and in the top band y 220-400 after. Scene 2 keeps him in his slot."""
+    from tests.hf.test_format import vertical_shots
+    run = make_world_run(tmp_path, vertical_shots())
+    build(run, KIT, run_check=False)
+    _, _, out = snap_mod._sample(run, KIT, 0.25, "test")
+    def band(b):
+        return "bottom" if 840 <= b["y"] and b["y"] + b["h"] <= 1020 else "top" if 220 <= b["y"] and b["y"] + b["h"] <= 400 else "neither"
+    caps = {(s["scene"], s["t"]): band(b) for s in out["samples"] for b in s["boxes"] if b["kind"] == "caption"}
+    assert caps and "neither" not in caps.values(), caps
+    assert caps[(1, 0.5)] == "bottom"
+    assert all(v == "top" for (sc, t), v in caps.items() if sc == 1 and t >= 2.0), caps
+    assert all(v == "bottom" for (sc, t), v in caps.items() if sc == 2), caps

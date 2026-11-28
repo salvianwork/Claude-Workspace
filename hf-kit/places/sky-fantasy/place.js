@@ -14,6 +14,9 @@
  *   cloud-sea  the top of the cloud sea below the islands
  * Path: flight (an arc across the sky, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -33,12 +36,20 @@
       day: { tint: "#FFF3DE", amount: 0.1, rim: "#FFF6DA", rimSide: 1 },
       twilight: { tint: "#A97AC8", amount: 0.42, rim: "#FFC48A", rimSide: 1 },
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "higher sky: far floating islands with waterfalls, nearer small islands (one with a little windmill, one with a lone tree and a swing), a high island with an observatory, wisps and cloud puffs, a flock of birds; stars at twilight", seamAllow: [] },
+      bottom: { draws: "the sea of clouds deepening below: rows of billows, a little sky-ship sailing on them, a whale-shaped cloud, a small rock islet with a lighthouse poking out, and puffs drifting in front", seamAllow: [] },
+    },
   };
 
   var G = { top: 1300, isle: [260, 1960], small: { x0: 2620, x1: 3420, top: 1120 }, fall: 1930, balloon: { x: 2300, y: 720 }, sea: 1900 };
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var flight = [];
     for (var k = 0; k <= 10; k++) { var u = k / 10; flight.push({ x: r2(300 + u * 3300), y: r2(900 - Math.sin(u * Math.PI) * 460) }); }
@@ -163,6 +174,99 @@
     return { defs: "", body: s + tag("g", { "data-part": "motes" }, "") };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  function windmill(x, y, s, tone) {
+    return tag("g", { transform: "translate(" + x + " " + y + ") scale(" + s + ")" }, tag("path", { d: "M-40 0 L-26 -170 L26 -170 L40 0 Z", fill: tone("#F4E3C3"), stroke: tone("#8C6A4A"), "stroke-width": 5 }) +
+      tag("path", { d: "M-34 -170 L0 -210 L34 -170 Z", fill: tone("#C2412F"), stroke: tone("#7A2A1F"), "stroke-width": 4 }) + tag("rect", { x: -12, y: -40, width: 24, height: 40, rx: 10, fill: tone("#7A4E2E") }) +
+      tag("g", { "data-xsail": 1, transform: "translate(0 -160)" }, [0, 90, 180, 270].map(function (a) { return tag("path", { d: "M0 0 L120 -10 L120 14 L0 8 Z", fill: tone("#FFF8EA"), stroke: tone("#8C6A4A"), "stroke-width": 3, transform: "rotate(" + a + ")" }); }).join("")) + tag("circle", { cx: 0, cy: -160, r: 8, fill: tone("#5A4128") }));
+  }
+  /* The top band. Far: distant islands with waterfalls and wisps. Mid: small islands (a windmill,
+   * a tree with a swing) and cloud puffs, a flock. Ground: a high island with an observatory. Sky:
+   * stars at twilight (its colour runs on by itself). */
+  function drawTopBand(P, v, L, R) {
+    var tone = L.tone, tw = v === "twilight", out = { sky: "", far: "", mid: "", ground: "" };
+    var haze = function (c) { return D.mix(tone(c), tw ? "#B89AD0" : "#9FB8D8", 0.5); };
+    var far = { cloud: D.mix(L.cloud.cloud, "#A9C8E8", 0.3), cloudShade: L.cloud.cloudShade, cloudLight: D.mix(L.cloud.cloudLight, "#A9C8E8", 0.2), lightOp: 0.5 };
+    var f = "";
+    [[900, 620, 220], [2700, 560, 180], [3500, 680, 140]].forEach(function (q, i) {
+      f += tag("g", { opacity: 0.6 }, island(q[0] - q[2], q[0] + q[2], q[1], q[2] * 0.9, haze, R, null) + A.tree(q[0] - q[2] * 0.3, q[1] - q[2] * 0.22, q[2] * 0.16, haze, 80 + i, false) +
+        tag("path", { d: "M" + (q[0] + q[2] * 0.6) + " " + (q[1] + 10) + " Q" + (q[0] + q[2] * 0.66) + " " + (q[1] + 200) + " " + (q[0] + q[2] * 0.62) + " " + (q[1] + 340), stroke: haze("#BFEFFF"), "stroke-width": 14, fill: "none", opacity: 0.8 }));
+    });
+    f += puff(1800, 540, 900, far) + puff(400, 420, 700, far) + puff(3200, 380, 800, far);
+    out.far = f;
+    var m = "";
+    m += island(500, 1000, 330, 300, tone, R, null) + windmill(700, 340, 0.9, tone);
+    m += island(2900, 3300, 250, 260, tone, R, null) + A.tree(3060, 160, 70, tone, 91, true) + tag("path", { d: "M3000 200 V300 M3060 200 V300 M2990 300 h80", stroke: tone("#8C6A4A"), "stroke-width": 4 }) + tag("rect", { x: 2990, y: 296, width: 80, height: 10, rx: 3, fill: tone("#A0703F") });
+    m += puff(1900, 200, 700, L.cloud) + puff(2200, 520, 500, L.cloud);
+    var fl = "";
+    for (var b = 0; b < 6; b++) fl += tag("path", { d: "M" + (b * 54) + " " + (Math.abs(b - 2.5) * 16) + " q13 -13 26 0 q13 -13 26 0", stroke: tw ? "#3A2A4A" : "#2E3B55", "stroke-width": 5, fill: "none", "stroke-linecap": "round" });
+    m += tag("g", { "data-part": "xflock", transform: "translate(1300 420)" }, fl);
+    out.mid = m;
+    // a high island with a little observatory, its telescope out of the dome
+    var g = island(1700, 2300, 230, 330, tone, R, [[1900, 470], [2100, 430]]);
+    g += tag("rect", { x: 1900, y: 110, width: 200, height: 120, fill: tone("#F4E3C3"), stroke: tone("#8C6A4A"), "stroke-width": 5 }) + tag("path", { d: "M1890 110 A110 100 0 0 1 2110 110 Z", fill: tone("#9AA6B8"), stroke: tone("#5A6470"), "stroke-width": 5 }) +
+      tag("path", { d: "M2000 60 L2090 20", stroke: tone("#3A4651"), "stroke-width": 22, "stroke-linecap": "round" }) + tag("rect", { x: 1980, y: 160, width: 40, height: 70, rx: 18, fill: tone("#7A4E2E") }) + tag("circle", { cx: 1940, cy: 160, r: 16, fill: tw ? "#FFD27A" : tone("#BFDCEB"), stroke: tone("#8C6A4A"), "stroke-width": 4 });
+    if (tw) g += tag("circle", { cx: 1940, cy: 160, r: 80, fill: "#FFE08A", opacity: 0.25 });
+    out.ground = g;
+    if (tw) {
+      var st = "";
+      for (var k = 0; k < 160; k++) { var sy = 20 + R() * 1000; if (Math.abs(sy - 720) < 8) sy += 16; st += tag("circle", { cx: r2(200 + R() * 3440), cy: r2(sy), r: r2(1.2 + R() * 2.4), fill: ["#FFF8E1", "#FFFFFF", "#FFE2F0"][k % 3], opacity: r2(0.35 + R() * 0.55), "data-xstar": k }); }
+      out.sky = tag("g", { "data-part": "xstars" }, st);
+    }
+    return out;
+  }
+  /* The bottom band (ground layer): the cloud sea runs on (the original's ends at y 3480) and
+   * deepens in rows of billows, with a little sky-ship sailing on it (data-part "xship"), a
+   * whale-shaped cloud and a rock islet with a lighthouse. Front layer: puffs drifting in front. */
+  function drawBottomBand(P, v, L, R) {
+    var tone = L.tone, tw = v === "twilight", s = "";
+    var deep = { cloud: D.mix(L.cloud.cloud, L.sea[1], 0.35), cloudShade: D.mix(L.cloud.cloudShade, L.sea[1], 0.3), cloudLight: L.cloud.cloudLight, lightOp: 0.5 };
+    s += tag("rect", { x: -400, y: 3400, width: 4640, height: 400, fill: L.sea[1] });
+    // rows of billows, deepening
+    [[3060, 900, 9], [3240, 1000, 7], [3400, 1100, 6], [3560, 1200, 5]].forEach(function (row, ri) {
+      for (var k = 0; k < row[2]; k++) { var x = -300 + (k + (ri % 2) * 0.5) * (4440 / (row[2] - 1)); s += puff(r2(x + (R() - 0.5) * 120), row[0], row[1] * (0.8 + R() * 0.3), ri < 2 ? L.cloud : deep); }
+    });
+    // the islet with a lighthouse, poking out of the clouds
+    var ix = 3300, iy = 3060;
+    s += tag("path", { d: "M" + (ix - 170) + " " + (iy + 60) + " Q" + (ix - 140) + " " + (iy - 50) + " " + (ix - 40) + " " + (iy - 70) + " Q" + (ix + 90) + " " + (iy - 80) + " " + (ix + 170) + " " + (iy + 60) + " Z", fill: tone("#8E8A80"), stroke: tone("#5C584F"), "stroke-width": 5 });
+    s += tag("path", { d: "M" + (ix - 30) + " " + (iy - 70) + " L" + (ix - 22) + " " + (iy - 300) + " L" + (ix + 22) + " " + (iy - 300) + " L" + (ix + 30) + " " + (iy - 70) + " Z", fill: "#FFFFFF", stroke: tone("#5A6470"), "stroke-width": 4 }) +
+      [0, 1].map(function (k) { var y0 = iy - 130 - k * 80; return tag("rect", { x: ix - 28 + k * 3, y: y0 - 30, width: 56 - k * 6, height: 30, fill: tone("#E03131") }); }).join("") +
+      tag("rect", { x: ix - 26, y: iy - 340, width: 52, height: 40, fill: "#FFF3C4", stroke: tone("#3A4651"), "stroke-width": 4 }) + tag("path", { d: "M" + (ix - 34) + " " + (iy - 340) + " L" + ix + " " + (iy - 380) + " L" + (ix + 34) + " " + (iy - 340) + " Z", fill: tone("#E03131") });
+    s += tag("path", { d: "M" + ix + " " + (iy - 320) + " L" + (ix - 600) + " " + (iy - 380) + " L" + (ix - 600) + " " + (iy - 260) + " Z", fill: "#FFF3C4", opacity: tw ? 0.3 : 0.12, "data-xbeam": 1 });
+    s += puff(3300, 3090, 700, L.cloud); // its foot in the billows
+    // a whale-shaped cloud swimming in the sea of clouds
+    var wx = 1100, wy = 3260;
+    s += tag("g", { "data-xwhale": 1, transform: "translate(" + wx + " " + wy + ")" }, tag("path", { d: "M-260 0 Q-250 -120 -60 -130 Q140 -136 240 -60 Q300 -20 340 -80 Q360 -20 330 20 Q360 60 330 90 Q290 40 230 40 Q120 90 -60 80 Q-250 70 -260 0 Z", fill: L.cloud.cloud, stroke: L.cloud.cloudShade, "stroke-width": 6 }) +
+      tag("circle", { cx: -170, cy: -30, r: 12, fill: tw ? "#6A3E8A" : "#5A7AA6" }) + tag("path", { d: "M-210 30 q60 30 120 0", stroke: L.cloud.cloudShade, "stroke-width": 6, fill: "none" }) + tag("path", { d: "M-80 -130 q-20 -60 10 -90 M-60 -130 q10 -70 50 -80", stroke: L.cloud.cloudLight, "stroke-width": 10, fill: "none", "stroke-linecap": "round" }));
+    // the sky-ship
+    s += tag("g", { "data-part": "xship", transform: "translate(2300 2990)" }, tag("path", { d: "M-180 0 L180 0 Q150 60 100 70 L-110 70 Q-160 60 -180 0 Z", fill: tone("#A0703F"), stroke: tone("#5A4128"), "stroke-width": 5 }) +
+      tag("path", { d: "M-170 20 H170", stroke: tone("#7A5230"), "stroke-width": 4 }) + tag("path", { d: "M0 0 V-260", stroke: tone("#5A4128"), "stroke-width": 8 }) + tag("path", { d: "M8 -250 Q140 -150 130 -20 L8 -20 Z", fill: "#FFF8EA", stroke: tone("#8C6A4A"), "stroke-width": 4 }) +
+      tag("path", { d: "M-8 -220 Q-110 -130 -100 -30 L-8 -30 Z", fill: tone("#F2C14E"), stroke: tone("#8C6A4A"), "stroke-width": 4 }) + tag("path", { d: "M0 -260 l50 14 l-50 14", fill: tone("#FF6B6B") }) +
+      tag("ellipse", { cx: -200, cy: -40, rx: 110, ry: 34, fill: tone("#FF8787"), stroke: tone("#5A4128"), "stroke-width": 4 }) + tag("path", { d: "M-260 -10 L-180 0 M-140 -10 L-120 0", stroke: tone("#5A4128"), "stroke-width": 3 })); // a little gas bag at the stern
+    var f = puff(400, 3440, 1100, L.cloud) + puff(3600, 3470, 1000, L.cloud);
+    return { body: s, front: f };
+  }
+  function mountBands(X, P, v, L, seed) {
+    var top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+    if (top.sky) PL.band(X.over.sky, "top", "", top.sky);
+    PL.band(X.over.far, "top", "", top.far);
+    PL.band(X.over.mid, "top", "", top.mid);
+    PL.band(X.over.ground, "top", "", top.ground);
+    var bg = PL.band(X.over.ground, "bottom", "", bot.body);
+    PL.band(X.over.front, "bottom", "", bot.front);
+    var ship = bg.querySelector('[data-part="xship"]'), whale = bg.querySelector("[data-xwhale]"), flock = X.over.mid.querySelector('[data-part="xflock"]');
+    var sails = [].slice.call(X.over.mid.querySelectorAll("[data-xsail]")), beam = bg.querySelector("[data-xbeam]");
+    var xstars = [].slice.call(X.over.sky.querySelectorAll("[data-xstar]")).filter(function (e, i) { return i % 4 === 0; }).map(function (e) { return { e: e, op: +e.getAttribute("opacity"), k: +e.getAttribute("data-xstar") }; });
+    return function (t) {
+      ship.setAttribute("transform", "translate(" + r2(2300 + Math.sin(t * 0.15) * 160) + " " + r2(2990 + Math.sin(t * 0.9) * 10) + ") rotate(" + r2(Math.sin(t * 0.9) * 2) + ")");
+      whale.setAttribute("transform", "translate(" + r2(1100 + Math.sin(t * 0.12) * 120) + " " + r2(3260 + Math.sin(t * 0.5) * 16) + ")");
+      flock.setAttribute("transform", "translate(" + r2(A.wrap(1300 + t * 60, -500, 4300)) + " " + r2(420 + D.wobble(t, 4, 0.4) * 20) + ")");
+      sails.forEach(function (e) { e.setAttribute("transform", "translate(0 -160) rotate(" + r2(t * 40) + ")"); });
+      if (beam) beam.setAttribute("transform", "rotate(" + r2(Math.sin(t * 0.6) * 12) + " 3300 2740)");
+      xstars.forEach(function (x) { x.e.setAttribute("opacity", r2(x.op * (0.6 + 0.4 * Math.sin(t * 2 + x.k)))); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -172,7 +276,9 @@
     var L = LOOK[v], tw = v === "twilight";
     var parts = { sky: drawSky(P, v, L, D.rng(seed + 1)), far: drawFar(P, v, L, D.rng(seed + 2)), mid: drawMid(P, v, L, D.rng(seed + 3)), ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)) };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "sky-fantasy-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "sky-fantasy-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, L, seed) : null; // the bands above and below (tall-world px)
     var balloon = g.ground.querySelector('[data-part="balloon"]');
     var clouds = [].slice.call(g.sky.querySelectorAll("[data-cloud]")).map(function (e) { return { e: e, base: e.getAttribute("transform"), x0: +/translate\(([-\d.]+)/.exec(e.getAttribute("transform"))[1] }; });
     var crystals = [].slice.call(g.ground.querySelectorAll("[data-crystal]"));
@@ -187,6 +293,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       var by = G.balloon.y + Math.sin(t * 0.6) * 24;
       balloon.setAttribute("transform", "translate(" + G.balloon.x + " " + r2(by) + ") rotate(" + r2(Math.sin(t * 0.45) * 2) + ")");
       clouds.forEach(function (c, k) { var x = A.wrap(c.x0 + t * (5 + k * 2), -800, 4600); c.e.setAttribute("transform", "translate(" + r2(x - c.x0) + " 0) " + c.base); });
@@ -201,7 +308,7 @@
       motes.forEach(function (mt) { var x = A.wrap(mt.x + t * 10, 100, 3800); mt.e.setAttribute("cx", r2(x)); mt.e.setAttribute("cy", r2(mt.y + D.wobble(t, mt.s, 0.4) * 40)); mt.e.setAttribute("opacity", r2(A.wrapFade(x, 100, 3800, 160) * (0.3 + 0.25 * D.wobble(t, mt.s + 3, 0.5)))); });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 

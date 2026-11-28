@@ -1,0 +1,1535 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "frames": 681,
+ "total": 22.7,
+ "style": {
+  "colors": {
+   "background": "#0F172A",
+   "surface": "#1E293B",
+   "primary": "#38BDF8",
+   "accent": "#F59E0B",
+   "text": "#F1F5F9"
+  },
+  "fonts": {
+   "heading": "Poppins",
+   "body": "Inter"
+  },
+  "captions": {
+   "size": 60,
+   "position": "bottom"
+  }
+ },
+ "presenterOutfit": "blazer",
+ "warnings": [],
+ "scenes": [
+  {
+   "id": 1,
+   "kind": "world",
+   "start": 0.0,
+   "frames": 360,
+   "duration": 12.0,
+   "words": [
+    {
+     "i": 0,
+     "text": "Sound",
+     "display": "Sound",
+     "start": 0.275,
+     "end": 0.55
+    },
+    {
+     "i": 1,
+     "text": "needs",
+     "display": "needs",
+     "start": 0.55,
+     "end": 0.8
+    },
+    {
+     "i": 2,
+     "text": "something",
+     "display": "something",
+     "start": 0.8,
+     "end": 1.062
+    },
+    {
+     "i": 3,
+     "text": "to",
+     "display": "to",
+     "start": 1.062,
+     "end": 1.15
+    },
+    {
+     "i": 4,
+     "text": "travel",
+     "display": "travel",
+     "start": 1.15,
+     "end": 1.562
+    },
+    {
+     "i": 5,
+     "text": "through",
+     "display": "through.",
+     "start": 1.562,
+     "end": 2.175
+    },
+    {
+     "i": 6,
+     "text": "In",
+     "display": "In",
+     "start": 2.388,
+     "end": 2.562
+    },
+    {
+     "i": 7,
+     "text": "air",
+     "display": "air,",
+     "start": 2.562,
+     "end": 2.875
+    },
+    {
+     "i": 8,
+     "text": "it",
+     "display": "it",
+     "start": 2.95,
+     "end": 3.075
+    },
+    {
+     "i": 9,
+     "text": "moves",
+     "display": "moves",
+     "start": 3.075,
+     "end": 3.362
+    },
+    {
+     "i": 10,
+     "text": "about",
+     "display": "about",
+     "start": 3.362,
+     "end": 3.688
+    },
+    {
+     "i": 11,
+     "text": "343",
+     "display": "343",
+     "start": 3.688,
+     "end": 4.8
+    },
+    {
+     "i": 12,
+     "text": "metres",
+     "display": "metres",
+     "start": 4.8,
+     "end": 5.175
+    },
+    {
+     "i": 13,
+     "text": "per",
+     "display": "per",
+     "start": 5.175,
+     "end": 5.338
+    },
+    {
+     "i": 14,
+     "text": "second",
+     "display": "second.",
+     "start": 5.338,
+     "end": 5.975
+    },
+    {
+     "i": 15,
+     "text": "In",
+     "display": "In",
+     "start": 6.112,
+     "end": 6.275
+    },
+    {
+     "i": 16,
+     "text": "water",
+     "display": "water,",
+     "start": 6.275,
+     "end": 6.65
+    },
+    {
+     "i": 17,
+     "text": "about",
+     "display": "about",
+     "start": 6.7,
+     "end": 7.0
+    },
+    {
+     "i": 18,
+     "text": "1,480",
+     "display": "1,480.",
+     "start": 7.0,
+     "end": 8.75
+    },
+    {
+     "i": 19,
+     "text": "And",
+     "display": "And",
+     "start": 8.875,
+     "end": 9.037
+    },
+    {
+     "i": 20,
+     "text": "in",
+     "display": "in",
+     "start": 9.037,
+     "end": 9.188
+    },
+    {
+     "i": 21,
+     "text": "steel",
+     "display": "steel,",
+     "start": 9.188,
+     "end": 9.6
+    },
+    {
+     "i": 22,
+     "text": "nearly",
+     "display": "nearly",
+     "start": 9.65,
+     "end": 9.988
+    },
+    {
+     "i": 23,
+     "text": "6,000",
+     "display": "6,000.",
+     "start": 9.988,
+     "end": 11.275
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.07,
+    0.24,
+    0.49,
+    0.74,
+    0.86,
+    0.86,
+    0.8,
+    0.77,
+    0.76,
+    0.76,
+    0.77,
+    0.8,
+    0.81,
+    0.79,
+    0.67,
+    0.53,
+    0.49,
+    0.54,
+    0.69,
+    0.75,
+    0.76,
+    0.55,
+    0.49,
+    0.52,
+    0.68,
+    0.7,
+    0.68,
+    0.47,
+    0.37,
+    0.29,
+    0.56,
+    0.7,
+    0.83,
+    0.8,
+    0.65,
+    0.54,
+    0.53,
+    0.63,
+    0.52,
+    0.29,
+    0.09,
+    0.1,
+    0.3,
+    0.55,
+    0.75,
+    0.81,
+    0.74,
+    0.6,
+    0.45,
+    0.28,
+    0.15,
+    0.04,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.26,
+    0.55,
+    0.84,
+    0.81,
+    0.68,
+    0.62,
+    0.67,
+    0.8,
+    0.85,
+    0.86,
+    0.84,
+    0.83,
+    0.8,
+    0.77,
+    0.67,
+    0.41,
+    0.38,
+    0.49,
+    0.68,
+    0.53,
+    0.49,
+    0.58,
+    0.8,
+    0.85,
+    0.85,
+    0.82,
+    0.72,
+    0.61,
+    0.55,
+    0.66,
+    0.68,
+    0.75,
+    0.74,
+    0.82,
+    0.8,
+    0.72,
+    0.46,
+    0.2,
+    0.0,
+    0.01,
+    0.14,
+    0.38,
+    0.64,
+    0.78,
+    0.81,
+    0.79,
+    0.79,
+    0.8,
+    0.77,
+    0.7,
+    0.69,
+    0.71,
+    0.69,
+    0.49,
+    0.26,
+    0.09,
+    0.23,
+    0.51,
+    0.8,
+    0.85,
+    0.77,
+    0.71,
+    0.66,
+    0.65,
+    0.44,
+    0.22,
+    0.1,
+    0.24,
+    0.5,
+    0.69,
+    0.78,
+    0.75,
+    0.75,
+    0.77,
+    0.79,
+    0.8,
+    0.77,
+    0.71,
+    0.71,
+    0.71,
+    0.7,
+    0.6,
+    0.39,
+    0.19,
+    0.08,
+    0.28,
+    0.47,
+    0.6,
+    0.56,
+    0.56,
+    0.65,
+    0.75,
+    0.77,
+    0.51,
+    0.22,
+    0.16,
+    0.3,
+    0.4,
+    0.31,
+    0.15,
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.27,
+    0.56,
+    0.84,
+    0.85,
+    0.83,
+    0.84,
+    0.87,
+    0.91,
+    0.92,
+    0.9,
+    0.85,
+    0.72,
+    0.66,
+    0.64,
+    0.69,
+    0.65,
+    0.54,
+    0.53,
+    0.54,
+    0.6,
+    0.66,
+    0.73,
+    0.81,
+    0.72,
+    0.56,
+    0.43,
+    0.43,
+    0.6,
+    0.74,
+    0.8,
+    0.77,
+    0.72,
+    0.51,
+    0.31,
+    0.37,
+    0.59,
+    0.81,
+    0.79,
+    0.71,
+    0.61,
+    0.59,
+    0.65,
+    0.69,
+    0.46,
+    0.21,
+    0.18,
+    0.43,
+    0.71,
+    0.85,
+    0.84,
+    0.72,
+    0.64,
+    0.62,
+    0.72,
+    0.74,
+    0.65,
+    0.66,
+    0.7,
+    0.68,
+    0.66,
+    0.66,
+    0.77,
+    0.78,
+    0.75,
+    0.6,
+    0.52,
+    0.44,
+    0.44,
+    0.3,
+    0.14,
+    0.03,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.12,
+    0.37,
+    0.66,
+    0.8,
+    0.82,
+    0.8,
+    0.79,
+    0.69,
+    0.66,
+    0.62,
+    0.65,
+    0.42,
+    0.31,
+    0.35,
+    0.62,
+    0.78,
+    0.8,
+    0.8,
+    0.79,
+    0.76,
+    0.69,
+    0.62,
+    0.62,
+    0.66,
+    0.76,
+    0.79,
+    0.83,
+    0.81,
+    0.76,
+    0.73,
+    0.7,
+    0.65,
+    0.59,
+    0.55,
+    0.59,
+    0.68,
+    0.69,
+    0.49,
+    0.36,
+    0.36,
+    0.51,
+    0.36,
+    0.35,
+    0.49,
+    0.76,
+    0.8,
+    0.72,
+    0.67,
+    0.65,
+    0.62,
+    0.54,
+    0.49,
+    0.48,
+    0.5,
+    0.43,
+    0.32,
+    0.18,
+    0.07,
+    0.01,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 1,
+    "kind": "world",
+    "place": "countryside",
+    "variant": "day",
+    "new_place": false,
+    "facts": [
+     "sound travels about 343 m/s in air",
+     "about 1,480 m/s in water",
+     "nearly 6,000 m/s (about 5,960 m/s) in steel",
+     "the rings, ripples and pulse spread at speeds in the true ratio 343 : 1,480 : 5,960"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "anchor": "rail-near"
+      }
+     },
+     {
+      "id": "friend",
+      "character": "extra-1",
+      "outfit": "casual",
+      "start": {
+       "anchor": "rail-far"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "the host, standing by the rail with a hammer, waves; the title shows; the camera pulls back over the railway",
+      "moves": [
+       {
+        "do": "hold",
+        "who": "host",
+        "prop": "hammer"
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "wave"
+       },
+       {
+        "do": "title",
+        "text": "How Fast Is Sound?",
+        "until": {
+         "word": 6
+        }
+       },
+       {
+        "do": "pull_out",
+        "target": "rail-near",
+        "zoom": 0.7,
+        "from": 0.85
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 6
+      },
+      "action": "the host strikes the rail as the camera moves in; sound rings spread slowly through the air around him",
+      "moves": [
+       {
+        "do": "use",
+        "who": "host",
+        "prop": "hammer",
+        "at": {
+         "word": 7
+        }
+       },
+       {
+        "do": "rings",
+        "target": "rail-near",
+        "at": {
+         "word": 7
+        },
+        "count": 3,
+        "interval": 0.6,
+        "speed": 172,
+        "radius": 900,
+        "color": "#E8F4FF"
+       },
+       {
+        "do": "label",
+        "target": "rail-near",
+        "text": "Air: 343 m/s",
+        "side": "left",
+        "at": {
+         "word": 11
+        },
+        "until": {
+         "word": 15
+        }
+       },
+       {
+        "do": "push_in",
+        "target": "rail-near",
+        "zoom": 1.1
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "happy",
+        "at": {
+         "word": 11
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 15
+      },
+      "action": "the camera moves to the lake; ripples of sound race through the water, faster than in the air",
+      "moves": [
+       {
+        "do": "push_in",
+        "target": "lake",
+        "zoom": 0.95,
+        "at": {
+         "word": 16
+        }
+       },
+       {
+        "do": "rings",
+        "target": "lake",
+        "at": {
+         "word": 16
+        },
+        "count": 3,
+        "interval": 0.35,
+        "speed": 745,
+        "radius": 700,
+        "squash": 0.45,
+        "color": "#FFFFFF",
+        "width": 20
+       },
+       {
+        "do": "label",
+        "target": "lake",
+        "text": "Water: 1,480 m/s",
+        "side": "above",
+        "at": {
+         "word": 18
+        },
+        "until": {
+         "word": 19
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "lake",
+        "at": {
+         "word": 16
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 19
+      },
+      "action": "back at the rail the host strikes again; a pulse races along the steel to the friend, who jumps in surprise",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "rail-near",
+        "zoom": 1.1
+       },
+       {
+        "do": "use",
+        "who": "host",
+        "prop": "hammer",
+        "at": {
+         "word": 21
+        }
+       },
+       {
+        "do": "pulse_along",
+        "path": "rail",
+        "from": "rail-near",
+        "to": "rail-far",
+        "speed": 3000,
+        "at": {
+         "word": 21
+        }
+       },
+       {
+        "do": "tag_follow",
+        "target": "pulse",
+        "text": "Steel: ≈6,000 m/s"
+       },
+       {
+        "do": "follow",
+        "target": "pulse",
+        "zoom": 1.0,
+        "at": {
+         "word": 21
+        }
+       },
+       {
+        "do": "react",
+        "who": "friend",
+        "expression": "surprised",
+        "at": {
+         "word": 23
+        }
+       },
+       {
+        "do": "jump",
+        "who": "friend",
+        "at": {
+         "word": 23
+        }
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "friend",
+        "at": {
+         "word": 23
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 2,
+   "kind": "world",
+   "start": 12.0,
+   "frames": 222,
+   "duration": 7.4,
+   "words": [
+    {
+     "i": 0,
+     "text": "In",
+     "display": "In",
+     "start": 0.275,
+     "end": 0.362
+    },
+    {
+     "i": 1,
+     "text": "a",
+     "display": "a",
+     "start": 0.362,
+     "end": 0.425
+    },
+    {
+     "i": 2,
+     "text": "gas",
+     "display": "gas,",
+     "start": 0.425,
+     "end": 0.775
+    },
+    {
+     "i": 3,
+     "text": "the",
+     "display": "the",
+     "start": 0.812,
+     "end": 0.9
+    },
+    {
+     "i": 4,
+     "text": "particles",
+     "display": "particles",
+     "start": 0.9,
+     "end": 1.4
+    },
+    {
+     "i": 5,
+     "text": "are",
+     "display": "are",
+     "start": 1.4,
+     "end": 1.538
+    },
+    {
+     "i": 6,
+     "text": "far",
+     "display": "far",
+     "start": 1.538,
+     "end": 1.8
+    },
+    {
+     "i": 7,
+     "text": "apart",
+     "display": "apart.",
+     "start": 1.8,
+     "end": 2.475
+    },
+    {
+     "i": 8,
+     "text": "In",
+     "display": "In",
+     "start": 2.612,
+     "end": 2.712
+    },
+    {
+     "i": 9,
+     "text": "a",
+     "display": "a",
+     "start": 2.712,
+     "end": 2.812
+    },
+    {
+     "i": 10,
+     "text": "solid",
+     "display": "solid,",
+     "start": 2.812,
+     "end": 3.2
+    },
+    {
+     "i": 11,
+     "text": "they",
+     "display": "they",
+     "start": 3.237,
+     "end": 3.375
+    },
+    {
+     "i": 12,
+     "text": "are",
+     "display": "are",
+     "start": 3.375,
+     "end": 3.5
+    },
+    {
+     "i": 13,
+     "text": "tightly",
+     "display": "tightly",
+     "start": 3.5,
+     "end": 3.888
+    },
+    {
+     "i": 14,
+     "text": "linked",
+     "display": "linked,",
+     "start": 3.888,
+     "end": 4.35
+    },
+    {
+     "i": 15,
+     "text": "so",
+     "display": "so",
+     "start": 4.45,
+     "end": 4.625
+    },
+    {
+     "i": 16,
+     "text": "each",
+     "display": "each",
+     "start": 4.625,
+     "end": 4.888
+    },
+    {
+     "i": 17,
+     "text": "push",
+     "display": "push",
+     "start": 4.888,
+     "end": 5.188
+    },
+    {
+     "i": 18,
+     "text": "is",
+     "display": "is",
+     "start": 5.188,
+     "end": 5.325
+    },
+    {
+     "i": 19,
+     "text": "passed",
+     "display": "passed",
+     "start": 5.325,
+     "end": 5.638
+    },
+    {
+     "i": 20,
+     "text": "on",
+     "display": "on",
+     "start": 5.638,
+     "end": 5.85
+    },
+    {
+     "i": 21,
+     "text": "quickly",
+     "display": "quickly.",
+     "start": 5.85,
+     "end": 6.7
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": "fade",
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.25,
+    0.55,
+    0.84,
+    0.88,
+    0.79,
+    0.68,
+    0.7,
+    0.79,
+    0.88,
+    0.85,
+    0.83,
+    0.8,
+    0.76,
+    0.65,
+    0.59,
+    0.49,
+    0.4,
+    0.48,
+    0.53,
+    0.45,
+    0.24,
+    0.31,
+    0.59,
+    0.81,
+    0.83,
+    0.8,
+    0.78,
+    0.62,
+    0.43,
+    0.39,
+    0.55,
+    0.73,
+    0.7,
+    0.64,
+    0.68,
+    0.75,
+    0.77,
+    0.51,
+    0.25,
+    0.04,
+    0.28,
+    0.57,
+    0.84,
+    0.84,
+    0.8,
+    0.79,
+    0.77,
+    0.62,
+    0.36,
+    0.15,
+    0.23,
+    0.5,
+    0.7,
+    0.69,
+    0.58,
+    0.44,
+    0.26,
+    0.1,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.27,
+    0.57,
+    0.86,
+    0.87,
+    0.78,
+    0.71,
+    0.64,
+    0.68,
+    0.76,
+    0.82,
+    0.84,
+    0.82,
+    0.82,
+    0.79,
+    0.79,
+    0.79,
+    0.71,
+    0.59,
+    0.5,
+    0.63,
+    0.76,
+    0.84,
+    0.84,
+    0.85,
+    0.82,
+    0.53,
+    0.35,
+    0.29,
+    0.52,
+    0.69,
+    0.8,
+    0.78,
+    0.59,
+    0.46,
+    0.49,
+    0.66,
+    0.77,
+    0.76,
+    0.75,
+    0.78,
+    0.82,
+    0.82,
+    0.77,
+    0.67,
+    0.44,
+    0.2,
+    0.08,
+    0.09,
+    0.09,
+    0.03,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.08,
+    0.27,
+    0.54,
+    0.77,
+    0.85,
+    0.74,
+    0.66,
+    0.66,
+    0.74,
+    0.64,
+    0.52,
+    0.47,
+    0.36,
+    0.21,
+    0.02,
+    0.03,
+    0.3,
+    0.59,
+    0.84,
+    0.79,
+    0.66,
+    0.55,
+    0.53,
+    0.59,
+    0.61,
+    0.54,
+    0.31,
+    0.16,
+    0.24,
+    0.51,
+    0.74,
+    0.78,
+    0.74,
+    0.63,
+    0.55,
+    0.33,
+    0.43,
+    0.52,
+    0.75,
+    0.72,
+    0.7,
+    0.66,
+    0.46,
+    0.3,
+    0.16,
+    0.42,
+    0.6,
+    0.55,
+    0.26,
+    0.07,
+    0.25,
+    0.43,
+    0.51,
+    0.4,
+    0.21,
+    0.08,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 2,
+    "kind": "world",
+    "place": "countryside",
+    "variant": "day",
+    "new_place": false,
+    "facts": [
+     "gas particles are far apart",
+     "solid particles are tightly linked (bonded)"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "slot": "left"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "the host wonders; the camera dives into the air above the farm: gas particles fly far apart",
+      "moves": [
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "think"
+       },
+       {
+        "do": "dive",
+        "target": "sky",
+        "into": "lattice",
+        "params": {
+         "state": "gas"
+        }
+       },
+       {
+        "do": "react",
+        "who": "host",
+        "expression": "curious",
+        "at": {
+         "word": 0
+        }
+       }
+      ]
+     },
+     {
+      "at": {
+       "word": 8
+      },
+      "action": "back out over the railway, the camera dives into the steel rail: its particles are packed and linked, jiggling together",
+      "moves": [
+       {
+        "do": "cut",
+        "target": "rail-near",
+        "zoom": 1.2
+       },
+       {
+        "do": "point",
+        "who": "host",
+        "target": "rail-near"
+       },
+       {
+        "do": "dive",
+        "target": "rail-near",
+        "into": "lattice",
+        "params": {
+         "state": "solid"
+        },
+        "at": {
+         "word": 9
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "point-across",
+        "at": {
+         "word": 17
+        }
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  },
+  {
+   "id": 3,
+   "kind": "world",
+   "start": 19.4,
+   "frames": 99,
+   "duration": 3.3,
+   "words": [
+    {
+     "i": 0,
+     "text": "Sound",
+     "display": "Sound",
+     "start": 0.275,
+     "end": 0.525
+    },
+    {
+     "i": 1,
+     "text": "travels",
+     "display": "travels",
+     "start": 0.525,
+     "end": 0.988
+    },
+    {
+     "i": 2,
+     "text": "fastest",
+     "display": "fastest",
+     "start": 0.988,
+     "end": 1.5
+    },
+    {
+     "i": 3,
+     "text": "through",
+     "display": "through",
+     "start": 1.5,
+     "end": 1.712
+    },
+    {
+     "i": 4,
+     "text": "solids",
+     "display": "solids.",
+     "start": 1.712,
+     "end": 2.6
+    }
+   ],
+   "cues": [],
+   "camera": [],
+   "presenter": {
+    "position": "none",
+    "size": "small"
+   },
+   "transition": "fade",
+   "next": null,
+   "mouth": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.12,
+    0.41,
+    0.73,
+    0.88,
+    0.86,
+    0.81,
+    0.82,
+    0.73,
+    0.59,
+    0.46,
+    0.59,
+    0.74,
+    0.86,
+    0.83,
+    0.78,
+    0.73,
+    0.73,
+    0.76,
+    0.78,
+    0.64,
+    0.53,
+    0.3,
+    0.16,
+    0.28,
+    0.57,
+    0.84,
+    0.83,
+    0.77,
+    0.68,
+    0.54,
+    0.3,
+    0.25,
+    0.4,
+    0.63,
+    0.66,
+    0.46,
+    0.23,
+    0.07,
+    0.15,
+    0.39,
+    0.66,
+    0.76,
+    0.71,
+    0.62,
+    0.54,
+    0.61,
+    0.75,
+    0.84,
+    0.85,
+    0.78,
+    0.7,
+    0.65,
+    0.59,
+    0.56,
+    0.44,
+    0.3,
+    0.24,
+    0.23,
+    0.18,
+    0.08,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "world": {
+    "id": 3,
+    "kind": "world",
+    "place": "countryside",
+    "variant": "day",
+    "new_place": false,
+    "facts": [
+     "sound travels fastest through solids"
+    ],
+    "actors": [
+     {
+      "id": "host",
+      "start": {
+       "anchor": "rail-near"
+      }
+     },
+     {
+      "id": "friend",
+      "character": "extra-1",
+      "outfit": "casual",
+      "start": {
+       "anchor": "rail-far"
+      }
+     }
+    ],
+    "beats": [
+     {
+      "at": {
+       "word": 0
+      },
+      "action": "the host strikes the rail once more; the pulse races away along the rail to the friend, who jumps; the camera pulls back over the whole line",
+      "moves": [
+       {
+        "do": "use",
+        "who": "host",
+        "prop": "hammer",
+        "at": {
+         "word": 1
+        }
+       },
+       {
+        "do": "pulse_along",
+        "path": "rail",
+        "from": "rail-near",
+        "to": "rail-far",
+        "speed": 3000,
+        "at": {
+         "word": 1
+        }
+       },
+       {
+        "do": "tag_follow",
+        "target": "pulse",
+        "text": "Fastest: solids",
+        "at": {
+         "word": 2
+        }
+       },
+       {
+        "do": "gesture",
+        "who": "host",
+        "name": "celebrate",
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "jump",
+        "who": "friend",
+        "at": {
+         "word": 3
+        }
+       },
+       {
+        "do": "pull_out",
+        "target": "rail-near",
+        "zoom": 0.6,
+        "from": 0.75
+       }
+      ]
+     }
+    ],
+    "transition": "fade"
+   }
+  }
+ ],
+ "cast": [
+  {
+   "id": "host",
+   "character": "host",
+   "outfit": "lab-coat"
+  }
+ ]
+}

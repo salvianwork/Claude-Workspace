@@ -60,7 +60,7 @@ test("HFKit.MOVES is the pinned vocabulary, by group", () => {
     actor: ["enter", "exit", "walk_to", "run_to", "jump", "point", "gesture", "react", "hold", "use", "say"],
     effect: ["burst", "rings", "pulse_along", "speed_lines", "splash", "sparkle", "smoke", "glow"],
     overlay: ["tag_follow", "label", "title"],
-    camera: ["push_in", "pull_out", "follow", "cut", "dive"],
+    camera: ["push_in", "pull_out", "follow", "cut", "dive", "pan_up", "pan_down"],
     custom: ["custom"],
   };
   const names = Object.values(want).flat();
@@ -79,6 +79,10 @@ test("HFKit.MOVES is the pinned vocabulary, by group", () => {
   assert.deepEqual(K.MOVES.push_in.required, ["target", "zoom"]);
   assert.deepEqual(K.MOVES.dive.required, ["target", "into"]);
   assert.deepEqual(K.MOVES.custom.required, ["name"]);
+  for (const n of ["pan_up", "pan_down"]) {
+    assert.deepEqual(K.MOVES[n].required, [], n);
+    assert.deepEqual(K.MOVES[n].optional, ["to", "by", "at"], n);
+  }
   // every effect move is a registered effect
   for (const n of want.effect) assert.equal(typeof K.effects[n], "function", n);
   assert.ok(K.SCRIPTS.indexOf("src/world/moves.js") > K.SCRIPTS.indexOf("src/world/overlays.js"));
@@ -399,3 +403,263 @@ test("point at another actor: he points toward that actor (no crash before the t
   assert.equal(K.actorAt(c.actors.host, WORDS[2].start + 0.5).state.pose, right ? "point-right" : "point-left");
   assert.equal(K.actorAt(c.actors.friend, WORDS[2].start + 0.5).state.pose, right ? "point-left" : "point-right");
 });
+
+// ---- extended places (vertical): the camera stays inside the taller world (Review Focus 4) ----
+test("vertical: an extended place is a 3840x3600 world and a 0.6x pull-out at its top or bottom never shows past the edge", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const scene = railway({
+      id: 7,
+      actors: [{ id: "host", start: { slot: "right" } }],
+      beats: [
+        { at: { word: 0 }, moves: [{ do: "cut", target: "sky", zoom: 0.6 }, { do: "pan_up", by: 600 }, { do: "gesture", who: "host", name: "wave" }] },
+        { at: { word: 6 }, moves: [{ do: "push_in", target: "sky", zoom: 1.2 }] },
+        { at: { word: 12 }, moves: [{ do: "cut", target: "lake", zoom: 0.6 }] },
+        { at: { word: 18 }, moves: [{ do: "pull_out", target: "lake", zoom: 0.6, from: 1 }] },
+      ],
+    });
+    const w = K.worldFor(scene, { cast: CAST });
+    assert.equal(w.extended, true);
+    assert.deepEqual(w.bounds, { width: 3840, height: 3600 });
+    assert.deepEqual(w.anchors.sky(0), { x: 1920, y: 560 + 720 }, "anchors move down by the top extension");
+    const c = K.compileMoves(scene, WORDS, w);
+    assert.deepEqual(c.errors, []);
+    let top = Infinity, bottom = -Infinity;
+    for (let t = 0; t <= c.duration; t += 0.05) {
+      const cam = K.worldCamera(c, t), hx = 540 / cam.zoom, hy = 960 / cam.zoom;
+      assert.ok(cam.x - hx >= -1e-6 && cam.x + hx <= 3840 + 1e-6, `t=${t.toFixed(2)}: view x past the edge ${JSON.stringify(cam)}`);
+      assert.ok(cam.y - hy >= -1e-6 && cam.y + hy <= 3600 + 1e-6, `t=${t.toFixed(2)}: view y past the edge ${JSON.stringify(cam)}`);
+      top = Math.min(top, cam.y - hy); bottom = Math.max(bottom, cam.y + hy);
+    }
+    // the shots really reach both edges of the tall world (so the clamp was exercised)
+    assert.ok(top < 1, "reaches the top: " + top);
+    assert.ok(bottom > 3599, "reaches the bottom: " + bottom);
+    // landscape: the same place mounts as today (no extension, 3840 x 2160)
+    K.setCanvas(K.FORMATS.landscape);
+    const l = K.worldFor(scene, { cast: CAST });
+    assert.equal(l.extended, false);
+    assert.deepEqual(l.bounds, { width: 3840, height: 2160 });
+    assert.deepEqual(l.anchors.sky(0), { x: 1920, y: 560 });
+  } finally { K.setCanvas(null); }
+});
+
+test("vertical: a place without meta.extend keeps the 3840x2160 world; extended can be forced off", () => {
+  K.setCanvas(K.FORMATS.vertical);
+  try {
+    const fake = { meta: { name: "flat", variants: ["a"], anchors: [], paths: [] }, anchorsFor: () => ({ anchors: {}, paths: {} }), mount() {} };
+    const w = K.worldFor({ id: 1, place: "flat", actors: [] }, { places: { flat: fake } });
+    assert.equal(w.extended, false);
+    assert.deepEqual(w.bounds, { width: 3840, height: 2160 });
+    const off = K.worldFor(railway(), { cast: CAST, extended: false });
+    assert.equal(off.extended, false);
+    assert.deepEqual(off.anchors.sky(0), { x: 1920, y: 560 });
+  } finally { K.setCanvas(null); }
+});
+
+// ---- vertical camera: pan_up / pan_down, and the anchor-spread warning (Task 6) ----
+function vertical(fn) {
+  K.setCanvas(K.FORMATS.vertical);
+  try { return fn(); } finally { K.setCanvas(null); }
+}
+function panScene(moves, first = [{ do: "cut", target: "lake", zoom: 1 }]) {
+  return railway({ id: 5, actors: [{ id: "host", start: { slot: "right" } }],
+    beats: [{ at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }, ...first] }, { at: { word: 8 }, moves }] });
+}
+function viewOf(c, t) { const cam = K.worldCamera(c, t); return { cam, top: cam.y - 960 / cam.zoom, bottom: cam.y + 960 / cam.zoom }; }
+
+test("pan_up by N world px moves the view up N at the same zoom, within the pan limit", () => vertical(() => {
+  const c = compile(panScene([{ do: "pan_up", by: 900 }]));
+  assert.deepEqual(c.errors, []);
+  const before = K.worldCamera(c, WORDS[8].start - 0.05), after = K.worldCamera(c, c.duration);
+  assert.ok(Math.abs(after.zoom - before.zoom) < 1e-6, "zoom unchanged");
+  assert.ok(Math.abs(after.x - before.x) < 1e-6, "no sideways drift");
+  assert.ok(Math.abs(before.y - after.y - 900) < 1, `moved up ${before.y - after.y}`);
+  let peak = 0;
+  for (let t = WORDS[8].start; t < c.duration; t += 1 / 30) { // world px/s x zoom <= 0.6 x 3840 (the pan limit)
+    const a = K.worldCamera(c, t), b = K.worldCamera(c, t + 1 / 30);
+    peak = Math.max(peak, Math.hypot(b.x - a.x, b.y - a.y) * 30 * a.zoom);
+  }
+  assert.ok(peak <= 0.6 * 3840 * 1.02, `pan speed ${peak}`);
+  assert.ok(peak > 100, "it really moves");
+}));
+
+test("pan_down mirrors pan_up; `to` frames an anchor (at y 640 in vertical, like a push-in)", () => vertical(() => {
+  const down = compile(panScene([{ do: "pan_down", by: 700 }], [{ do: "cut", target: "sky", zoom: 1 }]));
+  assert.deepEqual(down.errors, []);
+  const b = K.worldCamera(down, WORDS[8].start - 0.05), a = K.worldCamera(down, down.duration);
+  assert.ok(Math.abs(a.y - b.y - 700) < 1, `moved down ${a.y - b.y}`);
+  const to = compile(panScene([{ do: "pan_down", to: "lake" }], [{ do: "cut", target: "sky", zoom: 1.4 }]));
+  assert.deepEqual(to.errors, []);
+  const lake = K.worldFor(panScene([]), { cast: CAST }).anchors.lake(0), end = K.worldCamera(to, to.duration);
+  const sp = K.worldMath.toScreen(lake, end);
+  assert.ok(Math.abs(sp.x - 540) < 1 && Math.abs(sp.y - 640) < 1.5, JSON.stringify(sp));
+  assert.ok(end.y > K.worldCamera(to, WORDS[8].start - 0.05).y, "moved down");
+}));
+
+// ---- fix wave 2026-11-28: the vertical aim point sits above the caption band ----
+test("vertical aim: a framed anchor sits at y 640 (above the caption band 840-1020) while the host is in his slot", () => {
+  const scene = (target, zoom) => railway({ id: 11, actors: [{ id: "host", start: { slot: "bottom-right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target, zoom }, { do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 6 }, moves: [{ do: "push_in", target, zoom: zoom * 1.25 }] }] });
+  vertical(() => {
+    for (const [target, zoom] of [["bridge", 1.2], ["sky", 0.85], ["rail-near", 1.5], ["lake", 1.4]]) {
+      const s = scene(target, zoom), w = K.worldFor(s, { cast: CAST }), c = K.compileMoves(s, WORDS, w);
+      assert.deepEqual(c.errors, []);
+      for (const t of [0.4, c.duration]) {
+        const sp = K.worldMath.toScreen(w.anchors[target](t), K.worldCamera(c, t));
+        assert.ok(Math.abs(sp.x - 540) < 1 && Math.abs(sp.y - 640) < 1.5, `${target} @${zoom} t=${t}: ${JSON.stringify(sp)}`);
+        assert.ok(sp.y < 840 - 150, "well clear of the caption band");
+      }
+    }
+  });
+});
+
+test("vertical aim: while the host is out of his slot (captions in the top band) a framed anchor sits at y 1040 (where his feet go), below 400 and above the face zone", () => vertical(() => {
+  const s = railway({ id: 12, actors: [{ id: "host", start: { anchor: "rail-near" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "bridge", zoom: 1.2 }, { do: "gesture", who: "host", name: "wave" }] }] });
+  const w = K.worldFor(s, { cast: CAST }), c = K.compileMoves(s, WORDS, w);
+  assert.deepEqual(c.errors, []);
+  assert.equal(K.hostAway(c, w, 0.5), true);
+  const sp = K.worldMath.toScreen(w.anchors.bridge(0), K.worldCamera(c, 0.5));
+  assert.ok(Math.abs(sp.y - 1040) < 1.5, JSON.stringify(sp));
+  assert.ok(sp.y > 400 && sp.y < 1060);
+}));
+
+test("vertical actor framing: feet at y 1040 while the host is out of his slot, so his head is below the top caption band", () => vertical(() => {
+  const s = railway({ id: 13, actors: [{ id: "host", start: { anchor: "rail-near" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "host", zoom: 1 }, { do: "gesture", who: "host", name: "wave" }] }] });
+  const w = K.worldFor(s, { cast: CAST }), c = K.compileMoves(s, WORDS, w);
+  assert.deepEqual(c.errors, []);
+  const a = K.actorAt(c.actors.host, 0.5), cam = K.worldCamera(c, 0.5), feet = K.worldMath.toScreen(a, cam);
+  assert.ok(Math.abs(feet.y - 1040) < 1.5, JSON.stringify(feet));
+  const head = feet.y - 1270 * (globalThis.HFKitActor.WORLD_K || 0.3) * a.scale * cam.zoom;
+  assert.ok(head > 400, `head top ${head} is below the top caption band`);
+}));
+
+test("landscape aim is unchanged: a framed anchor sits at 55 % of the height (y 594)", () => {
+  const s = railway({ id: 14, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "bridge", zoom: 1.2 }, { do: "gesture", who: "host", name: "wave" }] }] });
+  const w = K.worldFor(s, { cast: CAST }), c = K.compileMoves(s, WORDS, w);
+  const sp = K.worldMath.toScreen(w.anchors.bridge(0), K.worldCamera(c, 0.5));
+  assert.ok(Math.abs(sp.y - 594) < 1e-6 && Math.abs(sp.x - 960) < 1e-6, JSON.stringify(sp));
+});
+
+test("pan_up / pan_down stop at the world edge (the camera clamps to world.bounds)", () => vertical(() => {
+  for (const [name, edge] of [["pan_up", "top"], ["pan_down", "bottom"]]) {
+    const c = compile(panScene([{ do: name, by: 99999 }], [{ do: "cut", target: "lake", zoom: 0.6 }]));
+    assert.deepEqual(c.errors, [], name);
+    for (let t = 0; t <= c.duration; t += 0.05) {
+      const { top, bottom } = viewOf(c, t);
+      assert.ok(top >= -1e-6 && bottom <= 3600 + 1e-6, `${name} t=${t.toFixed(2)}: ${top}..${bottom}`);
+    }
+    const end = viewOf(c, c.duration);
+    assert.ok(edge === "top" ? end.top < 1 : end.bottom > 3599, `${name} reaches the ${edge}`);
+  }
+}));
+
+test("pan moves are checked: to or by (not both), an anchor, a positive number, no zoom", () => {
+  const errs = (mv) => K.validateWorld(panScene([mv]), WORDS, { cast: CAST });
+  assert.ok(errs({ do: "pan_up" }).some((e) => /^scene 5 beat 1 move 0 \(pan_up\): needs `to`/.test(e)));
+  assert.ok(errs({ do: "pan_up", to: "sky", by: 5 }).some((e) => /needs `to`/.test(e)));
+  assert.ok(errs({ do: "pan_down", to: "nowhere" }).some((e) => /unknown anchor "nowhere"/.test(e)));
+  assert.ok(errs({ do: "pan_down", by: -3 }).some((e) => /`by` must be a number of world px above 0/.test(e)));
+  assert.ok(errs({ do: "pan_down", by: 3, zoom: 2 }).some((e) => /unknown parameter "zoom"/.test(e)));
+  assert.deepEqual(errs({ do: "pan_up", by: 300 }), []);
+});
+
+test("pan_up after a push_in keeps its zoom, and a later pull_out is not undone by it", () => vertical(() => {
+  const c = compile(railway({ id: 6, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }, { do: "cut", target: "lake", zoom: 1.5 }] },
+    { at: { word: 8 }, moves: [{ do: "pan_up", by: 500 }] },
+    { at: { word: 16 }, moves: [{ do: "pull_out", zoom: 1 }] }] }));
+  assert.deepEqual(c.errors, []);
+  assert.ok(Math.abs(K.worldCamera(c, WORDS[15].start).zoom - 1.5) < 1e-6, "the pan keeps zoom 1.5");
+  const y15 = K.worldCamera(c, WORDS[15].start).y, yEnd = K.worldCamera(c, c.duration).y;
+  assert.ok(Math.abs(y15 - yEnd) < 400, `the pull-out stays where the pan left it (${y15} -> ${yEnd})`);
+}));
+
+test("Review Focus 2: anchors far apart in one vertical beat warn, naming scene, beat and spread", () => {
+  const far = railway({ id: 3, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 6 }, moves: [{ do: "walk_to", who: "host", to: "rail-near" }, { do: "burst", target: "barn" }] }] });
+  const near = railway({ id: 3, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 6 }, moves: [{ do: "walk_to", who: "host", to: "rail-near" }, { do: "burst", target: "rail-near" }] },
+    { at: { word: 14 }, moves: [{ do: "pan_up", by: 400 }, { do: "burst", target: "barn" }] }] });
+  vertical(() => {
+    const w = compile(far).warnings.filter((x) => /apart horizontally/.test(x));
+    assert.equal(w.length, 1, w.join("\n"));
+    assert.match(w[0], /^scene 3 beat 1: anchors "rail-near" and "barn" are 2700 world px apart horizontally \(more than 1700;/);
+    assert.deepEqual(compile(near).warnings.filter((x) => /apart horizontally/.test(x)), [], "one anchor per beat: no warning");
+  });
+  assert.deepEqual(compile(far).warnings.filter((x) => /apart horizontally/.test(x)), [], "landscape shows the whole width");
+});
+
+// ---- fix round 1: bottom slots, camera-aware spread, tag vs caption band ----
+test("bottom-left / bottom-right are host slots on a vertical canvas; landscape refuses them", () => {
+  const scene = (slot) => railway({ id: 8, actors: [{ id: "host", start: { slot } }],
+    beats: [{ at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }, { do: "walk_to", who: "host", to: "rail-near", at: { word: 4 } }] }] });
+  vertical(() => {
+    for (const side of ["left", "right"]) {
+      const w = K.worldFor(scene("bottom-" + side), { cast: CAST });
+      assert.deepEqual(w.errors, []);
+      assert.deepEqual(w.actors.host.start, { slot: side, bottom: true });
+      assert.deepEqual(K.validateWorld(scene("bottom-" + side), WORDS, { cast: CAST }), []);
+      const c = compile(scene("bottom-" + side));
+      const a = K.actorAt(c.actors.host, 0.1), SLOT = K.rig.SLOT;
+      assert.equal(a.mode, "slot");
+      assert.deepEqual(a.screen, { x: SLOT[side], y: SLOT.feetY });
+      assert.equal(a.screen.y > 1400, true, "feet below the face zone: he is cropped by the frame bottom");
+    }
+    assert.ok(K.validateWorld(scene("bottom-middle"), WORDS, { cast: CAST }).some((e) => /slot must be left, right, bottom-left or bottom-right/.test(e)));
+  });
+  const land = K.validateWorld(scene("bottom-right"), WORDS, { cast: CAST });
+  assert.ok(land.some((e) => /slot "bottom-right" needs a vertical canvas/.test(e)), land.join("\n"));
+});
+
+test("the spread counts the target of push_in, cut and follow (not a pan's `to`)", () => vertical(() => {
+  const mk = (cam) => railway({ id: 4, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 6 }, moves: [{ do: "burst", target: "rail-near" }, cam] }] });
+  const spread = (cam) => compile(mk(cam)).warnings.filter((x) => /apart horizontally/.test(x));
+  for (const cam of [{ do: "cut", target: "barn" }, { do: "push_in", target: "barn", zoom: 1.2 }, { do: "follow", target: "barn" }]) {
+    const w = spread(cam);
+    assert.equal(w.length, 1, cam.do + ": " + w.join("\n"));
+    assert.match(w[0], /^scene 4 beat 1: anchors "rail-near" and "barn" are 2700 world px apart/);
+  }
+  assert.deepEqual(spread({ do: "pan_up", to: "barn" }), [], "a pan is how the frame travels");
+}));
+
+test("a tag or label whose pill crosses the caption band (y 840-1020) warns in vertical only", () => {
+  const mk = (moves) => railway({ id: 9, actors: [{ id: "host", start: { slot: "right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "lake", zoom: 1 }, { do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 4 }, moves }] });
+  const crossing = (moves) => compile(mk(moves)).warnings.filter((x) => /caption band/.test(x));
+  vertical(() => {
+    // at zoom 1 the world's bottom edge holds the lake at y 870 (it cannot rise to the aim point, y 640): a label above it is on the band
+    const hit = crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]);
+    assert.equal(hit.length, 1, hit.join("\n"));
+    assert.match(hit[0], /^scene 9 beat 1 move 0 \(label\): the label "Lake" crosses the caption band \(y 840-1020, where the caption is then\) at \d+\.\d s/);
+    // the bridge is 300 px above the lake: its tag sits well above the band
+    assert.deepEqual(crossing([{ do: "tag_follow", target: "bridge", text: "Bridge", at: { word: 8 }, until: { word: 12 } }]), []);
+  });
+  assert.deepEqual(crossing([{ do: "label", target: "lake", text: "Lake", side: "above" }]), [], "landscape has no vertical caption band");
+});
+
+test("the caption band a tag must avoid is the active one: the top band (220-400) while the host is out of his slot", () => vertical(() => {
+  const mk = (moves) => railway({ id: 10, actors: [{ id: "host", start: { slot: "bottom-right" } }], beats: [
+    { at: { word: 0 }, moves: [{ do: "cut", target: "lake", zoom: 1 }, { do: "gesture", who: "host", name: "wave" }] },
+    { at: { word: 2 }, moves: [{ do: "walk_to", who: "host", to: "bridge" }] },
+    { at: { word: 14 }, moves }] });
+  const w = K.worldFor(mk([{ do: "gesture", who: "host", name: "wave" }]), { cast: CAST });
+  const c = K.compileMoves(mk([{ do: "gesture", who: "host", name: "wave" }]), WORDS, w);
+  assert.equal(K.hostAway(c, w, 0.5), false, "in the slot");
+  assert.equal(K.hostAway(c, w, WORDS[14].start), true, "stepped into the world");
+  const warn = (moves) => compile(mk(moves)).warnings.filter((x) => /caption band/.test(x));
+  // the lake sits at y about 870 (zoom 1, held by the world edge): a label above it is on the BOTTOM band, which is not active once he is out
+  assert.deepEqual(warn([{ do: "label", target: "lake", text: "Lake", side: "above" }]), []);
+  // a label sitting at the top (y about 300) is on the TOP band, active now
+  const top = warn([{ do: "cut", target: "lake", zoom: 0.8 }, { do: "label", target: "sky", text: "Sky", at: { word: 16 } }]);
+  assert.equal(top.length, 1, top.join("\n"));
+  assert.ok(top.every((x) => /\(y 220-400, where the caption is then\)/.test(x)), top.join("\n"));
+}));

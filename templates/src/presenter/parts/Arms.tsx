@@ -75,31 +75,88 @@ export const capsule = (ax: number, ay: number, ra: number, bx: number, by: numb
 /** Hands are drawn a little larger than life, as in most explainer illustration. */
 const HAND_SCALE = 1.3;
 
-/** Sleeve outline of an arm (upper arm and forearm as two tapered capsules) in body space. */
+/**
+ * Bendy sleeve (phone-ready refresh): the arm runs along one smooth curve, a quadratic from the
+ * shoulder to the wrist whose control point sits a little past the elbow, so a bent arm reads soft
+ * and rounded rather than as two stiff tubes. BEND sets how far the elbow is rounded toward the chord.
+ */
+const BEND = 0.3;
+/** Capsules per half arm. */
+const SEG = 8;
+
+type Pt = { x: number; y: number };
+
+const armCurve = (p: { s: Pt; e: Pt; w: Pt }) => {
+  const mx = (p.s.x + p.w.x) / 2;
+  const my = (p.s.y + p.w.y) / 2;
+  const c = { x: p.e.x + BEND * (p.e.x - mx), y: p.e.y + BEND * (p.e.y - my) };
+  const at = (t: number): Pt => {
+    const a = (1 - t) * (1 - t);
+    const b = 2 * t * (1 - t);
+    const d = t * t;
+    return { x: a * p.s.x + b * c.x + d * p.w.x, y: a * p.s.y + b * c.y + d * p.w.y };
+  };
+  const tan = (t: number): Pt => {
+    const x = 2 * (1 - t) * (c.x - p.s.x) + 2 * t * (p.w.x - c.x);
+    const y = 2 * (1 - t) * (c.y - p.s.y) + 2 * t * (p.w.y - c.y);
+    const l = Math.hypot(x, y) || 1;
+    return { x: x / l, y: y / l };
+  };
+  return { at, tan };
+};
+type Curve = ReturnType<typeof armCurve>;
+
+/** Sleeve radius along the arm: shoulder -> elbow (t 0.5) -> wrist. */
+const armRadius = (t: number) =>
+  t <= 0.5
+    ? RIG.shoulderWidth / 2 + (RIG.elbowWidth / 2 - RIG.shoulderWidth / 2) * (t / 0.5)
+    : RIG.elbowWidth / 2 - 1 + (RIG.wristWidth / 2 - RIG.elbowWidth / 2 + 1) * ((t - 0.5) / 0.5);
+
+/** One path of SEG capsules along the curve from t0 to t1 (same winding, so they union), each point
+ * pushed off(t) along the normal on `side` (+1 / -1), with radius rad(t). */
+const chain = (cv: Curve, t0: number, t1: number, rad: (t: number) => number, off?: (t: number) => number, side = 0) => {
+  const pt = (t: number) => {
+    const q = cv.at(t);
+    const o = off ? off(t) * side : 0;
+    const g = cv.tan(t);
+    return { x: q.x - g.y * o, y: q.y + g.x * o, r: rad(t) };
+  };
+  const d: string[] = [];
+  let a = pt(t0);
+  for (let i = 1; i <= SEG; i++) {
+    const b = pt(t0 + ((t1 - t0) * i) / SEG);
+    d.push(capsule(a.x, a.y, a.r, b.x, b.y, b.r));
+    a = b;
+  }
+  return d.join(" ");
+};
+
+/** Sleeve outline of an arm (upper arm and forearm halves of one soft curve) in body space. */
 export const armShapes = (pose: ArmPose) => {
-  const { s, e, w } = armPoints(pose);
-  const upper = capsule(s.x, s.y, RIG.shoulderWidth / 2, e.x, e.y, RIG.elbowWidth / 2);
-  const fore = capsule(e.x, e.y, RIG.elbowWidth / 2 - 1, w.x, w.y, RIG.wristWidth / 2);
-  return { s, e, w, upper, fore };
+  const p = armPoints(pose);
+  const curve = armCurve(p);
+  return { ...p, curve, elbow: curve.at(0.5), upper: chain(curve, 0, 0.5, armRadius), fore: chain(curve, 0.5, 1, armRadius) };
 };
 
 /** One arm (jacket sleeve, shirt cuff, hand). `mirror` draws the screen-right arm. */
 export const Arm: React.FC<{ pose: ArmPose; mirror: boolean; pal: Palette }> = ({ pose, mirror, pal }) => {
-  const { s, e, w, upper, fore } = armShapes(pose);
+  const { s, w, curve: cv, elbow: e, upper, fore } = armShapes(pose);
   const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
-  const ux = (e.x - s.x) / len;
-  const uy = (e.y - s.y) / len;
   const flen = Math.hypot(w.x - e.x, w.y - e.y) || 1;
-  const fx = (w.x - e.x) / flen;
-  const fy = (w.y - e.y) / flen;
-  // Normals pointing to the shaded side of each segment.
+  const g = cv.tan(0.5);
+  const fx = g.x;
+  const fy = g.y;
+  // Normal pointing to the shaded side.
   const nx = -fy;
   const ny = fx;
   const handAngle = pose.elbow + pose.wrist;
   const cuffW = RIG.wristWidth - 4;
+  const shadeU = (t: number) => 11 - (2 * (t - 0.12)) / 0.35;
+  const shadeF = (t: number) => 9 - (2 * (t - 0.62)) / 0.3;
+  const el = (pose.elbow * Math.PI) / 180;
   return (
     <g transform={mirror ? "scale(-1 1)" : undefined}>
-      {/* union outline: the two sleeve parts read as one bent arm */}
+      {/* union outline: the sleeve reads as one soft, bent arm */}
       <g fill={pal.jacketLine} stroke={pal.jacketLine} strokeWidth={LINE * 2} strokeLinejoin="round">
         <path d={upper} />
         <path d={fore} />
@@ -108,32 +165,20 @@ export const Arm: React.FC<{ pose: ArmPose; mirror: boolean; pal: Palette }> = (
         <path d={upper} />
         <path d={fore} />
       </g>
-      {/* shaded underside of the upper arm and forearm (soft, wide, along the inner edge) */}
-      {len > 50 ? (
-        <path
-          d={capsule(s.x + ux * 30 + uy * 24, s.y + uy * 30 - ux * 24, 11, e.x - ux * 2 + uy * 19, e.y - uy * 2 - ux * 19, 9)}
-          fill={pal.jacketShade}
-          opacity={0.85}
-        />
-      ) : null}
-      {flen > 40 ? (
-        <path
-          d={capsule(e.x + fx * 24 + nx * 14, e.y + fy * 24 + ny * 14, 9, w.x - fx * 10 + nx * 12, w.y - fy * 10 + ny * 12, 7)}
-          fill={pal.jacketShade}
-          opacity={0.85}
-        />
-      ) : null}
-      {/* elbow crease */}
+      {/* shaded undersides of the upper arm and forearm, following the curve */}
+      {len > 50 ? <path d={chain(cv, 0.12, 0.47, shadeU, (t) => armRadius(t) - shadeU(t), -1)} fill={pal.jacketShade} opacity={0.85} /> : null}
+      {flen > 40 ? <path d={chain(cv, 0.62, 0.92, shadeF, (t) => armRadius(t) - shadeF(t) - 4, 1)} fill={pal.jacketShade} opacity={0.85} /> : null}
+      {/* elbow crease, soft */}
       <path
         d={`M ${e.x + nx * 6 - fx * 4} ${e.y + ny * 6 - fy * 4} q ${fx * 10} ${fy * 10} ${nx * 16} ${ny * 16}`}
         fill="none"
         stroke={pal.jacketLine}
         strokeWidth={2.5}
         strokeLinecap="round"
-        opacity={0.55}
+        opacity={0.4}
       />
       {/* hand, then the shirt cuff over the wrist */}
-      <g transform={`translate(${w.x + fx * 8} ${w.y + fy * 8}) rotate(${handAngle}) scale(${HAND_SCALE})`}>
+      <g transform={`translate(${w.x - Math.sin(el) * 8} ${w.y + Math.cos(el) * 8}) rotate(${handAngle}) scale(${HAND_SCALE})`}>
         <Hand shape={pose.hand} pal={pal} />
       </g>
       <g transform={`translate(${w.x} ${w.y}) rotate(${pose.elbow})`}>

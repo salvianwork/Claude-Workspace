@@ -19,6 +19,9 @@
     glassesColor: "#9CD62B", // translucent lime acetate (drawn at 0.95 opacity)
     glassesEdge: "#5E9A14",
     glassesLight: "#D4F57A",
+    // phone-ready refresh: the whole head (hair, ears, face, glasses) is drawn this much bigger
+    // relative to the body, scaled about the chin (RIG.headScaleY), so the neck and collar still fit
+    headScale: 1.2,
     outfits: {
       // Navy blazer over a light-blue collared shirt, no tie: the default "documentary host".
       blazer: {
@@ -93,5 +96,5 @@
   P.shade = shade;
   P.tint = tint;
   P.palette = palette;
-  if (root.HFKit) root.HFKit.presenter = P;
+  if (root.HFKit) { root.HFKit.presenter = P; root.HFKit.LOOK = P.LOOK; }
 })(typeof globalThis !== "undefined" ? globalThis : window);

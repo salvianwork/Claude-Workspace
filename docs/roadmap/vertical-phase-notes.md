@@ -36,4 +36,4 @@ Make videos for **TikTok and YouTube Shorts** (the owner's main targets).
 ## After this phase
 - **Pip**, the publisher agent (named by the owner): titles, description, hashtags, cover
   frame and an upload checklist, with a pixel character and desk in the studio.
-- **Clipping:** see `clipping-phase-brief.md`.
+- **Clipping:** future only, not scheduled (see `clipping-phase-brief.md`).

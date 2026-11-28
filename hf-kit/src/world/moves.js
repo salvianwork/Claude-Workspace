@@ -49,14 +49,18 @@
  * maxPanPerSec 0.6 x zoom is then 0.6 x 3840 = 2304 world px/s at zoom 1, which on screen is
  * 2304 px/s = 1.2 frame widths a second at the eased (sine) peak, at every zoom (world px/s =
  * 2304 / zoom). Zoom is multiplicative (<= 2.5x/s at the peak); a dive's push-in may zoom at up to
- * 4x/s (DIVE_LIMITS) because it ends in a cut. Move times come from timing.js (cameraMoveTime). The view never leaves the 3840 x 2160 world (focus points are clamped
- * for their zoom). */
+ * 4x/s (DIVE_LIMITS) because it ends in a cut. Move times come from timing.js (cameraMoveTime). The view never leaves the world (focus points are clamped
+ * for their zoom): world.bounds, 3840 x 2160, or 3840 x 3600 for an extended place (a vertical
+ * canvas and a place with meta.extend: world.extended; its anchors are 720 lower, see place.js).
+ * opts.extended (true / false) overrides the canvas rule. */
 (function (root) {
   "use strict";
   var K = root.HFKit;
   if (!K || !K.effects || !K.overlays || !K.cameraAt) throw new Error("world/moves.js: load the kit scripts first (timing, effects, overlays)");
 
-  var WORLD = { width: 3840, height: 2160 }, NORM = 3840, FRAME = { width: 1920, height: 1080 };
+  var WORLD = { width: 3840, height: 2160 }, NORM = 3840;
+  // the frame is the composition canvas, read when the moves compile or the camera runs (not cached)
+  function canvas() { return K.CANVAS; }
   var MOTION = { walk: 420, run: 640, ramp: 0.3, turn: 0.25 };
   var DIVE_LIMITS = Object.assign({}, K.WORLD_LIMITS, { maxZoomPerSec: 4 });
   var PULSE_SPEED = { slow: 600, medium: 1100, fast: 1800 }; // world px/s
@@ -111,6 +115,8 @@
     follow: m("camera", ["target"], ["zoom", "at"], "follow a moving actor or `pulse` (slew-limited, never a whip pan). Walkers are followed by default while no camera move runs"),
     cut: m("camera", ["target"], ["zoom", "at"], "an instant cut to a target (after a dive: back out of the inside view)"),
     dive: m("camera", ["target", "into"], ["params", "zoom", "at"], "push in to zoom >= 3 (default 3.2, up to 3x/s) on the target, then cut to the inside view HFKit.insides[into]: {INSIDES}"),
+    pan_up: m("camera", [], ["to", "by", "at"], "pan the view up (a tall reveal, ground to sky) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move; it stops at the world's top edge. `at` is where the pan starts"),
+    pan_down: m("camera", [], ["to", "by", "at"], "pan the view down (sky to ground) to an anchor `to`, or by `by` world px, at the same zoom; same pan limit as every move; it stops at the world's bottom edge. `at` is where the pan starts"),
     custom: m("custom", ["name"], ["params", "at", "until"], "a scene-specific piece: needs 04-video/hf/scenes/scene-<id>.js registering HFKit.customs[name]"),
   };
   Object.keys(FX).forEach(function (name) {
@@ -120,7 +126,7 @@
   // the pinned table's order
   var ORDER = ["enter", "exit", "walk_to", "run_to", "jump", "point", "gesture", "react", "hold", "use", "say",
     "burst", "rings", "pulse_along", "speed_lines", "splash", "sparkle", "smoke", "glow", "tag_follow", "label", "title",
-    "push_in", "pull_out", "follow", "cut", "dive", "custom"];
+    "push_in", "pull_out", "follow", "cut", "dive", "pan_up", "pan_down", "custom"];
   var ORDERED = {};
   ORDER.forEach(function (n) { ORDERED[n] = MOVES[n]; });
   MOVES = ORDERED;
@@ -132,13 +138,14 @@
   function num(v) { return typeof v === "number" && isFinite(v); }
   function rig() { return K.rig; }
   function worldK() { return (root.HFKitActor && root.HFKitActor.WORLD_K) || 0.3; }
-  function toScreen(p, cam) { return { x: (p.x - cam.x) * cam.zoom + FRAME.width / 2, y: (p.y - cam.y) * cam.zoom + FRAME.height / 2 }; }
-  function unproject(s, cam) { return { x: cam.x + (s.x - FRAME.width / 2) / cam.zoom, y: cam.y + (s.y - FRAME.height / 2) / cam.zoom }; }
+  function toScreen(p, cam) { return { x: (p.x - cam.x) * cam.zoom + canvas().width / 2, y: (p.y - cam.y) * cam.zoom + canvas().height / 2 }; }
+  function unproject(s, cam) { return { x: cam.x + (s.x - canvas().width / 2) / cam.zoom, y: cam.y + (s.y - canvas().height / 2) / cam.zoom }; }
   /* The focus point a camera at zoom z may use, so the view stays inside the world. */
-  function clampFocus(p, z) {
-    var hx = FRAME.width / 2 / z, hy = FRAME.height / 2 / z;
-    return { x: clamp(p.x, Math.min(hx, WORLD.width / 2), Math.max(WORLD.width - hx, WORLD.width / 2)), y: clamp(p.y, Math.min(hy, WORLD.height / 2), Math.max(WORLD.height - hy, WORLD.height / 2)) };
+  function clampFocus(p, z, bounds) {
+    var B = bounds || WORLD, hx = canvas().width / 2 / z, hy = canvas().height / 2 / z;
+    return { x: clamp(p.x, Math.min(hx, B.width / 2), Math.max(B.width - hx, B.width / 2)), y: clamp(p.y, Math.min(hy, B.height / 2), Math.max(B.height - hy, B.height / 2)) };
   }
+  var clampTo = clampFocus;
   function norm(p) { return { x: p.x / NORM, y: p.y / NORM }; }
   function denorm(c) { return { x: c.x * NORM, y: c.y * NORM, zoom: c.zoom }; }
 
@@ -183,11 +190,13 @@
     var w = {
       place: scene.place, variant: scene.variant, meta: P ? P.meta : null, anchors: {}, paths: {}, actors: {},
       effects: opts.effects || Object.keys(K.effects), customs: opts.customs || K.customs || {}, insides: opts.insides || K.insides || {},
-      duration: opts.duration, errors: errors, fatal: false,
+      duration: opts.duration, errors: errors, fatal: false, extended: false, bounds: { width: WORLD.width, height: WORLD.height },
     };
     if (!P) { errors.push("scene " + sid + ": unknown place \"" + scene.place + "\""); w.fatal = true; return w; }
+    w.extended = opts.extended !== undefined ? !!opts.extended && !!P.meta.extend : K.place.extendedFor(P, canvas());
+    w.bounds = K.placeWorld(P, w.extended);
     var a;
-    try { a = P.anchorsFor({ variant: scene.variant, seed: sid }); } catch (e) { errors.push("scene " + sid + ": " + e.message); w.fatal = true; return w; }
+    try { a = P.anchorsFor({ variant: scene.variant, seed: sid, extended: w.extended }); } catch (e) { errors.push("scene " + sid + ": " + e.message); w.fatal = true; return w; }
     w.variant = scene.variant === undefined ? P.meta.variants[0] : scene.variant;
     w.anchors = a.anchors; w.paths = a.paths;
     var cast = opts.cast;
@@ -207,7 +216,11 @@
       var start = sa.start || (character === "host" ? { slot: "right" } : null);
       if (!start) { errors.push(tag + ": needs a start ({slot} or {anchor})"); return; }
       if (start.slot !== undefined) {
-        if (start.slot !== "left" && start.slot !== "right") { errors.push(tag + ": slot must be left or right (got \"" + start.slot + "\")"); return; }
+        var bm = /^bottom-(left|right)$/.exec(String(start.slot));
+        if (bm) { // the vertical host's slot: on a portrait canvas the rig's left / right slots are the bottom slot's sides
+          if (!(canvas().height > canvas().width)) { errors.push(tag + ": slot \"" + start.slot + "\" needs a vertical canvas (use left or right in landscape)"); return; }
+          start = { slot: bm[1], bottom: true };
+        } else if (start.slot !== "left" && start.slot !== "right") { errors.push(tag + ": slot must be left, right, bottom-left or bottom-right (got \"" + start.slot + "\")"); return; }
       } else if (!w.anchors[start.anchor]) { errors.push(tag + ": unknown anchor \"" + start.anchor + "\""); return; }
       w.actors[sa.id] = { id: sa.id, character: character, outfit: outfit, start: start, scale: actorScale * (sa.scale || 1), host: character === "host" };
     });
@@ -276,6 +289,11 @@
           else if (!world.insides[mv.into]) e = "unknown inside \"" + mv.into + "\"";
           else if (world.insides[mv.into].check) e = world.insides[mv.into].check(mv.params);
         }
+        break;
+      case "pan_up": case "pan_down":
+        if ((mv.to === undefined) === (mv.by === undefined)) e = "needs `to` (an anchor) or `by` (world px), not both and not neither";
+        else if (mv.to !== undefined) e = anchorErr(mv.to);
+        else if (!(num(mv.by) && mv.by > 0)) e = "`by` must be a number of world px above 0 (got " + JSON.stringify(mv.by) + "); the move's name gives the direction";
         break;
       case "custom":
         if (!world.customs[mv.name]) e = "no HFKit.customs[\"" + mv.name + "\"] (register it in 04-video/hf/scenes/scene-" + ctx.sceneId + ".js)";
@@ -414,7 +432,7 @@
     function sortTrack(tr) { return tr.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return a[0].t - b[0].t || a[1] - b[1]; }).map(function (x) { return x[0]; }); }
     function edgeX(cam, side, scale) { // just outside the frame, in world px
       var half = 360 * WK * scale; // half the drawn figure, so it is fully off frame
-      return side === "left" ? cam.x - FRAME.width / 2 / cam.zoom - half : cam.x + FRAME.width / 2 / cam.zoom + half;
+      return side === "left" ? cam.x - canvas().width / 2 / cam.zoom - half : cam.x + canvas().width / 2 / cam.zoom + half;
     }
     function moveEv(t0, gait, space, from, to, extra) {
       var dist = space === "screen" ? Math.abs(to.x - from.x) : Math.hypot(to.x - from.x, to.y - from.y);
@@ -452,12 +470,12 @@
           var start = sorted[0];
           if (cur.mode === "slot" || start.mode === "slot") {
             var sideS = mv.side || cur.side || start.side;
-            var fx = sideS === "left" ? -420 : FRAME.width + 420;
+            var fx = sideS === "left" ? -420 : canvas().width + 420;
             tr.push({ t: t0, type: "show" });
             e = moveEv(t0, "walk", "screen", { x: fx, scale: slotScale() }, { x: SLOT[start.side], scale: slotScale() }, { side: start.side });
           } else {
             var dest = { x: cur.x, y: cur.y, scale: cur.scale };
-            var side = mv.side || (toScreen(dest, cam).x < FRAME.width / 2 ? "left" : "right");
+            var side = mv.side || (toScreen(dest, cam).x < canvas().width / 2 ? "left" : "right");
             tr.push({ t: t0, type: "show" });
             e = moveEv(t0, "walk", "world", { x: edgeX(cam, side, dest.scale), y: dest.y, scale: dest.scale }, dest);
           }
@@ -467,11 +485,11 @@
         case "exit": {
           if (!cur.visible) { errors.push([p, "\"" + id + "\" is not on stage"]); return; }
           if (cur.mode === "slot") {
-            var sx = (mv.side || cur.side) === "left" ? -420 : FRAME.width + 420;
+            var sx = (mv.side || cur.side) === "left" ? -420 : canvas().width + 420;
             e = moveEv(t0, "walk", "screen", { x: cur.screen.x, scale: slotScale() }, { x: sx, scale: slotScale() }, { side: cur.side });
           } else {
             var here = { x: cur.x, y: cur.y, scale: cur.scale };
-            var sd = mv.side || (toScreen(here, cam).x < FRAME.width / 2 ? "left" : "right");
+            var sd = mv.side || (toScreen(here, cam).x < canvas().width / 2 ? "left" : "right");
             e = moveEv(t0, "walk", "world", here, { x: edgeX(cam, sd, cur.scale), y: cur.y, scale: cur.scale });
           }
           tr.push(e); tr.push({ t: e.t1, type: "hide" }); busy[id] = e.t1; p.done = e.t1;
@@ -587,25 +605,52 @@
     return K.cameraMoveTime({ x: a.x / NORM, y: a.y / NORM, zoom: a.zoom }, { x: b.x / NORM, y: b.y / NORM, zoom: b.zoom }, lim);
   }
   /* The zoom at which an actor of this scale is READABLE: at least 45 % of the frame height. */
-  function readableZoom(scale) { return Math.min(K.WORLD_LIMITS.maxZoom, 0.45 * FRAME.height / (TOP * worldK() * scale)); }
+  function readableZoom(scale) { return Math.min(K.WORLD_LIMITS.maxZoom, 0.45 * canvas().height / (TOP * worldK() * scale)); }
 
   /* Where the camera centres to frame a point: a ground point (an anchor, the pulse) sits a little
    * below the middle, at 55 % of the frame height, so what stands there shows and the caption band
    * stays clear of it; actors are framed by actorFocus below. */
-  var AIM = 0.05 * FRAME.height;
-  function aim(p, zoom, isActor) { return isActor ? { x: p.x, y: p.y } : { x: p.x, y: p.y - AIM / zoom }; }
+  var AIM = 0.05; // x the frame height
+  /* Vertical (1080 x 1920, 2026-11-28 fix wave): 55 % of the height would be y 1056, on and under the
+   * caption band (840-1020), so a vertical frame puts a ground point in the clear area above the band:
+   * at y 640 (a third of the height) while the host is in his slot, and at y 1040 while he is out of it (the line his feet stand on)
+   * (the caption is then in the top band, 220-400, and the slot is empty), so what stands there shows
+   * below the top band. `away` = the host is out of his slot when the move starts. */
+  var AIM_V = { slot: 640, away: 1040 };
+  function isVert() { var c = canvas(); return c.height > c.width; }
+  function aimY(away) { return isVert() ? (away ? AIM_V.away : AIM_V.slot) : canvas().height * (0.5 + AIM); }
+  function aim(p, zoom, isActor, away) {
+    if (isActor) return { x: p.x, y: p.y };
+    if (isVert()) return { x: p.x, y: p.y - (aimY(away) - canvas().height / 2) / zoom };
+    return { x: p.x, y: p.y - AIM * canvas().height / zoom };
+  }
+  /* The inverse of aim: the framed point for a camera centre. */
+  function unaim(c, zoom, away) {
+    if (isVert()) return { x: c.x, y: c.y + (aimY(away) - canvas().height / 2) / zoom };
+    return { x: c.x, y: c.y + AIM * canvas().height / zoom };
+  }
   /* Framing an actor: when he fits (head to feet in 660 px), his feet sit at y 700, just above the
-   * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest. */
-  var FEET_Y = 700, FIT_H = 660;
-  function actorFocus(points, name, t, zoom) {
+   * caption band, so what he stands on and does with his hands shows; a taller shot frames his chest.
+   * Vertical: feet at y 780 and up to 560 px tall (head below y 220) while the host is in his slot
+   * (the caption band is 840-1020), or feet at y 1040 and up to 620 px tall (head below the top
+   * caption band, 220-400) while he is out of it. */
+  var FEET_Y = 700, FIT_H = 660, FEET_V = { slot: { y: 780, h: 560 }, away: { y: 1040, h: 620 } };
+  function actorFocus(points, name, t, zoom, away) {
     var f = points(name, t, "feet"), top = points(name, t, "top");
     if (!f || f.screen) return null;
-    return (f.y - top.y) * zoom <= FIT_H ? { x: f.x, y: f.y - (FEET_Y - FRAME.height / 2) / zoom } : points(name, t, "body");
+    var fy = FEET_Y, fh = FIT_H;
+    if (isVert()) { var fv = away ? FEET_V.away : FEET_V.slot; fy = fv.y; fh = fv.h; }
+    return (f.y - top.y) * zoom <= fh ? { x: f.x, y: f.y - (fy - canvas().height / 2) / zoom } : points(name, t, "body");
   }
 
   /* Camera keys from the camera moves (plus automatic follows of walkers, `autos`). points(name, t,
    * "body") resolves targets. Returns {keys, anchors, dives, errors, warnings}. */
-  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos) {
+  function buildCamera(camMoves, points, tracks, opening, actorMoves, autos, bounds, awayAt) {
+    var B = bounds || WORLD;
+    // vertical: is the host out of his slot at the move being framed (the caption is then in the top band)
+    var away = false;
+    function awayNow(t) { away = !!(awayAt && isVert() && awayAt(t)); }
+    function clampFocus(p, z) { return clampTo(p, z, B); }
     var anchors = {}, keys = [], dives = [], errors = [], warnings = [], n = 0, landed = [];
     function isStatic(name) {
       if (tracks[name] || name === "pulse") return false;
@@ -614,23 +659,24 @@
     }
     /* A named camera anchor: a fixed normalised point, or a function (tracking) clamped to the view. */
     function anchorFor(name, zoom, at) {
-      var key = "cam-" + (n++);
-      if (name === null) anchors[key] = norm(clampFocus(aim(at, zoom), zoom));
-      else if (isStatic(name)) anchors[key] = norm(clampFocus(aim(points(name, 0, "body"), zoom), zoom));
+      var key = "cam-" + (n++), aw = away;
+      if (name === null) anchors[key] = norm(clampFocus(aim(at, zoom, false, aw), zoom));
+      else if (isStatic(name)) anchors[key] = norm(clampFocus(aim(points(name, 0, "body"), zoom, false, aw), zoom));
       else {
         anchors[key] = function (t) {
           var p = points(name, t, "body");
           if (!p || p.screen) { // an actor in the side slot: aim where he will step into the world
             var tr = tracks[name], mvs = (tr || []).filter(function (e) { return e.type === "move" && e.space === "world"; });
             var nx = mvs.find(function (e) { return e.t >= t; }) || mvs[mvs.length - 1];
-            p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: WORLD.width / 2, y: WORLD.height / 2 };
-          } else p = tracks[name] ? actorFocus(points, name, t, zoom) : aim(p, zoom, false);
+            p = nx ? { x: nx.to.x, y: nx.to.y - BODY * worldK() * nx.to.scale } : { x: B.width / 2, y: B.height / 2 };
+          } else p = tracks[name] ? actorFocus(points, name, t, zoom, aw) : aim(p, zoom, false, aw);
           return norm(clampFocus(p, zoom));
         };
       }
       return key;
     }
     var open = opening;
+    awayNow(0);
     keys.push({ t: 0, frame: { focus: anchorFor(null, open.zoom, open), zoom: open.zoom } });
     var cur = { target: null, point: open, zoom: open.zoom, follow: false, name: keys[0].frame.focus };
     var prevLand = 0, inside = null;
@@ -639,6 +685,7 @@
     var stream = camMoves.concat(autos || []).sort(function (a, b) { return a.t - b.t || (a.auto ? 1 : 0) - (b.auto ? 1 : 0) || a.order - b.order; });
     stream.forEach(function (p) {
       var mv = p.mv;
+      awayNow(p.t);
       if (p.auto) { // follow a walker while no camera move of the scene is running
         if (inside || prevLand > p.t + 0.3 || p.t > p.walkEnd - 0.4) return;
         if (cur.follow && cur.target === mv.target) return;
@@ -672,6 +719,23 @@
         prevLand = t1; inside = mv.into;
         return;
       }
+      if (mv.do === "pan_up" || mv.do === "pan_down") { // a vertical pan: the same zoom, to an anchor or by world px
+        var ps = Math.max(prevLand, p.beatStart), pa = poseAt(ps), pz = cur.zoom, pkey = "cam-" + (n++), ptp = null, pfocus;
+        if (mv.to !== undefined) {
+          ptp = points(mv.to, p.t, "body");
+          pfocus = clampFocus(aim(ptp, pz, false, away), pz);
+        } else pfocus = clampFocus({ x: pa.x, y: pa.y + (mv.do === "pan_up" ? -mv.by : mv.by) }, pz);
+        anchors[pkey] = norm(pfocus);
+        var pd = Math.max(0.8, moveTime(pa, { x: pfocus.x, y: pfocus.y, zoom: pz }, K.WORLD_LIMITS) * 1.04);
+        var pstart = Math.max(ps, p.explicit ? p.t : ps), pland = pstart + pd;
+        landed.push({ p: p, t: pland });
+        var plast = keys[keys.length - 1];
+        if (pstart > plast.t + 1e-6) keys.push({ t: pstart, frame: Object.assign({}, plast.frame) });
+        keys.push({ t: pland, frame: { focus: pkey, zoom: pz } });
+        cur = { target: ptp ? mv.to : null, point: ptp ? ptp : unaim(pfocus, pz, away), zoom: pz, follow: false, name: pkey };
+        prevLand = pland;
+        return;
+      }
       // push_in / pull_out / follow: an eased move that lands on `at` when it is given
       var follow = mv.do === "follow" || (mv.do === "pull_out" && cur.follow && mv.target === undefined);
       var start0 = Math.max(prevLand, p.beatStart);
@@ -683,7 +747,7 @@
       var landOn = mv.do === "follow" ? null : p.explicit ? p.t : mv.do !== "pull_out" ? null : p.beatEnd < p.duration - 1e-9 ? p.beatEnd : Math.max(p.beatStart, p.duration - 0.4);
       var a = poseAt(start0);
       var tp = target === null ? null : points(target, p.t, "body");
-      var bp = clampFocus(tp && !tp.screen ? (tracks[target] ? actorFocus(points, target, p.t, zoom) : aim(tp, zoom, false)) : aim(cur.point, zoom), zoom);
+      var bp = clampFocus(tp && !tp.screen ? (tracks[target] ? actorFocus(points, target, p.t, zoom, away) : aim(tp, zoom, false, away)) : aim(cur.point, zoom, false, away), zoom);
       var d = Math.max(0.8, moveTime(a, { x: bp.x, y: bp.y, zoom: zoom }, K.WORLD_LIMITS) * 1.04);
       var land, start;
       if (landOn !== null) { start = Math.max(start0, landOn - d); land = Math.max(landOn, start + d); }
@@ -701,12 +765,13 @@
       if (mv.do === "push_in" && target !== null && !tracks[target] && tp && !tp.screen) Object.keys(tracks).forEach(function (id) {
         var a = actorAt(tracks[id], land);
         if (!a.visible || a.mode !== "world" || Math.abs(a.x - tp.x) > 160 || Math.abs(a.y - tp.y) > 120) return;
-        var tall = (TOP + 30) * worldK() * a.scale, fit = (FRAME.height * 0.55 - 40) / tall;
+        // vertical: the actor must fit between his feet (the aim point) and the top of the clear area
+        var tall = (TOP + 30) * worldK() * a.scale, fit = isVert() ? (aimY(away) - (away ? CAPTION_TOP_BAND.bottom + 20 : SAFE_Y.y0)) / tall : (canvas().height * 0.55 - 40) / tall;
         if (zoom > fit + 1e-9) { warnings.push([p, "zoom " + zoom + " on \"" + target + "\" crops \"" + id + "\" standing there (at most " + fit.toFixed(2) + " shows all of them; or push_in on \"" + id + "\")"]); p.cropped = (p.cropped || []).concat([id]); }
       });
     });
     // an actor in view whose head the frame edge cuts (or leaves out) where a camera move lands: warn
-    var final = { camera: keys.slice(), camAnchors: anchors, dives: dives };
+    var final = { camera: keys.slice(), camAnchors: anchors, dives: dives, bounds: B };
     camMoves.forEach(function (p) { if (p.mv.do === "cut") landed.push({ p: p, t: p.t }); });
     landed.forEach(function (L) {
       var cam = worldCamera(final, L.t + 1e-6);
@@ -716,8 +781,8 @@
         if (!a.visible || a.mode !== "world" || (L.p.cropped || []).indexOf(id) >= 0) return;
         var k = worldK() * a.scale * cam.zoom, f = toScreen(a, cam), HB = rig().headBox({ pose: "idle", expression: "happy", mouth: 0, blink: 0, breath: 0, outfit: "blazer" });
         var x0 = f.x + HB.x * k, x1 = x0 + HB.width * k, y0 = f.y + (HB.y - rig().FEET) * k, y1 = y0 + HB.height * k;
-        var inside = x0 >= 0 && x1 <= FRAME.width && y0 >= 0 && y1 <= FRAME.height;
-        var bodyIn = f.x + 160 * k > 0 && f.x - 160 * k < FRAME.width && f.y > 0 && y0 < FRAME.height; // some of him shows
+        var inside = x0 >= 0 && x1 <= canvas().width && y0 >= 0 && y1 <= canvas().height;
+        var bodyIn = f.x + 160 * k > 0 && f.x - 160 * k < canvas().width && f.y > 0 && y0 < canvas().height; // some of him shows
         if (!inside && bodyIn) warnings.push([L.p, "the frame edge cuts \"" + id + "\"'s head where the camera lands (" + L.t.toFixed(2) + " s): reframe, or zoom out a little"]);
       });
     });
@@ -750,22 +815,89 @@
   function worldCamera(c, t) {
     for (var i = 0; i < (c.dives || []).length; i++) {
       var dv = c.dives[i];
-      if (t >= dv.t0 && t < dv.t1) return clampView(camPose(dv.keys, c.camAnchors, t, DIVE_LIMITS));
+      if (t >= dv.t0 && t < dv.t1) return clampView(camPose(dv.keys, c.camAnchors, t, DIVE_LIMITS), c.bounds);
       if (t >= dv.t1 && t < dv.until) {
         var at = camPose(c.camera, c.camAnchors, t);
-        return Object.assign(clampView(at), { inside: dv.into, insideT: t - dv.t1, params: dv.params, dive: i });
+        return Object.assign(clampView(at, c.bounds), { inside: dv.into, insideT: t - dv.t1, params: dv.params, dive: i });
       }
     }
-    return clampView(camPose(c.camera, c.camAnchors, t));
+    return clampView(camPose(c.camera, c.camAnchors, t), c.bounds);
   }
-  function clampView(cam) { var p = clampFocus(cam, cam.zoom); return { x: p.x, y: p.y, zoom: cam.zoom }; }
+  function clampView(cam, bounds) { var p = clampFocus(cam, cam.zoom, bounds); return { x: p.x, y: p.y, zoom: cam.zoom }; }
+
+  /* Anchors used together in one beat of a vertical shot (Review Focus 2): a tall frame shows about 1800
+   * world px across at 1x, so anchors more than SPREAD_MAX px apart horizontally can't both be framed.
+   * One warning per such beat, naming the scene, the beat and the spread. The target of push_in, cut and follow counts;
+   * a pan's `to` and a pulse's from / to are left out (the pan is how the frame gets from one anchor to
+   * the other, and the camera follows a pulse). */
+  var SPREAD_MAX = 1700;
+  function spreadWarnings(parsed, world, sid) {
+    var c = canvas();
+    if (!(c.height > c.width)) return [];
+    var byBeat = {}, out = [];
+    parsed.forEach(function (p) {
+      var d = p.mv.do, camera = MOVES[d].group === "camera";
+      if (d === "pulse_along" || d === "pan_up" || d === "pan_down") return; // the camera follows a pulse; a pan is the way between anchors
+      // push_in, cut and follow frame their target, so it must share the frame with the beat's other anchors
+      if (camera && d !== "push_in" && d !== "cut" && d !== "follow") return;
+      (camera ? ["target"] : ["to", "from", "target"]).forEach(function (k) {
+        var a = world.anchors[p.mv[k]];
+        if (a) (byBeat[p.bi] = byBeat[p.bi] || {})[p.mv[k]] = a(0).x;
+      });
+    });
+    Object.keys(byBeat).sort(function (a, b) { return a - b; }).forEach(function (bi) {
+      var names = Object.keys(byBeat[bi]).sort(function (a, b) { return byBeat[bi][a] - byBeat[bi][b]; });
+      if (names.length < 2) return;
+      var lo = names[0], hi = names[names.length - 1], spread = Math.round(byBeat[bi][hi] - byBeat[bi][lo]);
+      if (spread > SPREAD_MAX) out.push("scene " + sid + " beat " + bi + ": anchors \"" + lo + "\" and \"" + hi + "\" are " + spread + " world px apart horizontally (more than " + SPREAD_MAX + "; a vertical frame shows about 1800 px across): pan or cut between them in separate beats instead");
+    });
+    return out;
+  }
+
+  /* Vertical frames: where a tag or label pill sits on screen over its life, against the caption band
+   * (y 840-1020). Same placement rules as overlays.js (a tag above its point by LEAD, below near the
+   * top; a label centred, or beside / above / below by `side`), clamped to the text safe zone. Returns the
+   * first time (s) it crosses the band, or null. Not in landscape (no vertical caption band). */
+  var CAPTION_BAND = { top: 840, bottom: 1020 }, CAPTION_TOP_BAND = { top: 220, bottom: 400 }, SAFE_Y = { y0: 200, y1: 1420 };
+  /* Is a host actor out of his slot (stepped into the world, or walking) at t? Vertical captions then sit in
+   * the top band. compiled = compileMoves output (compiled.actors tracks), world = worldFor output. */
+  function hostAway(compiled, world, t) {
+    return Object.keys(world.actors).some(function (id) {
+      var a = world.actors[id];
+      if (!a.host || !compiled.actors[id]) return false;
+      var st = actorAt(compiled.actors[id], t);
+      return st.visible && st.mode !== "slot";
+    });
+  }
+  K.hostAway = hostAway;
+  function captionBandCrossing(o, out, camFn, world) {
+    var c = canvas();
+    if (!(c.height > c.width) || o.kind === "title" || o.target === undefined) return null;
+    var isTag = o.kind === "tag", vm = K.overlays && K.overlays.verticalMetrics ? K.overlays.verticalMetrics(o.kind, o.text) : { height: isTag ? 67 : 61, lead: isTag ? 97 : 29 };
+    var H = vm.height, lead = vm.lead; // the vertical pill size (overlays.js: about 1.5x landscape)
+    var side = o.side || (isTag ? "auto" : "center");
+    for (var t = o.at; t <= o.until + 1e-9; t += 0.1) {
+      var q = out.point(o.target, t, "top");
+      if (!q) continue;
+      if (!q.screen) q = toScreen(q, camFn(t));
+      if (q.x < -200 || q.x > c.width + 200 || q.y < -200 || q.y > c.height + 200) continue; // far outside: the pill is hidden
+      var s = side;
+      if (s === "auto") s = q.y - lead - H < SAFE_Y.y0 ? "below" : "above";
+      var cy = s === "above" ? q.y - lead - H / 2 : s === "below" ? q.y + lead + H / 2 : q.y;
+      var y0 = Math.min(Math.max(cy - H / 2, SAFE_Y.y0), SAFE_Y.y1 - H);
+      var band = hostAway(out, world, t) ? CAPTION_TOP_BAND : CAPTION_BAND; // the caption sits where the host is not
+      if (y0 + H > band.top && y0 < band.bottom) return { t: t, band: band };
+    }
+    return null;
+  }
 
   // ---- the compiler ---------------------------------------------------------------------------
   function compileMoves(scene, words, world) {
     scene = scene || {};
     world = world || worldFor(scene, {});
     var sid = scene.id, errors = [], duration = sceneDuration(scene, words, world);
-    var out = { actors: {}, effects: [], overlays: [], camera: [], dives: [], camAnchors: {}, overrun: 0, duration: duration, errors: errors, warnings: [] };
+    var bounds = world.bounds || WORLD;
+    var out = { actors: {}, effects: [], overlays: [], camera: [], dives: [], camAnchors: {}, overrun: 0, duration: duration, errors: errors, warnings: [], bounds: bounds, extended: !!world.extended };
     var beats = scene.beats;
     if (!Array.isArray(beats) || !beats.length) { errors.push("scene " + sid + ": no beats"); return out; }
     var hasPulse = beats.some(function (b) { return b && (b.moves || []).some(function (mv) { return mv && mv.do === "pulse_along"; }); });
@@ -831,7 +963,7 @@
     var used = [];
     Object.keys(world.actors).forEach(function (id) { var st = world.actors[id].start; if (st.anchor) used.push(st.anchor); });
     parsed.forEach(function (p) { ["to", "from", "target"].forEach(function (k) { if (world.anchors[p.mv[k]]) used.push(p.mv[k]); }); });
-    var first = camMoves[0], centre = { x: WORLD.width / 2, y: WORLD.height / 2 };
+    var first = camMoves[0], centre = { x: bounds.width / 2, y: bounds.height / 2 };
     if (used.length) {
       var ps = used.map(function (n) { return world.anchors[n](0); });
       var xs = ps.map(function (q) { return q.x; }), ys = ps.map(function (q) { return q.y; });
@@ -854,14 +986,17 @@
       if (of && !of.screen) opening = { x: of.x, y: of.y, zoom: oz };
       first.openedTight = true;
     }
-    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration));
-    var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives }, t); };
+    var c1 = buildCamera(camMoves, makePoints(world, p1.tracks, pulses), p1.tracks, opening, actorMoves, autoFollows(actorMoves, p1.tracks, duration), bounds,
+      function (t) { return hostAway({ actors: p1.tracks }, world, t); });
+    var cam1 = function (t) { return worldCamera({ camera: c1.keys, camAnchors: c1.anchors, dives: c1.dives, bounds: bounds }, t); };
     var p2 = pass(cam1, p1.tracks);
     sync();
     var points = makePoints(world, p2.tracks, pulses);
-    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration));
+    var c2 = buildCamera(camMoves, points, p2.tracks, opening, actorMoves, autoFollows(actorMoves, p2.tracks, duration), bounds,
+      function (t) { return hostAway({ actors: p2.tracks }, world, t); });
     p2.errors.concat(c2.errors).forEach(function (x) { errors.push(x[0].tag + ": " + x[1]); });
     c2.warnings.forEach(function (x) { out.warnings.push(x[0].tag + ": " + x[1]); });
+    spreadWarnings(parsed, world, sid).forEach(function (x) { out.warnings.push(x); });
     // a strike that had to wait for its actor more than 0.5 s after its word: say how to fix it
     actorMoves.forEach(function (u) {
       if (u.mv.do !== "use" || !(u.actual > u.t0 + 0.5)) return;
@@ -918,6 +1053,8 @@
       if (mv.target !== undefined) o.target = mv.target;
       if (mv.side !== undefined) o.side = mv.side;
       out.overlays.push(o);
+      var cross = captionBandCrossing(o, out, cam, world);
+      if (cross !== null) out.warnings.push(p.tag + ": the " + (o.kind === "tag" ? "tag" : o.kind) + " \"" + o.text + "\" crosses the caption band (y " + cross.band.top + "-" + cross.band.bottom + ", where the caption is then) at " + cross.t.toFixed(1) + " s and would sit on the caption: reframe so its target is clear of the band, or move it to another beat");
     });
 
     // camera overrun (main keys and dives) against the scene duration

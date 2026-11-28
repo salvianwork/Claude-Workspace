@@ -117,8 +117,9 @@ WORLD_SECONDS = {1: 11.0, 2: 6.0}
 
 def world_shots() -> dict:
     """Two world scenes: the host steps into the countryside once (scene 1), then talks from the
-    side slot in the lab (scene 2). Valid as is (1 step-in)."""
-    return {"schema": 2, "type": "explainer", "audience": "all-ages",
+    side slot in the lab (scene 2). Valid as is (1 step-in). Landscape (the side slot is a
+    landscape layout); drop "format" for the vertical default."""
+    return {"schema": 2, "format": "landscape", "type": "explainer", "audience": "all-ages",
             "cast": [{"id": "host", "character": "host", "outfit": "lab-coat"}],
             "scenes": [
                 {"id": 1, "kind": "world", "place": "countryside", "variant": "day", "new_place": False,

@@ -116,6 +116,10 @@ def _render_hyperframes(run_dir: Path, workers: int | None, hero_count: bool) ->
     except HFError as e:
         raise RenderError(f"hyperframes: {e}") from e
     print(f"hyperframes render took {result['seconds']:.1f} s")
+    if result.get("retried"):
+        print("note: the render was interrupted and finished on a retry with 1 worker")
+    for w in result.get("warnings", []):
+        print(f"warning: {w}")
     return _mux(tools["ffmpeg"], silent, mix, final, run_dir)
 
 

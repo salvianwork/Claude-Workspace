@@ -15,6 +15,9 @@
  *   floor    the open floor in the middle of the room
  * Path: floor (across the room, left to right).
  *
+ * Extended (vertical videos, mount with extended: true; meta.extend): 720 px drawn above and below,
+ * anchors and paths 720 lower (see drawTopBand / drawBottomBand and src/world/place.js).
+ *
  * Contract: hf-kit/places/README.md and hf-kit/src/world/place.js. Pure function of (t, cam). */
 (function (root) {
   "use strict";
@@ -34,6 +37,11 @@
       day: { tint: "#FFF4E4", amount: 0.08 },
       evening: { tint: "#FF9E5E", amount: 0.32, rim: "#FFD39A", rimSide: -1 }, // the floor lamp at the left
     },
+    // the extension for vertical videos (place.js: mount with extended: true, world 3840 x 3600)
+    extend: {
+      top: { draws: "the ceiling continued up toward the viewer: exposed wooden rafters, a skylight over the kitchen, a turning ceiling fan with a light over the sofa, a macramé hanging plant, a smoke detector and a string of fairy lights", seamAllow: [] },
+      bottom: { draws: "the plank floor continued toward the viewer (the window's sunbeam fading out in the day), a striped round rug with a dog asleep in its bed, a ball, slippers and a stack of books, and in front a knitted pouf, a floor vent and a basket with a blanket and balls of yarn", seamAllow: [] },
+    },
   };
 
   var G = {
@@ -50,6 +58,9 @@
 
   function anchorsFor(opts) {
     PL.variantOf(meta, opts);
+    return PL.offsetAnchors(baseAnchors(opts), PL.extendOffset(meta, opts));
+  }
+  function baseAnchors(opts) {
     var fixed = function (x, y) { return function () { return { x: x, y: y }; }; };
     var walk = [];
     for (var x = 300; x <= 3600; x += 330) walk.push({ x: x, y: 1860 });
@@ -250,6 +261,146 @@
     return { defs: "", body: s };
   }
 
+  // ---- the extension for vertical videos (tall-world px: the original is 720 lower) -----------
+  /* The top band (ground layer): the ceiling runs on up toward the viewer (the original's top strip
+   * is its far edge): exposed rafters getting deeper as they come closer, a skylight over the
+   * kitchen, a ceiling fan with a light (turning: data-part "fan"), a macramé hanging plant, a smoke
+   * detector and fairy lights. Nothing has a horizontal edge on the seam row (y 720). */
+  function drawTopBand(P, v, L, R) {
+    var room = L.room, ev = v === "evening", s = "";
+    var defs = '<linearGradient id="' + P + '-xceil" gradientUnits="userSpaceOnUse" x1="0" y1="722" x2="0" y2="0"><stop offset="0" stop-color="' + room("#F4E9D8") + '"/><stop offset="1" stop-color="' + room("#E6D3B6") + '"/></linearGradient>' +
+      S.lin(P + "-xsky", ev ? [[0, "#2B2F6B"], [1, "#7A4E8E"]] : [[0, "#5AA9E6"], [1, "#A8D8F2"]]) + S.rad(P + "-xglow", [[0, "#FFE0A0", 0.8], [1, "#FFE0A0", 0]]);
+    s += tag("rect", { x: -300, y: -200, width: 4440, height: 922, fill: "url(#" + P + "-xceil)" });
+    // the skylight between two rafters, over the kitchen (a shaft of light falls from it by day)
+    var sk = [2620, 3240, 334, 450];
+    s += tag("path", { d: "M" + (sk[0] - 40) + " " + (sk[2] - 30) + " H" + (sk[1] + 40) + " L" + (sk[1] + 26) + " " + (sk[3] + 20) + " H" + (sk[0] - 26) + " Z", fill: room("#FFFCF5"), stroke: room("#C2AE8A"), "stroke-width": 5 });
+    s += tag("path", { d: "M" + sk[0] + " " + sk[2] + " H" + sk[1] + " L" + (sk[1] - 10) + " " + sk[3] + " H" + (sk[0] + 10) + " Z", fill: "url(#" + P + "-xsky)" });
+    if (ev) s += A.stars(R, 14, sk[0] + 20, sk[2] + 10, sk[1] - sk[0] - 40, sk[3] - sk[2] - 30);
+    else s += A.cloud(2800, 400, 0.25, { cloud: "#FFFFFF", cloudShade: "#DCEBF6", cloudLight: "#FFFDF4" }, "x0") + A.glint(sk[0] + 20, sk[2], 260, sk[3] - sk[2], 0.35);
+    s += tag("path", { d: "M" + ((sk[0] + sk[1]) / 2) + " " + sk[2] + " V" + sk[3] + " M" + sk[0] + " " + ((sk[2] + sk[3]) / 2) + " H" + sk[1], stroke: room("#FFFCF5"), "stroke-width": 14 });
+    // rafters: beams parallel to the back wall, deeper (and further apart) as they come closer
+    [[690, 16, 10], [596, 24, 14], [470, 34, 20], [310, 46, 28], [110, 62, 40]].forEach(function (b) {
+      var y = b[0];
+      s += tag("rect", { x: -300, y: y - b[1], width: 4440, height: b[1], fill: room("#A87449") }) + tag("rect", { x: -300, y: y, width: 4440, height: b[2], fill: room("#7E5232") }) +
+        tag("path", { d: "M-300 " + r2(y - b[1] * 0.55) + " H4140", stroke: room("#C08A5A"), "stroke-width": 3, opacity: 0.6 }) + tag("rect", { x: -300, y: y + b[2], width: 4440, height: 10, fill: "#000", opacity: 0.07 });
+      for (var nx = -200 + (y % 300); nx < 4140; nx += 620) s += tag("circle", { cx: nx, cy: y - b[1] / 2, r: 4 + b[1] / 14, fill: room("#5A3A22") }); // pegs
+    });
+    // fairy lights looped along the nearest-but-one rafter
+    var fl = "", bulbs = "";
+    for (var fx = -300; fx < 4140; fx += 240) {
+      fl += (fx === -300 ? "M" : " ") + "Q" + (fx + 120) + " " + 266 + " " + (fx + 240) + " " + 222;
+      for (var b2 = 1; b2 < 4; b2++) { var u = b2 / 4, bx = fx + 240 * u, by = 222 + 2 * u * (1 - u) * 44; bulbs += tag("circle", { cx: r2(bx), cy: r2(by + 8), r: 7, fill: ["#FFD43B", "#FF8787", "#74C0FC", "#B2F2BB"][(b2 + fx / 240 | 0) % 4], "data-xbulb": 1, opacity: ev ? 1 : 0.85 }); }
+    }
+    s += tag("path", { d: "M-300 222 " + fl.replace(/^M/, ""), stroke: room("#3A4651"), "stroke-width": 3, fill: "none" }) + bulbs;
+    if (ev) s += tag("rect", { x: -300, y: 200, width: 4440, height: 90, fill: "#FFE0A0", opacity: 0.12 });
+    // the ceiling fan over the sofa: a rod from the rafter, the motor, a light bowl; blades turn
+    var fx0 = 1220, fy = 560;
+    s += tag("path", { d: "M" + fx0 + " 338 V" + (fy - 30), stroke: room("#3A4651"), "stroke-width": 12 }) + tag("rect", { x: fx0 - 40, y: 330, width: 80, height: 24, rx: 8, fill: room("#3A4651") });
+    s += tag("g", { "data-part": "fan" }, "");
+    s += tag("path", { d: "M" + (fx0 - 70) + " " + (fy - 20) + " q0 -30 70 -30 q70 0 70 30 v22 h-140 Z", fill: room("#5A3A22"), stroke: room("#3A2416"), "stroke-width": 4 });
+    s += tag("path", { d: "M" + (fx0 - 50) + " " + (fy + 2) + " q50 70 100 0 Z", fill: ev ? "#FFE0A0" : room("#F7EEDD"), stroke: room("#C2AE8A"), "stroke-width": 4 });
+    s += tag("path", { d: "M" + (fx0 + 30) + " " + (fy + 30) + " v50", stroke: room("#E7C46A"), "stroke-width": 3 }) + tag("circle", { cx: fx0 + 30, cy: fy + 84, r: 6, fill: room("#E7C46A") });
+    if (ev) s += tag("ellipse", { cx: fx0, cy: fy + 60, rx: 380, ry: 200, fill: "url(#" + P + "-xglow)", opacity: 0.75 });
+    // a macramé plant hanger by the bookshelf; a smoke detector
+    var hx = 620;
+    s += tag("path", { d: "M" + hx + " 140 V430 M" + hx + " 430 l-60 120 M" + hx + " 430 l60 120 M" + hx + " 430 v120 M" + (hx - 40) + " 500 l40 30 l40 -30", stroke: room("#E9DCC5"), "stroke-width": 6, fill: "none" }) + tag("circle", { cx: hx, cy: 140, r: 10, fill: room("#8C6A4A") });
+    s += tag("path", { d: "M" + (hx - 70) + " 550 h140 l-16 90 h-108 Z", fill: room("#E07A4F"), stroke: room("#8E4325"), "stroke-width": 5 });
+    for (var lf = 0; lf < 9; lf++) { var a = -160 + lf * 18, rad = a * Math.PI / 180, lx = hx + Math.cos(rad) * 80, ly = 550 + Math.sin(rad) * 60 + (lf % 3) * 40 + 40; s += tag("ellipse", { cx: r2(lx), cy: r2(ly), rx: 30, ry: 14, fill: room(lf % 2 ? "#4E9A48" : "#6DB552"), stroke: room("#2E6B33"), "stroke-width": 3, transform: "rotate(" + r2(a + 90) + " " + r2(lx) + " " + r2(ly) + ")" }); }
+    s += tag("ellipse", { cx: 2240, cy: 600, rx: 40, ry: 12, fill: room("#FFFDF7"), stroke: room("#A89A80"), "stroke-width": 3 }) + tag("circle", { cx: 2256, cy: 600, r: 4, fill: "#E03131", "data-blink": 0 });
+    return { defs: defs, body: s };
+  }
+
+  /* The bottom band (ground layer): the planks continued toward the viewer (the window's sunbeam
+   * runs on and fades by day), a striped rug with a dog asleep in its bed (data-part "dog"), a ball,
+   * slippers and books, then nearer a knitted pouf, a floor vent and a basket of yarn. */
+  function drawBottomBand(P, v, L, R) {
+    var room = L.room, ev = v === "evening", s = "";
+    var defs = S.lin(P + "-xshade", [[0, "#000000", 0], [1, "#000000", 0.24]]) + S.rad(P + "-xglow2", [[0, "#FFE0A0", 0.5], [1, "#FFE0A0", 0]]);
+    var under = tag("rect", { x: -300, y: 3200, width: 4440, height: 600, fill: room("#A8703F") });
+    // planks: rows getting deeper toward the viewer, with joints (the original's last row ends at y 2950)
+    var rows = [2950, 3110, 3290, 3490, 3720], pl = "";
+    rows.forEach(function (yy, i) { if (i) pl += "M-300 " + yy + " H4140 "; if (!i) return; var step = 300 + (i + 8) * 70; for (var px = -300 + (i % 2) * step / 2; px < 4140; px += step) pl += "M" + px + " " + rows[i - 1] + " V" + yy + " "; });
+    s += tag("path", { d: pl, stroke: room("#8E5A30"), "stroke-width": 3, opacity: 0.55 });
+    for (var g = 0; g < 40; g++) { var gx = -280 + R() * 4400, gy = 2960 + R() * 640; s += tag("path", { d: "M" + r2(gx) + " " + r2(gy) + " q60 -6 120 0", stroke: room("#8E5A30"), "stroke-width": 2, fill: "none", opacity: 0.35 }); } // grain
+    if (!ev) { // the window's sunbeam (its last row: opacity 0.19 x (1 - u), u: 0 at x 820 .. 1 at x 2320)
+      defs += '<linearGradient id="' + P + '-xbeam" gradientUnits="userSpaceOnUse" x1="820" y1="0" x2="2320" y2="0"><stop offset="0" stop-color="#FFF1C9" stop-opacity="0.19"/><stop offset="1" stop-color="#FFF1C9" stop-opacity="0"/></linearGradient>' +
+        '<linearGradient id="' + P + '-xbeamfade" gradientUnits="userSpaceOnUse" x1="0" y1="2880" x2="0" y2="3300"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>' +
+        '<mask id="' + P + '-xbeammask" maskUnits="userSpaceOnUse" x="-300" y="2870" width="4440" height="500"><rect x="-300" y="2870" width="4440" height="500" fill="url(#' + P + '-xbeamfade)"/></mask>';
+      var bl = function (y) { return 1020 + (y - 2880) * 200 / 1100; }, br = function (y) { return 2320 + (y - 2880) * 700 / 1100; };
+      s += tag("path", { d: "M1020 2880 L2320 2880 L" + r2(br(3300)) + " 3300 L" + r2(bl(3300)) + " 3300 Z", fill: "url(#" + P + "-xbeam)", mask: "url(#" + P + "-xbeammask)" });
+    }
+    // a striped round rug, a dog bed with a sleeping dog
+    var rx = 2620, ry = 3120;
+    s += tag("ellipse", { cx: rx, cy: ry, rx: 660, ry: 141, fill: room("#E9C46A") });
+    [[600, "#E76F51"], [500, "#F4E3C1"], [400, "#2A9D8F"], [300, "#F4E3C1"], [200, "#E76F51"]].forEach(function (c) { s += tag("ellipse", { cx: rx, cy: ry, rx: c[0], ry: c[0] * 0.214, fill: "none", stroke: room(c[1]), "stroke-width": 16 }); });
+    s += tag("ellipse", { cx: rx + 40, cy: ry + 6, rx: 230, ry: 64, fill: room("#8E5A8E"), stroke: room("#5E3A5E"), "stroke-width": 6 }) + tag("ellipse", { cx: rx + 40, cy: ry + 2, rx: 180, ry: 42, fill: room("#C9A0C9") });
+    s += tag("g", { "data-part": "dog" }, "");
+    // a ball, slippers, a stack of books with a mug
+    s += tag("circle", { cx: 1900, cy: 3040, r: 34, fill: room("#E03131"), stroke: room("#8E1E1E"), "stroke-width": 4 }) + tag("path", { d: "M1868 3030 q32 -20 64 0", stroke: room("#FFD43B"), "stroke-width": 8, fill: "none" });
+    [[1300, -8], [1390, 6]].forEach(function (q) { s += tag("ellipse", { cx: q[0], cy: 3060, rx: 56, ry: 22, fill: room("#5C7CFA"), stroke: room("#364FC7"), "stroke-width": 4, transform: "rotate(" + q[1] + " " + q[0] + " 3060)" }) + tag("ellipse", { cx: q[0] - 14, cy: 3056, rx: 28, ry: 12, fill: room("#F1F3FF"), transform: "rotate(" + q[1] + " " + q[0] + " 3060)" }); });
+    [["#4F81BD", 0], ["#C0504D", 1], ["#9BBB59", 2]].forEach(function (b) { s += tag("rect", { x: 3300 - b[1] * 6, y: 3080 - b[1] * 34, width: 170 - b[1] * 12, height: 34, rx: 4, fill: room(b[0]), stroke: room("#3A2F28"), "stroke-width": 3 }); });
+    s += tag("path", { d: "M3330 2978 h50 v40 q0 12 -12 12 h-26 q-12 0 -12 -12 Z", fill: room("#FFFFFF"), stroke: room("#8A99A3"), "stroke-width": 4 });
+    // a toy chest with toys peeking out, a guitar on its stand, a stack of board games
+    var tc = 1480, tcy = 3200;
+    s += tag("rect", { x: tc - 200, y: tcy + 120, width: 400, height: 20, rx: 8, fill: "#000", opacity: 0.14 });
+    s += tag("rect", { x: tc - 190, y: tcy - 60, width: 380, height: 190, rx: 12, fill: room("#B9825A"), stroke: room("#6B4A2F"), "stroke-width": 6 }) + tag("path", { d: "M" + (tc - 190) + " " + (tcy + 20) + " h380 M" + (tc - 190) + " " + (tcy + 80) + " h380", stroke: room("#8C5E3C"), "stroke-width": 5 });
+    s += tag("path", { d: "M" + (tc - 200) + " " + (tcy - 60) + " l20 -150 h360 l20 150 Z", fill: room("#C98E5A"), stroke: room("#6B4A2F"), "stroke-width": 6, "stroke-linejoin": "round" });
+    s += tag("circle", { cx: tc - 90, cy: tcy - 70, r: 46, fill: room("#FFD43B"), stroke: room("#B08A1A"), "stroke-width": 4 }) + tag("rect", { x: tc - 10, y: tcy - 130, width: 70, height: 70, rx: 8, fill: room("#4DABF7"), stroke: room("#1C6EA4"), "stroke-width": 4 }) + tag("rect", { x: tc + 70, y: tcy - 110, width: 70, height: 50, rx: 8, fill: room("#FF6B6B"), stroke: room("#A83232"), "stroke-width": 4 });
+    s += tag("rect", { x: tc - 40, y: tcy + 30, width: 80, height: 26, rx: 6, fill: room("#E7C46A") });
+    var gt = 420, gty = 3180;
+    s += tag("path", { d: "M" + (gt - 60) + " " + (gty + 40) + " L" + gt + " " + (gty - 60) + " L" + (gt + 60) + " " + (gty + 40) + " M" + gt + " " + (gty - 60) + " V" + (gty - 160), stroke: room("#3A4651"), "stroke-width": 8, fill: "none" });
+    s += tag("rect", { x: gt - 16, y: gty - 460, width: 32, height: 300, rx: 6, fill: room("#5A3A22") }) + tag("rect", { x: gt - 26, y: gty - 500, width: 52, height: 60, rx: 10, fill: room("#3A2416") });
+    s += tag("path", { d: "M" + gt + " " + (gty - 200) + " c-110 0 -120 90 -70 120 c-60 40 -50 150 70 150 c120 0 130 -110 70 -150 c50 -30 40 -120 -70 -120 Z", fill: room("#D9822B"), stroke: room("#7A4214"), "stroke-width": 6 }) +
+      tag("circle", { cx: gt, cy: gty - 90, r: 30, fill: room("#3A2416") }) + tag("rect", { x: gt - 40, y: gty, width: 80, height: 14, rx: 4, fill: room("#3A2416") }) + tag("path", { d: "M" + (gt - 6) + " " + (gty - 480) + " V" + gty + " M" + (gt + 6) + " " + (gty - 480) + " V" + gty, stroke: room("#E9ECEF"), "stroke-width": 2 });
+    [["#7048E8", 0], ["#E8590C", 1], ["#2B8A3E", 2], ["#F2C14E", 3]].forEach(function (b) { s += tag("rect", { x: 1980 - b[1] * 8, y: 3250 - b[1] * 40, width: 240 - b[1] * 10, height: 40, rx: 4, fill: room(b[0]), stroke: room("#3A2F28"), "stroke-width": 3 }) + tag("rect", { x: 2020 - b[1] * 8, y: 3262 - b[1] * 40, width: 60, height: 16, rx: 3, fill: "#FFFFFF", opacity: 0.6 }); });
+    // a floor vent; a knitted pouf; a basket with a blanket and yarn
+    s += tag("rect", { x: 2360, y: 3420, width: 240, height: 60, rx: 6, fill: room("#D9DFE4"), stroke: room("#8A99A3"), "stroke-width": 4 }) + tag("path", { d: "M2380 3436 h200 M2380 3450 h200 M2380 3464 h200", stroke: room("#8A99A3"), "stroke-width": 4 });
+    var px = 1000, py = 3440;
+    s += tag("ellipse", { cx: px + 20, cy: py + 120, rx: 260, ry: 40, fill: "#000", opacity: 0.16 });
+    s += tag("path", { d: "M" + (px - 250) + " " + (py - 40) + " q0 170 250 170 q250 0 250 -170 Z", fill: room("#E8A33C"), stroke: room("#9A6A20"), "stroke-width": 6 });
+    s += tag("ellipse", { cx: px, cy: py - 40, rx: 250, ry: 66, fill: room("#F2B84E"), stroke: room("#9A6A20"), "stroke-width": 6 });
+    var knit = "";
+    for (var k = -4; k <= 4; k++) knit += "M" + (px + k * 54) + " " + (py - 30) + " q" + (k * 4) + " 80 " + (k * 6) + " " + (150 - Math.abs(k) * 8) + " ";
+    s += tag("path", { d: knit, stroke: room("#C98A2A"), "stroke-width": 6, fill: "none", opacity: 0.8 }) + tag("circle", { cx: px, cy: py - 40, r: 16, fill: room("#C98A2A") });
+    var bx = 3200, by = 3450;
+    s += tag("ellipse", { cx: bx, cy: by + 110, rx: 230, ry: 34, fill: "#000", opacity: 0.16 });
+    s += tag("path", { d: "M" + (bx - 210) + " " + (by - 60) + " Q" + (bx - 210) + " " + (by + 110) + " " + (bx - 150) + " " + (by + 110) + " H" + (bx + 150) + " Q" + (bx + 210) + " " + (by + 110) + " " + (bx + 210) + " " + (by - 60) + " Z", fill: room("#C9965C"), stroke: room("#7A5230"), "stroke-width": 6 });
+    var wv = "";
+    for (var wy = by - 40; wy < by + 100; wy += 26) wv += "M" + (bx - 205) + " " + wy + " H" + (bx + 205) + " ";
+    for (var wx = bx - 180; wx < bx + 200; wx += 40) wv += "M" + wx + " " + (by - 60) + " V" + (by + 106) + " ";
+    s += tag("path", { d: wv, stroke: room("#9C6B45"), "stroke-width": 4, opacity: 0.7 });
+    s += tag("path", { d: "M" + (bx - 200) + " " + (by - 60) + " q60 -90 170 -40 q80 40 140 -20 l90 60 Z", fill: room("#3D6E9E"), stroke: room("#274A70"), "stroke-width": 5 }) + tag("path", { d: "M" + (bx - 150) + " " + (by - 82) + " q60 -40 120 0 M" + (bx + 30) + " " + (by - 70) + " q50 -20 90 -10", stroke: room("#F2C57C"), "stroke-width": 6, fill: "none" });
+    [[bx - 60, by - 96, "#E76F51"], [bx + 70, by - 104, "#2A9D8F"]].forEach(function (y2) { s += tag("circle", { cx: y2[0], cy: y2[1], r: 42, fill: room(y2[2]), stroke: D.shade(room(y2[2]), 0.35), "stroke-width": 4 }) + tag("path", { d: "M" + (y2[0] - 30) + " " + (y2[1] - 10) + " q30 30 60 0 M" + (y2[0] - 24) + " " + (y2[1] + 16) + " q24 -40 48 0", stroke: D.shade(room(y2[2]), 0.3), "stroke-width": 3, fill: "none" }); });
+    s += tag("path", { d: "M" + (bx + 112) + " " + (by - 100) + " q60 40 30 120 q-30 60 40 110", stroke: room("#2A9D8F"), "stroke-width": 4, fill: "none" }) + tag("path", { d: "M" + (bx + 40) + " " + (by - 150) + " l40 70 M" + (bx + 60) + " " + (by - 154) + " l30 76", stroke: room("#C0A080"), "stroke-width": 6 });
+    if (ev) s += tag("ellipse", { cx: 600, cy: 2960, rx: 700, ry: 160, fill: "url(#" + P + "-xglow2)" }); // the floor lamp's pool runs on
+    s += tag("rect", { x: -300, y: 3150, width: 4440, height: 450, fill: "url(#" + P + "-xshade)" });
+    return { defs: defs, under: under, body: s };
+  }
+  function mountBands(X, P, v, L, seed) {
+    var room = L.room, top = drawTopBand(P, v, L, D.rng(seed + 31)), bot = drawBottomBand(P, v, L, D.rng(seed + 32));
+    var tg = PL.band(X.over.ground, "top", top.defs, top.body);
+    PL.band(X.under.ground, "bottom", "", bot.under);
+    var bg = PL.band(X.over.ground, "bottom", bot.defs, bot.body);
+    var fanG = tg.querySelector('[data-part="fan"]'), blades = [0, 1, 2, 3].map(function () { return D.el(fanG, "path", { fill: room("#8C5E3C"), stroke: room("#5A3A22"), "stroke-width": 4 }); });
+    var dog = D.el(bg.querySelector('[data-part="dog"]'), "g", {}), fur = room("#C98E5A"), furD = D.shade(fur, 0.35);
+    dog.innerHTML = tag("path", { d: "M-130 0 Q-140 -70 -40 -78 Q60 -84 100 -40 Q120 0 90 0 Z", fill: fur, stroke: furD, "stroke-width": 5 }) +
+      tag("ellipse", { cx: 96, cy: -30, rx: 52, ry: 40, fill: fur, stroke: furD, "stroke-width": 5 }) + tag("ellipse", { cx: 140, cy: -20, rx: 26, ry: 18, fill: D.tint(fur, 0.2), stroke: furD, "stroke-width": 4 }) + tag("circle", { cx: 160, cy: -24, r: 7, fill: "#1E1E24" }) +
+      tag("path", { d: "M70 -60 q-30 10 -24 60 q20 -10 30 -50 Z", fill: room("#8E5A30"), stroke: furD, "stroke-width": 4 }) + tag("path", { d: "M92 -34 q8 6 16 0", stroke: "#1E1E24", "stroke-width": 4, fill: "none", "stroke-linecap": "round" }) +
+      tag("path", { d: "M-130 -14 q-50 -10 -40 -50", stroke: fur, "stroke-width": 18, fill: "none", "stroke-linecap": "round" });
+    var dogBase = "translate(2620 3132)", blink = tg.querySelector("[data-blink]"), bulbs = [].slice.call(tg.querySelectorAll("[data-xbulb]"));
+    var fx0 = 1220, fy = 548;
+    return function (t) {
+      blades.forEach(function (b, i) { // four blades on a plane seen nearly edge-on (squashed 0.16)
+        var a = t * 3.2 + i * Math.PI / 2, c = Math.cos(a), sn = Math.sin(a), L1 = 420, w = 46;
+        var tip = [fx0 + c * L1, fy + sn * L1 * 0.16], side = [-sn * w, c * w * 0.16];
+        b.setAttribute("d", "M" + r2(fx0 + c * 60 + side[0] * 0.5) + " " + r2(fy + sn * 9.6 + side[1] * 0.5) + " L" + r2(tip[0] + side[0]) + " " + r2(tip[1] + side[1]) + " L" + r2(tip[0] - side[0]) + " " + r2(tip[1] - side[1]) + " L" + r2(fx0 + c * 60 - side[0] * 0.5) + " " + r2(fy + sn * 9.6 - side[1] * 0.5) + " Z");
+      });
+      dog.setAttribute("transform", dogBase + " scale(1 " + r2(1 + 0.04 * Math.sin(t * 1.9)) + ")");
+      if (blink) blink.setAttribute("opacity", (t % 2) < 0.25 ? 1 : 0.2);
+      bulbs.forEach(function (e, i) { e.setAttribute("opacity", r2(0.7 + 0.3 * Math.sin(t * 2 + i * 1.7))); });
+    };
+  }
+
   function mount(layers, opts) {
     opts = opts || {};
     var v = PL.variantOf(meta, opts);
@@ -262,7 +413,9 @@
       ground: drawGround(P, v, L, D.rng(seed + 4)), front: drawFront(P, v, L, D.rng(seed + 5)),
     };
     var g = {};
-    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(layers[name], "home-" + name, parts[name].defs, parts[name].body); });
+    var X = PL.extendLayers(layers, opts, meta);
+    PL.LAYERS.forEach(function (name) { g[name] = PL.paint(X.layers[name], "home-" + name, parts[name].defs, parts[name].body); });
+    var bandsUpdate = X.on ? mountBands(X, P, v, L, seed) : null; // the bands above and below (tall-world px)
     var room = L.room;
     var clockG = g.ground.querySelector('[data-part="clock"]');
     var hourH = D.el(clockG, "path", { stroke: room("#3A4651"), "stroke-width": 9, "stroke-linecap": "round" }), minH = D.el(clockG, "path", { stroke: room("#3A4651"), "stroke-width": 6, "stroke-linecap": "round" });
@@ -280,6 +433,7 @@
 
     function update(t, cam) {
       PL.applyCamera(layers, cam);
+      if (bandsUpdate) bandsUpdate(t);
       var mins = (t / 60 + 0.4) % 1, hrs = (t / 720 + 0.27) % 1;
       hourH.setAttribute("d", "M2240 420 L" + r2(2240 + Math.sin(hrs * 6.283) * 34) + " " + r2(420 - Math.cos(hrs * 6.283) * 34));
       minH.setAttribute("d", "M2240 420 L" + r2(2240 + Math.sin(mins * 6.283) * 52) + " " + r2(420 - Math.cos(mins * 6.283) * 52));
@@ -300,7 +454,7 @@
       });
     }
     var a = anchorsFor(opts);
-    update(0, PL.REF);
+    update(0, X.ref);
     return { update: update, anchors: a.anchors, paths: a.paths, variant: v };
   }
 
