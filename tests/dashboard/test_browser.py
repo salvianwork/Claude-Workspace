@@ -150,6 +150,40 @@ def test_board_stuck_gate_options_and_must_fix(tmp_path):
         assert [t.split("\n")[-1].strip() for t in out["results"][3]] == ["Accept anyway", "Give directions", "Cancel"]
 
 
+def _stuck_gate4(videos):
+    run = videos / "stuck-gate3"
+    req = json.loads((run / "board" / "request.json").read_text(encoding="utf-8"))
+    req.update(id="stuck-gate-4-1", checkpoint="stuck-gate-4", title="The video is stuck")
+    (run / "board" / "request.json").write_text(json.dumps(req), encoding="utf-8")
+    (run / "review" / "gate-4-round-3.md").write_text("# Gate 4, round 3: FIX\n## Must-fix\n- Render failed\n", encoding="utf-8")
+
+
+def test_board_stuck_gate4_without_a_video_hides_accept(tmp_path):
+    """After a failed render there is nothing to accept: the button is hidden and the reason shown."""
+    with studio(tmp_path, ["stuck-gate3"], mutate=_stuck_gate4) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "WAITING FOR YOU"},
+            {"op": "wait_text", "text": "there is no video to accept"},
+            {"op": "buttons", "selector": "#board button.decision"},
+        ])
+        assert [t.split("\n")[-1].strip() for t in out["results"][3]] == ["Give directions", "Cancel"]
+
+    def with_video(videos):
+        _stuck_gate4(videos)
+        out_dir = videos / "stuck-gate3" / "04-video" / "out"
+        out_dir.mkdir(parents=True)
+        (out_dir / "video.mp4").write_bytes(b"mp4")
+    (tmp_path / "b").mkdir()
+    with studio(tmp_path / "b", ["stuck-gate3"], mutate=with_video) as s:
+        out = drive([
+            {"op": "goto", "url": s.url},
+            {"op": "wait_text", "text": "Render failed"},
+            {"op": "buttons", "selector": "#board button.decision"},
+        ])
+        assert [t.split("\n")[-1].strip() for t in out["results"][2]] == ["Accept anyway", "Give directions", "Cancel"]
+
+
 def test_board_cancel_needs_second_click(tmp_path):
     with studio(tmp_path, ["stuck-gate3"]) as s:
         drive([
